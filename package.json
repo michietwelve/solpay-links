@@ -1,0 +1,13 @@
+{
+  "name": "solpay-links-monorepo",
+  "version": "1.0.0",
+  "description": "The Social Commerce Layer for Solana",
+  "scripts": {
+    "dev:dashboard": "cd solpay-dashboard-out && npm run dev",
+    "dev:api": "cd solpay-links-out && npm run dev",
+    "dev": "concurrently \"npm run dev:dashboard\" \"npm run dev:api\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
