@@ -6,12 +6,17 @@
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
+// Public-facing base used for Blink / Action QR codes.
+// Must be reachable from the internet (e.g. a localtunnel / Railway URL).
+// Falls back to BASE when running locally without a tunnel.
+const ACTION_BASE = process.env.NEXT_PUBLIC_ACTION_BASE_URL ?? BASE;
+
 // The hosted payment page lives on the Next.js dashboard, not the Express API.
 // In production these may be on separate domains.
 const DASHBOARD_BASE =
   typeof window !== "undefined"
     ? window.location.origin
-    : (process.env.NEXT_PUBLIC_DASHBOARD_URL ?? BASE);
+    : (process.env.NEXT_PUBLIC_DASHBOARD_URL ?? "http://localhost:3000");
 
 export type SupportedToken = "SOL" | "USDC" | "USDT";
 export type LinkStatus = "active" | "completed" | "expired" | "cancelled";
@@ -150,10 +155,9 @@ export function computeStats(links: PaymentLink[]): DashboardStats {
 // ─── URL helpers ──────────────────────────────────────────────────────────────
 
 export function getShareUrls(linkId: string) {
-  const apiBase = BASE;
   return {
-    blink: `https://dial.to/?action=solana-action:${encodeURIComponent(`${apiBase}/actions/${linkId}`)}`,
-    action: `solana-action:${apiBase}/actions/${linkId}`,
+    blink: `https://dial.to/?action=solana-action:${encodeURIComponent(`${ACTION_BASE}/actions/${linkId}`)}`,
+    action: `solana-action:${ACTION_BASE}/actions/${linkId}`,
     payPage: `${DASHBOARD_BASE}/pay/${linkId}`,
   };
 }
