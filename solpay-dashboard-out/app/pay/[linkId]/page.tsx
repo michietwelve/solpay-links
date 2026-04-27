@@ -176,7 +176,7 @@ export default function PayPage() {
       }
 
       // Privy's signTransaction returns the signed Transaction object
-      const signedTx = await embeddedWallet.signTransaction(tx);
+      const signedTx = await (embeddedWallet as any).signTransaction(tx);
 
       // 4. Broadcast directly to the RPC
       const connection = new Connection(RPC, "confirmed");
