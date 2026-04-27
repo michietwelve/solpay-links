@@ -80,7 +80,7 @@ export default function PayPage() {
   const linkId   = params.linkId;
 
   // Privy
-  const { ready, authenticated, login, logout, user, linkWallet } = usePrivy();
+  const { ready, authenticated, login, logout, user, createWallet } = usePrivy();
   const { wallets } = useWallets();
 
   // Local state
@@ -332,7 +332,7 @@ export default function PayPage() {
                 <p className="text-sm text-zinc-500 font-medium">Preparing your secure checkout...</p>
                 {showRetry && (
                   <button
-                    onClick={() => linkWallet()}
+                    onClick={() => createWallet()}
                     className="mt-2 text-xs text-purple-600 font-bold hover:underline"
                   >
                     Taking too long? Click to initialize wallet manually.
