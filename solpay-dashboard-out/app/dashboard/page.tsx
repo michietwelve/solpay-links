@@ -15,7 +15,9 @@ export default function DashboardPage() {
   const { wallets } = useWallets();
   
   const address = useMemo(() => {
-    return wallets.find(w => w.chainType === 'solana')?.address || user?.wallet?.address;
+    // Find the first Solana wallet in the list
+    const solWallet = wallets.find(w => (w as any).chainType === 'solana');
+    return solWallet?.address || user?.wallet?.address;
   }, [wallets, user]);
 
   const { links, isLoading } = useLinks(address);
