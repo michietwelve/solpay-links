@@ -90,6 +90,7 @@ export default function PayPage() {
   const [txSig,      setTxSig]      = useState<string | null>(null);
   const [errMsg,     setErrMsg]     = useState<string | null>(null);
   const [walletAddr, setWalletAddr] = useState<string | null>(null);
+  const [showRetry, setShowRetry] = useState(false);
 
   // ── Step 1: Fetch link metadata ─────────────────────────────────────────────
 
@@ -132,8 +133,11 @@ export default function PayPage() {
         setWalletAddr(activeWallet.address);
         setStage("form");
       } else {
-        // Logged in but no Solana wallet yet
+        // Logged in but no Solana wallet yet — try to trigger creation
         setStage("auth");
+        // Privy's createWallet is often needed if createOnLogin didn't fire
+        const timer = setTimeout(() => setShowRetry(true), 8000);
+        return () => clearTimeout(timer);
       }
     } else {
       setStage("auth");
@@ -326,6 +330,14 @@ export default function PayPage() {
               <div className="flex flex-col items-center gap-3 py-4">
                 <div className="w-6 h-6 border-2 border-zinc-200 border-t-zinc-900 rounded-full animate-spin" />
                 <p className="text-sm text-zinc-500 font-medium">Preparing your secure checkout...</p>
+                {showRetry && (
+                  <button
+                    onClick={() => linkWallet()}
+                    className="mt-2 text-xs text-purple-600 font-bold hover:underline"
+                  >
+                    Taking too long? Click to initialize wallet manually.
+                  </button>
+                )}
               </div>
             ) : (
               <>
