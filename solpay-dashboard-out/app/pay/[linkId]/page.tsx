@@ -27,6 +27,7 @@ import {
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 import { MoonPayBuyWidget } from "@moonpay/moonpay-react";
+const ComponentAny = MoonPayBuyWidget as any;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -477,8 +478,8 @@ export default function PayPage() {
                   After the purchase, MoonPay calls onTransactionCompleted and the
                   user can click "Pay" above to send the on-chain transaction.
                 */}
-                {/* @ts-ignore - Bypass build-time type errors for MoonPay SDK version mismatch */}
-                <MoonPayBuyWidget
+                {/* @ts-ignore */}
+                <ComponentAny
                   apiKey={MOONPAY_API_KEY}
                   currencyCode={moonpayCurrency}
                   walletAddress={walletAddr ?? undefined}
