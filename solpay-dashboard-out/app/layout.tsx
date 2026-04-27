@@ -7,6 +7,7 @@ import {
 } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { PhantomWalletAdapter } from "@solana/wallet-adapter-phantom";
+import { toSolanaWalletConnectors } from "@privy-io/react-auth/solana";
 import "@solana/wallet-adapter-react-ui/styles.css";
 import "./globals.css";
 
@@ -36,6 +37,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             embeddedWallets: {
               createOnLogin: "users-without-wallets",
               requireUserPasswordOnCreate: false,
+            },
+            externalWallets: {
+              solana: {
+                connectors: toSolanaWalletConnectors(),
+              },
             },
             solanaClusters: [{
               name: "devnet",

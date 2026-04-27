@@ -118,16 +118,23 @@ export default function PayPage() {
     if (!ready) return; // Privy not initialised yet
 
     if (authenticated) {
-      // Find the best wallet: prefer any Solana wallet, never use EVM
+      // Find the best wallet: prefer any Solana wallet
       const embeddedSolana = wallets.find(
         w => (w as any).walletClientType === "privy" && (w as any).chainType === "solana"
       );
       const externalSolana = wallets.find(
         w => (w as any).chainType === "solana"
       );
+      
       const activeWallet = embeddedSolana ?? externalSolana;
-      setWalletAddr(activeWallet?.address ?? null);
-      setStage(activeWallet ? "form" : "auth");
+      
+      if (activeWallet) {
+        setWalletAddr(activeWallet.address);
+        setStage("form");
+      } else {
+        // Logged in but no Solana wallet yet
+        setStage("auth");
+      }
     } else {
       setStage("auth");
     }
@@ -319,10 +326,10 @@ export default function PayPage() {
               Sign in to pay — no wallet required.
             </p>
             <button
-              onClick={login}
+              onClick={authenticated ? () => linkWallet() : login}
               className="w-full py-3 bg-zinc-900 text-white text-sm font-medium rounded-xl hover:bg-zinc-700 transition-colors"
             >
-              Continue with email or wallet
+              {authenticated ? "Setup Solana wallet" : "Continue with email or wallet"}
             </button>
             <p className="text-xs text-zinc-400">
               Powered by{" "}
