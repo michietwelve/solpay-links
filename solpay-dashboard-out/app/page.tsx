@@ -1,3 +1,4 @@
+"use client";
 import Link from "next/link";
 import { ArrowRight, Zap, Shield, CreditCard, Globe, Share2 } from "lucide-react";
 
