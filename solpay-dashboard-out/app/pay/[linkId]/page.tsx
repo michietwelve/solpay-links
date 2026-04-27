@@ -119,7 +119,7 @@ export default function PayPage() {
     if (authenticated) {
       // Find the best wallet: prefer embedded Solana wallet, else first available
       const embeddedSolana = wallets.find(
-        w => w.walletClientType === "privy" && w.type === "solana"
+        w => (w as any).walletClientType === "privy" && (w as any).chainType === "solana"
       );
       const activeWallet = embeddedSolana ?? wallets[0];
       setWalletAddr(activeWallet?.address ?? null);
