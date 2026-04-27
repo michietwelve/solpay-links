@@ -17,7 +17,7 @@ import type {
 const router = Router();
 
 const RPC = process.env.RPC_ENDPOINT ?? "https://api.devnet.solana.com";
-const API_BASE = process.env.API_BASE_URL ?? "http://localhost:3000";
+const API_BASE = process.env.API_BASE_URL ?? "https://solpay-links-production.up.railway.app";
 const ICON_URL =
   process.env.ICON_URL ??
   "https://solpay.link/icon.png";

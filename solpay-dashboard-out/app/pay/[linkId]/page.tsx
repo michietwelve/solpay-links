@@ -118,13 +118,16 @@ export default function PayPage() {
     if (!ready) return; // Privy not initialised yet
 
     if (authenticated) {
-      // Find the best wallet: prefer embedded Solana wallet, else first available
+      // Find the best wallet: prefer any Solana wallet, never use EVM
       const embeddedSolana = wallets.find(
         w => (w as any).walletClientType === "privy" && (w as any).chainType === "solana"
       );
-      const activeWallet = embeddedSolana ?? wallets[0];
+      const externalSolana = wallets.find(
+        w => (w as any).chainType === "solana"
+      );
+      const activeWallet = embeddedSolana ?? externalSolana;
       setWalletAddr(activeWallet?.address ?? null);
-      setStage("form");
+      setStage(activeWallet ? "form" : "auth");
     } else {
       setStage("auth");
     }
