@@ -80,7 +80,7 @@ export default function PayPage() {
   const linkId   = params.linkId;
 
   // Privy
-  const { ready, authenticated, login, logout, user } = usePrivy();
+  const { ready, authenticated, login, logout, user, linkWallet } = usePrivy();
   const { wallets } = useWallets();
 
   // Local state
