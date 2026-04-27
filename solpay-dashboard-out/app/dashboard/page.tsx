@@ -15,9 +15,16 @@ export default function DashboardPage() {
   const { wallets } = useWallets();
   
   const address = useMemo(() => {
-    // Find the first Solana wallet in the list
-    const solWallet = wallets.find(w => (w as any).chainType === 'solana');
-    return solWallet?.address || user?.wallet?.address;
+    // 1. Check for a connected Solana wallet (Phantom, Backpack, etc.)
+    const externalSolana = wallets.find(w => (w as any).chainType === 'solana');
+    if (externalSolana) return externalSolana.address;
+
+    // 2. Fallback to Privy embedded Solana wallet if available
+    const embeddedSolana = wallets.find(w => (w as any).walletClientType === 'privy' && (w as any).chainType === 'solana');
+    if (embeddedSolana) return embeddedSolana.address;
+
+    // 3. Last resort fallback
+    return user?.wallet?.address;
   }, [wallets, user]);
 
   const { links, isLoading } = useLinks(address);

@@ -21,6 +21,11 @@ app.use(express.json());
 // Solana Actions headers must be on every response
 app.use(actionsHeaders);
 
+// Handle CORS preflight
+app.options("*", (_req, res) => {
+  res.status(200).end();
+});
+
 // ─── Routes ───────────────────────────────────────────────────────────────
 
 // Required by Blinks spec — must be at root domain

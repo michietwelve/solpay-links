@@ -55,7 +55,9 @@ export interface PaymentRecord {
 // ─── Request / response Zod schemas ─────────────────────────────────────────
 
 export const CreateLinkSchema = z.object({
-  recipientWallet: z.string().min(32).max(44),
+  recipientWallet: z.string().min(32).max(44).refine(val => !val.startsWith('0x'), {
+    message: "Recipient wallet must be a Solana address (not Ethereum/EVM)"
+  }),
   amount: z.number().positive().optional(),           // undefined = open amount
   token: z.enum(SUPPORTED_TOKENS).default("USDC"),
   label: z.string().min(1).max(80),
