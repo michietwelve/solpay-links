@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { usePrivy } from "@privy-io/react-auth";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { createLink } from "../../hooks/useLinks";
 import type { CreateLinkResponse, SupportedToken } from "../../lib/api";
 
@@ -34,7 +35,17 @@ const INITIAL: FormState = {
 
 export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
   const { user } = usePrivy();
-  const publicKey = user?.wallet?.address;
+  const { wallets: privyWallets } = useWallets();
+  const { publicKey: solanaPublicKey } = useWallet();
+
+  // Priority: Solana Wallet Adapter > Privy Solana wallet > never EVM
+  const recipientAddress = (() => {
+    if (solanaPublicKey) return solanaPublicKey.toBase58();
+    const sol = privyWallets.find(w => (w as any).chainType === 'solana');
+    if (sol) return sol.address;
+    return null;
+  })();
+
   const [form, setForm] = useState<FormState>(INITIAL);
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [loading, setLoading] = useState(false);
@@ -64,8 +75,8 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
-    if (!publicKey) {
-      setApiError("Connect your wallet first.");
+    if (!recipientAddress) {
+      setApiError("Please connect your Solana wallet (Phantom/Backpack) first.");
       return;
     }
 
@@ -74,7 +85,7 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
 
     try {
       const result = await createLink({
-        recipientWallet: publicKey,
+        recipientWallet: recipientAddress,
         token: form.token,
         label: form.label.trim(),
         description: form.description.trim(),
@@ -83,7 +94,7 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
         ...(form.expiresIn !== "0" ? { expiresInMinutes: parseInt(form.expiresIn) } : {}),
         ...(form.maxPayments ? { maxPayments: parseInt(form.maxPayments) } : {}),
         ...(form.redirectUrl ? { redirectUrl: form.redirectUrl.trim() } : {}),
-        merchantId: publicKey,
+        merchantId: recipientAddress,
       });
       onSuccess(result);
     } catch (err) {

@@ -4,7 +4,7 @@
  * All dashboard components import from here — never raw fetch.
  */
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 // The hosted payment page lives on the Next.js dashboard, not the Express API.
 // In production these may be on separate domains.

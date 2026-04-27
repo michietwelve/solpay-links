@@ -8,24 +8,31 @@ import type { PaymentLink, CreateLinkResponse } from "../../lib/api";
 import CreateLinkForm from "../../components/dashboard/CreateLinkForm";
 import ShareModal     from "../../components/dashboard/ShareModal";
 
+import { useWallet } from "@solana/wallet-adapter-react";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+
 type Modal = "create" | "share" | null;
 
 export default function DashboardPage() {
-  const { ready, authenticated, user, login, logout } = usePrivy();
-  const { wallets } = useWallets();
+  const { ready, authenticated, user, login, logout, linkWallet } = usePrivy();
+  const { wallets: privyWallets } = useWallets();
+  const { publicKey, disconnect: solanaDisconnect } = useWallet();
   
   const address = useMemo(() => {
-    // 1. Check for a connected Solana wallet (Phantom, Backpack, etc.)
-    const externalSolana = wallets.find(w => (w as any).chainType === 'solana');
+    // 1. Native Solana Wallet (Highest Priority)
+    if (publicKey) return publicKey.toBase58();
+
+    // 2. Privy connected Solana wallet
+    const externalSolana = privyWallets.find(w => (w as any).chainType === 'solana');
     if (externalSolana) return externalSolana.address;
 
-    // 2. Fallback to Privy embedded Solana wallet if available
-    const embeddedSolana = wallets.find(w => (w as any).walletClientType === 'privy' && (w as any).chainType === 'solana');
+    // 3. Fallback to Privy embedded Solana wallet
+    const embeddedSolana = privyWallets.find(w => (w as any).walletClientType === 'privy' && (w as any).chainType === 'solana');
     if (embeddedSolana) return embeddedSolana.address;
 
-    // 3. Last resort fallback
+    // 4. Last resort fallback (EVM address)
     return user?.wallet?.address;
-  }, [wallets, user]);
+  }, [privyWallets, user, publicKey]);
 
   const { links, isLoading } = useLinks(address);
   const { stats } = useStats(address);
@@ -101,19 +108,25 @@ export default function DashboardPage() {
           <span className="font-medium text-sm">SolPay Links</span>
           <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">beta</span>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-mono text-zinc-400">
-            {address?.slice(0, 6)}…{address?.slice(-4)}
-          </span>
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col items-end gap-0.5">
+            {address && (
+              <span className="text-[10px] font-mono text-zinc-400 flex items-center gap-1">
+                <span className={`w-1 h-1 rounded-full ${address.startsWith('0x') ? 'bg-blue-400' : 'bg-emerald-400'}`}></span>
+                {address.startsWith('0x') ? 'EVM' : 'SOL'}: {address.slice(0, 4)}…{address.slice(-4)}
+              </span>
+            )}
+          </div>
           <button
-            onClick={logout}
+            onClick={() => { logout(); solanaDisconnect(); }}
             className="text-xs text-zinc-500 hover:text-zinc-800 transition-colors"
           >
             Logout
           </button>
           <button
             onClick={() => setModal("create")}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-zinc-900 text-white text-sm rounded-lg hover:bg-zinc-700 transition-colors"
+            disabled={!address || address.startsWith("0x")}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-zinc-900 text-white text-sm rounded-lg hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 16 16">
               <line x1="8" y1="2" x2="8" y2="14" strokeWidth="1.5"/>
@@ -126,29 +139,23 @@ export default function DashboardPage() {
 
       <main className="max-w-6xl mx-auto px-6 py-8">
 
-        {/* Stats */}
-        {/* Wallet Status / Setup */}
-        {(!address || address.startsWith("0x")) && (
-          <div className="mb-8 p-4 bg-amber-50 border border-amber-100 rounded-xl flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-amber-900">Solana Wallet Required</h3>
-                <p className="text-xs text-amber-700">You are using an Ethereum address. You need a Solana wallet to create links.</p>
-              </div>
+        {/* Native Solana Wallet Section */}
+        <div className="mb-8 p-6 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-between shadow-xl shadow-zinc-200">
+          <div className="flex items-center gap-6">
+            <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center">
+              <svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A10.003 10.003 0 0012 20c4.478 0 8.268-2.943 9.543-7a9.97 9.97 0 000-6C20.268 2.943 16.478 0 12 0c-4.478 0-8.268 2.943-9.543 7a9.97 9.97 0 00.01 2z" />
+              </svg>
             </div>
-            <button 
-              onClick={() => login()} 
-              className="px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors"
-            >
-              Setup Solana Wallet
-            </button>
+            <div>
+              <h3 className="text-white font-semibold">Solana Wallet Connection</h3>
+              <p className="text-zinc-400 text-sm">Connect your Phantom or Backpack wallet to create payment links.</p>
+            </div>
           </div>
-        )}
+          <div className="custom-wallet-button">
+            <WalletMultiButton />
+          </div>
+        </div>
 
         <div className="grid grid-cols-4 gap-4 mb-8">
           {[
