@@ -168,7 +168,7 @@ export default function PayPage() {
 
       // 3. Sign via Privy embedded wallet
       const embeddedWallet = wallets.find(
-        w => w.walletClientType === "privy" && w.type === "solana"
+        w => (w as any).walletClientType === "privy" && (w as any).chainType === "solana"
       );
 
       if (!embeddedWallet) {
