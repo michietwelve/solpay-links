@@ -35,7 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               accentColor: "#18181b",
             },
             embeddedWallets: {
-              createOnLogin: "users-without-wallets",
+              createOnLogin: "all-users",
               requireUserPasswordOnCreate: false,
             },
             externalWallets: {

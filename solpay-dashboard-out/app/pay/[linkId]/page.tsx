@@ -329,7 +329,7 @@ export default function PayPage() {
               onClick={authenticated ? () => linkWallet() : login}
               className="w-full py-3 bg-zinc-900 text-white text-sm font-medium rounded-xl hover:bg-zinc-700 transition-colors"
             >
-              {authenticated ? "Setup Solana wallet" : "Continue with email or wallet"}
+              {authenticated ? "Complete Secure Login" : "Continue with email or wallet"}
             </button>
             <p className="text-xs text-zinc-400">
               Powered by{" "}
