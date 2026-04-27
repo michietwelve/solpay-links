@@ -19,16 +19,16 @@ export default function DashboardPage() {
   const { publicKey, disconnect: solanaDisconnect } = useWallet();
   
   const address = useMemo(() => {
-    // 1. Native Solana Wallet (Highest Priority)
+    // 1. Native Solana Wallet Adapter (Highest Priority)
     if (publicKey) return publicKey.toBase58();
 
-    // 2. Privy connected Solana wallet
-    const externalSolana = privyWallets.find(w => (w as any).chainType === 'solana');
-    if (externalSolana) return externalSolana.address;
-
-    // 3. Fallback to Privy embedded Solana wallet
+    // 2. Privy: Embedded Solana wallet
     const embeddedSolana = privyWallets.find(w => (w as any).walletClientType === 'privy' && (w as any).chainType === 'solana');
     if (embeddedSolana) return embeddedSolana.address;
+
+    // 3. Privy: External connected Solana wallet
+    const externalSolana = privyWallets.find(w => (w as any).chainType === 'solana' && (w as any).walletClientType !== 'privy');
+    if (externalSolana) return externalSolana.address;
 
     // 4. Last resort fallback (EVM address)
     return user?.wallet?.address;
@@ -36,6 +36,42 @@ export default function DashboardPage() {
 
   const { links, isLoading } = useLinks(address);
   const { stats } = useStats(address);
+
+  // --- Wallet Selection Logic ---
+  const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
+
+  const allAddresses = useMemo(() => {
+    const list: { address: string; type: string; label: string }[] = [];
+    
+    if (publicKey) {
+      list.push({ address: publicKey.toBase58(), type: 'SOL', label: 'Phantom/Adapter' });
+    }
+    
+    privyWallets.forEach(w => {
+      if (w.chainType === 'solana') {
+        list.push({ 
+          address: w.address, 
+          type: 'SOL', 
+          label: (w as any).walletClientType === 'privy' ? 'Privy Embedded' : (w.meta?.name ?? 'External Solana') 
+        });
+      } else if (w.chainType === 'ethereum') {
+        list.push({ address: w.address, type: 'EVM', label: 'Privy Ethereum' });
+      }
+    });
+
+    // Remove duplicates
+    return list.filter((v, i, a) => a.findIndex(t => t.address === v.address) === i);
+  }, [publicKey, privyWallets]);
+
+  const activeAddress = useMemo(() => {
+    if (selectedAddress && allAddresses.some(a => a.address === selectedAddress)) {
+      return selectedAddress;
+    }
+    return allAddresses[0]?.address ?? null;
+  }, [selectedAddress, allAddresses]);
+
+  // Use the activeAddress for everything
+  const address = activeAddress;
 
   const [modal, setModal]       = useState<Modal>(null);
   const [shareLink, setShareLink] = useState<{ id: string; label: string } | null>(null);
@@ -109,21 +145,36 @@ export default function DashboardPage() {
           <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">beta</span>
         </div>
         <div className="flex items-center gap-4">
-          <div className="flex flex-col items-end gap-0.5">
-            {address && (
-              <span className="text-[10px] font-mono text-zinc-400 flex items-center gap-1">
-                <span className={`w-1 h-1 rounded-full ${address.startsWith('0x') ? 'bg-blue-400' : 'bg-emerald-400'}`}></span>
-                {address.startsWith('0x') ? 'EVM' : 'SOL'}: {address.slice(0, 4)}…{address.slice(-4)}
+          <div className="flex flex-col items-end gap-1">
+            {allAddresses.length > 0 && (
+              <select 
+                value={address ?? ''} 
+                onChange={(e) => setSelectedAddress(e.target.value)}
+                className="text-[11px] font-mono bg-zinc-100 border border-zinc-200 rounded-md px-2 py-1 outline-none focus:ring-1 focus:ring-zinc-400 transition-all cursor-pointer"
+              >
+                {allAddresses.map((a) => (
+                  <option key={a.address} value={a.address}>
+                    ({a.type}) {a.label}: {a.address.slice(0, 4)}...{a.address.slice(-4)}
+                  </option>
+                ))}
+              </select>
+            )}
+            {!address && authenticated && (
+              <span className="text-[10px] text-amber-600 font-medium px-2 py-0.5 bg-amber-50 rounded border border-amber-100">
+                Wait, initializing Solana...
               </span>
             )}
           </div>
           <button
-            onClick={() => { logout(); solanaDisconnect(); }}
-            className="text-xs text-zinc-500 hover:text-zinc-800 transition-colors"
+            onClick={() => {
+              logout();
+              solanaDisconnect();
+            }}
+            className="text-xs font-medium text-zinc-500 hover:text-zinc-900 transition-colors"
           >
             Logout
           </button>
-          <button
+        </div>  <button
             onClick={() => setModal("create")}
             disabled={!address || address.startsWith("0x")}
             className="flex items-center gap-1.5 px-3.5 py-2 bg-zinc-900 text-white text-sm rounded-lg hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
