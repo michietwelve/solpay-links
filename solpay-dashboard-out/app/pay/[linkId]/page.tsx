@@ -322,20 +322,29 @@ export default function PayPage() {
           )}
 
           <div className="space-y-3">
-            <p className="text-sm text-zinc-500">
-              Sign in to pay — no wallet required.
-            </p>
-            <button
-              onClick={authenticated ? () => linkWallet() : login}
-              className="w-full py-3 bg-zinc-900 text-white text-sm font-medium rounded-xl hover:bg-zinc-700 transition-colors"
-            >
-              {authenticated ? "Complete Secure Login" : "Continue with email or wallet"}
-            </button>
-            <p className="text-xs text-zinc-400">
-              Powered by{" "}
-              <a href="https://privy.io" target="_blank" rel="noreferrer" className="underline">Privy</a>
-              {" "}· no seed phrase needed
-            </p>
+            {authenticated ? (
+              <div className="flex flex-col items-center gap-3 py-4">
+                <div className="w-6 h-6 border-2 border-zinc-200 border-t-zinc-900 rounded-full animate-spin" />
+                <p className="text-sm text-zinc-500 font-medium">Preparing your secure checkout...</p>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-zinc-500">
+                  Sign in to pay — no wallet required.
+                </p>
+                <button
+                  onClick={login}
+                  className="w-full py-3 bg-zinc-900 text-white text-sm font-medium rounded-xl hover:bg-zinc-700 transition-colors shadow-lg shadow-zinc-200"
+                >
+                  Continue with email or wallet
+                </button>
+                <p className="text-xs text-zinc-400">
+                  Powered by{" "}
+                  <a href="https://privy.io" target="_blank" rel="noreferrer" className="underline">Privy</a>
+                  {" "}· no seed phrase needed
+                </p>
+              </>
+            )}
           </div>
         </div>
       </Card>
