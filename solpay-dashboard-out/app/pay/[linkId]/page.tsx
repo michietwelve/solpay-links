@@ -487,8 +487,7 @@ export default function PayPage() {
                       ? undefined
                       : link.amountHuman ?? undefined
                   }
-                  onTransactionCompleted={() => {
-                    // Ramp complete — collapse the widget and let user pay
+                  onTransactionCompleted={async (props: any) => {
                     setStage("form");
                     setErrMsg(null);
                   }}
