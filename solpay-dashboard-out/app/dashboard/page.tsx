@@ -17,29 +17,9 @@ export default function DashboardPage() {
   const { ready, authenticated, user, login, logout, linkWallet } = usePrivy();
   const { wallets: privyWallets } = useWallets();
   const { publicKey, disconnect: solanaDisconnect } = useWallet();
-  
-  const address = useMemo(() => {
-    // 1. Native Solana Wallet Adapter (Highest Priority)
-    if (publicKey) return publicKey.toBase58();
 
-    // 2. Privy: Embedded Solana wallet
-    const embeddedSolana = privyWallets.find(w => (w as any).walletClientType === 'privy' && (w as any).chainType === 'solana');
-    if (embeddedSolana) return embeddedSolana.address;
-
-    // 3. Privy: External connected Solana wallet
-    const externalSolana = privyWallets.find(w => (w as any).chainType === 'solana' && (w as any).walletClientType !== 'privy');
-    if (externalSolana) return externalSolana.address;
-
-    // 4. Last resort fallback (EVM address)
-    return user?.wallet?.address;
-  }, [privyWallets, user, publicKey]);
-
-  const { links, isLoading } = useLinks(address);
-  const { stats } = useStats(address);
-
-  // --- Wallet Selection Logic ---
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
-
+  
   const allAddresses = useMemo(() => {
     const list: { address: string; type: string; label: string }[] = [];
     
@@ -67,11 +47,15 @@ export default function DashboardPage() {
     if (selectedAddress && allAddresses.some(a => a.address === selectedAddress)) {
       return selectedAddress;
     }
-    return allAddresses[0]?.address ?? null;
+    // Default to first Solana wallet, or first wallet overall
+    return allAddresses.find(a => a.type === 'SOL')?.address ?? allAddresses[0]?.address ?? null;
   }, [selectedAddress, allAddresses]);
 
   // Use the activeAddress for everything
   const address = activeAddress;
+
+  const { links = [], isLoading } = useLinks(address);
+  const { stats } = useStats(address);
 
   const [modal, setModal]       = useState<Modal>(null);
   const [shareLink, setShareLink] = useState<{ id: string; label: string } | null>(null);
