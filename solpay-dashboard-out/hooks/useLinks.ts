@@ -61,7 +61,7 @@ export async function createLink(
   payload: CreateLinkPayload
 ): Promise<CreateLinkResponse> {
   const result = await linksApi.create(payload);
-  // Invalidate the links list so all consumers re-fetch
-  await globalMutate("/api/links");
+  // Invalidate any links list keys to ensure the dashboard updates immediately
+  await globalMutate(key => Array.isArray(key) && key[0] === "/api/links");
   return result;
 }
