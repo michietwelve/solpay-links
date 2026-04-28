@@ -61,7 +61,7 @@ type Stage =
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://solpay-links-production.up.railway.app";
 const RPC      = process.env.NEXT_PUBLIC_RPC_ENDPOINT ?? "https://api.devnet.solana.com";
 const MOONPAY_API_KEY = process.env.NEXT_PUBLIC_MOONPAY_API_KEY ?? "";
 
@@ -445,8 +445,8 @@ export default function PayPage() {
         </div>
 
         {/* --- Version & Diagnostics --- */}
-        <div className="mt-8 flex flex-col items-center gap-2 opacity-30 hover:opacity-100 transition-opacity">
-          <p className="text-[10px] text-zinc-500 font-mono">Build v1.5 • Solana Enforced</p>
+        <div className="mt-8 flex flex-col items-center gap-2 opacity-100 transition-opacity">
+          <p className="text-[10px] text-red-600 font-bold font-mono animate-pulse">Build v1.6 • Solana Enforced</p>
           <button 
             onClick={() => {
               window.location.href = window.location.pathname + '?v=' + Date.now();
