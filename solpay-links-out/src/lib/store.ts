@@ -1,6 +1,5 @@
 import { nanoid } from "nanoid";
-import fs from "fs";
-import path from "path";
+import { prisma } from "./db";
 import {
   PaymentLink,
   PaymentRecord,
@@ -8,37 +7,6 @@ import {
   TOKEN_DECIMALS,
   SupportedToken,
 } from "../types";
-
-// ─── Simple JSON File Store ──────────────────────────────────────────────────
-// Persistent storage that works without native dependencies (SQLite/Postgres).
-// Perfect for hackathons and local development.
-
-const DATA_FILE = path.resolve(process.cwd(), "solpay-data.json");
-
-interface StoreData {
-  links: Record<string, any>;
-  payments: Record<string, any>;
-}
-
-function loadData(): StoreData {
-  try {
-    if (fs.existsSync(DATA_FILE)) {
-      const raw = fs.readFileSync(DATA_FILE, "utf-8");
-      return JSON.parse(raw);
-    }
-  } catch (err) {
-    console.error("[store] failed to load data file, starting fresh:", err);
-  }
-  return { links: {}, payments: {} };
-}
-
-function saveData(data: StoreData) {
-  try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf-8");
-  } catch (err) {
-    console.error("[store] failed to save data file:", err);
-  }
-}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -62,8 +30,7 @@ function mapPayment(data: any): PaymentRecord {
 
 // ─── Link CRUD ────────────────────────────────────────────────────────────────
 
-export function createLink(input: CreateLinkInput): PaymentLink {
-  const data = loadData();
+export async function createLink(input: CreateLinkInput): Promise<PaymentLink> {
   const id = nanoid(10);
   const decimals = TOKEN_DECIMALS[input.token as SupportedToken];
 
@@ -76,58 +43,60 @@ export function createLink(input: CreateLinkInput): PaymentLink {
     ? new Date(Date.now() + input.expiresInMinutes * 60_000)
     : null;
 
-  const link: any = {
-    id,
-    recipientWallet: input.recipientWallet,
-    amountLamports: amountLamports?.toString() ?? null,
-    token: input.token as SupportedToken,
-    label: input.label,
-    description: input.description,
-    memo: input.memo ?? null,
-    expiresAt: expiresAt?.toISOString() ?? null,
-    maxPayments: input.maxPayments ?? null,
-    paymentCount: 0,
-    redirectUrl: input.redirectUrl ?? null,
-    status: "active",
-    createdAt: new Date().toISOString(),
-    merchantId: input.merchantId,
-  };
-
-  data.links[id] = link;
-  saveData(data);
+  const link = await prisma.paymentLink.create({
+    data: {
+      id,
+      recipientWallet: input.recipientWallet,
+      amountLamports: amountLamports?.toString() ?? null,
+      token: input.token as SupportedToken,
+      label: input.label,
+      description: input.description,
+      memo: input.memo ?? null,
+      expiresAt,
+      maxPayments: input.maxPayments ?? null,
+      paymentCount: 0,
+      redirectUrl: input.redirectUrl ?? null,
+      status: "active",
+      merchantId: input.merchantId,
+    },
+  });
 
   return mapLink(link);
 }
 
-export function getLinkById(id: string): PaymentLink | undefined {
-  const data = loadData();
-  const link = data.links[id];
+export async function getLinkById(id: string): Promise<PaymentLink | undefined> {
+  const link = await prisma.paymentLink.findUnique({
+    where: { id },
+  });
   return link ? mapLink(link) : undefined;
 }
 
-export function getAllLinks(merchantId?: string): PaymentLink[] {
-  const data = loadData();
-  let links = Object.values(data.links);
-  
-  if (merchantId) {
-    links = links.filter((l: any) => l.merchantId === merchantId);
-  }
+export async function getAllLinks(merchantId?: string): Promise<PaymentLink[]> {
+  const links = await prisma.paymentLink.findMany({
+    where: merchantId ? { merchantId } : {},
+    orderBy: { createdAt: "desc" },
+  });
 
-  return links
-    .map(mapLink)
-    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  return links.map(mapLink);
 }
 
-export function incrementPaymentCount(id: string): void {
-  const data = loadData();
-  const link = data.links[id];
+export async function incrementPaymentCount(id: string): Promise<void> {
+  const link = await prisma.paymentLink.findUnique({ where: { id } });
   if (link) {
-    link.paymentCount += 1;
-    if (link.maxPayments !== null && link.paymentCount >= link.maxPayments) {
-      link.status = "completed";
+    const newCount = link.paymentCount + 1;
+    let newStatus = link.status;
+    
+    if (link.maxPayments !== null && newCount >= link.maxPayments) {
+      newStatus = "completed";
     }
-    data.links[id] = link;
-    saveData(data);
+
+    await prisma.paymentLink.update({
+      where: { id },
+      data: {
+        paymentCount: newCount,
+        status: newStatus,
+      },
+    });
   }
 }
 
@@ -145,51 +114,48 @@ export function getLinkStatus(link: PaymentLink): {
 
 // ─── Payment records ──────────────────────────────────────────────────────────
 
-export function createPaymentRecord(
+export async function createPaymentRecord(
   linkId: string,
   payerWallet: string,
   amountLamports: bigint,
   token: SupportedToken
-): PaymentRecord {
-  const data = loadData();
+): Promise<PaymentRecord> {
   const id = nanoid(12);
 
-  const record: any = {
-    id,
-    linkId,
-    payerWallet,
-    amountLamports: amountLamports.toString(),
-    token,
-    signature: null,
-    status: "pending",
-    createdAt: new Date().toISOString(),
-    confirmedAt: null,
-  };
-
-  data.payments[id] = record;
-  saveData(data);
+  const record = await prisma.paymentRecord.create({
+    data: {
+      id,
+      linkId,
+      payerWallet,
+      amountLamports: amountLamports.toString(),
+      token,
+      status: "pending",
+    },
+  });
 
   return mapPayment(record);
 }
 
-export function confirmPayment(recordId: string, signature: string): void {
-  const data = loadData();
-  const record = data.payments[recordId];
+export async function confirmPayment(recordId: string, signature: string): Promise<void> {
+  const record = await prisma.paymentRecord.findUnique({ where: { id: recordId } });
   if (record) {
-    record.signature = signature;
-    record.status = "confirmed";
-    record.confirmedAt = new Date().toISOString();
-    data.payments[recordId] = record;
-    saveData(data);
+    await prisma.paymentRecord.update({
+      where: { id: recordId },
+      data: {
+        signature,
+        status: "confirmed",
+        confirmedAt: new Date(),
+      },
+    });
     
-    incrementPaymentCount(record.linkId);
+    await incrementPaymentCount(record.linkId);
   }
 }
 
-export function getPaymentsForLink(linkId: string): PaymentRecord[] {
-  const data = loadData();
-  return Object.values(data.payments)
-    .filter((p: any) => p.linkId === linkId)
-    .map(mapPayment)
-    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+export async function getPaymentsForLink(linkId: string): Promise<PaymentRecord[]> {
+  const payments = await prisma.paymentRecord.findMany({
+    where: { linkId },
+    orderBy: { createdAt: "desc" },
+  });
+  return payments.map(mapPayment);
 }

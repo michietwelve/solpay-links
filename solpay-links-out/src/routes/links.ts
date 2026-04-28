@@ -14,14 +14,14 @@ const API_BASE = process.env.API_BASE_URL ?? "http://localhost:3000";
 // ─── POST /api/links  ─────────────────────────────────────────────────────
 // Create a new payment link. Returns the link object + ready-to-share URLs.
 
-router.post("/", (req: Request, res: Response): void => {
+router.post("/", async (req: Request, res: Response): Promise<void> => {
   const parsed = CreateLinkSchema.safeParse(req.body);
   if (!parsed.success) {
     actionError(res, 400, parsed.error.errors.map((e) => e.message).join("; "));
     return;
   }
 
-  const link = createLink(parsed.data);
+  const link = await createLink(parsed.data);
 
   // Blink URL — what you share on X/Telegram/WhatsApp
   const blinkUrl = `https://dial.to/?action=solana-action:${encodeURIComponent(
@@ -50,8 +50,8 @@ router.post("/", (req: Request, res: Response): void => {
 
 // ─── GET /api/links/:id  ──────────────────────────────────────────────────
 
-router.get("/:id", (req: Request, res: Response): void => {
-  const link = getLinkById(req.params.id as string);
+router.get("/:id", async (req: Request, res: Response): Promise<void> => {
+  const link = await getLinkById(req.params.id as string);
   if (!link) {
     actionError(res, 404, "Link not found.");
     return;
@@ -64,13 +64,13 @@ router.get("/:id", (req: Request, res: Response): void => {
 
 // ─── GET /api/links/:id/payments  ────────────────────────────────────────
 
-router.get("/:id/payments", (req: Request, res: Response): void => {
-  const link = getLinkById(req.params.id as string);
+router.get("/:id/payments", async (req: Request, res: Response): Promise<void> => {
+  const link = await getLinkById(req.params.id as string);
   if (!link) {
     actionError(res, 404, "Link not found.");
     return;
   }
-  const payments = getPaymentsForLink(req.params.id as string);
+  const payments = await getPaymentsForLink(req.params.id as string);
   res.json({
     link: {
       ...link,
@@ -86,10 +86,11 @@ router.get("/:id/payments", (req: Request, res: Response): void => {
 // ─── GET /api/links  ─────────────────────────────────────────────────────
 // Simple list (no pagination yet — add cursor-based pagination for prod)
 
-router.get("/", (req: Request, res: Response): void => {
+router.get("/", async (req: Request, res: Response): Promise<void> => {
   const merchantId = req.query.merchantId as string | undefined;
+  const links = await getAllLinks(merchantId);
   res.json(
-    getAllLinks(merchantId).map((l) => ({
+    links.map((l) => ({
       ...l,
       amountLamports: l.amountLamports?.toString() ?? null,
     }))

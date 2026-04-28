@@ -14,8 +14,8 @@ import { actionError } from "../middleware/actions";
 
 const router = Router();
 
-router.get("/:linkId", (req: Request, res: Response): void => {
-  const link = getLinkById(req.params.linkId as string);
+router.get("/:linkId", async (req: Request, res: Response): Promise<void> => {
+  const link = await getLinkById(req.params.linkId as string);
 
   if (!link) {
     actionError(res, 404, "Payment link not found.");

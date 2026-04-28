@@ -34,7 +34,7 @@ router.options("/:linkId/pay", optionsPreflight);
 router.get("/:linkId", async (req: Request, res: Response): Promise<void> => {
   const linkId = req.params.linkId as string;
 
-  const link = getLinkById(linkId);
+  const link = await getLinkById(linkId);
   if (!link) {
     actionError(res, 404, "Payment link not found.");
     return;
@@ -101,7 +101,7 @@ router.post("/:linkId/pay", async (req: Request, res: Response): Promise<void> =
   const linkId = req.params.linkId as string;
 
   // 1. Validate the link exists and is still active
-  const link = getLinkById(linkId);
+  const link = await getLinkById(linkId);
   if (!link) {
     actionError(res, 404, "Payment link not found.");
     return;
@@ -158,7 +158,7 @@ router.post("/:linkId/pay", async (req: Request, res: Response): Promise<void> =
   }
 
   // 5. Record this pending payment attempt
-  createPaymentRecord(linkId, account, amountBaseUnits, link.token);
+  await createPaymentRecord(linkId, account, amountBaseUnits, link.token);
 
   // 6. Return the signed-ready transaction to the wallet
   const body: ActionPostResponse = {

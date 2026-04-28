@@ -5,11 +5,14 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
+    "build": "prisma generate && tsc",
+    "start": "prisma generate && node dist/index.js",
+    "postinstall": "prisma generate",
+    "db:push": "prisma db push",
     "test": "jest"
   },
   "dependencies": {
+    "@prisma/client": "^7.8.0",
     "@solana/actions": "^1.6.3",
     "@solana/spl-token": "^0.4.9",
     "@solana/web3.js": "^1.98.0",

@@ -71,7 +71,7 @@ export function startEventListener(connection: Connection): () => void {
       console.log(`[listener] Payment confirmed for link ${linkId}: ${signature}`);
 
       // Credit the link in our store
-      incrementPaymentCount(linkId);
+      await incrementPaymentCount(linkId);
 
       // Fire webhooks — in production, look up merchant webhook URL from DB
       const webhookUrl = process.env.WEBHOOK_URL;
