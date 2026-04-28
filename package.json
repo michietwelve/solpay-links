@@ -5,7 +5,9 @@
   "scripts": {
     "dev:dashboard": "cd solpay-dashboard-out && npm run dev",
     "dev:api": "cd solpay-links-out && npm run dev",
-    "dev": "concurrently \"npm run dev:dashboard\" \"npm run dev:api\""
+    "dev": "concurrently \"npm run dev:dashboard\" \"npm run dev:api\"",
+    "build": "cd solpay-dashboard-out && npm install && npm run build",
+    "install": "cd solpay-dashboard-out && npm install"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
