@@ -129,7 +129,7 @@ export default function PayPage() {
         // Logged in but NO Solana wallet — FORCE create it now
         setIsInitializing(true);
         console.log("Triggering auto-creation of Solana wallet...");
-        createWallet().catch(err => {
+        (createWallet as any)({ chainType: 'solana' }).catch((err: any) => {
           console.error("Wallet creation failed:", err);
           setIsInitializing(false);
         });
@@ -301,7 +301,7 @@ export default function PayPage() {
                 <div className="w-6 h-6 border-2 border-zinc-200 border-t-zinc-900 rounded-full animate-spin" />
                 <p className="text-sm text-zinc-500 font-medium">Preparing your secure checkout...</p>
                 {showRetry && (
-                  <button onClick={() => createWallet()} className="mt-2 text-xs text-purple-600 font-bold hover:underline">
+                  <button onClick={() => (createWallet as any)({ chainType: 'solana' })} className="mt-2 text-xs text-purple-600 font-bold hover:underline">
                     Taking too long? Click to initialize wallet manually.
                   </button>
                 )}
