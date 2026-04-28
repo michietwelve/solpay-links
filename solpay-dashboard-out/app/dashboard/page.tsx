@@ -28,13 +28,14 @@ export default function DashboardPage() {
     }
     
     privyWallets.forEach(w => {
-      if (w.chainType === 'solana') {
+      const wallet = w as any;
+      if (wallet.chainType === 'solana') {
         list.push({ 
           address: w.address, 
           type: 'SOL', 
-          label: (w as any).walletClientType === 'privy' ? 'Privy Embedded' : (w.meta?.name ?? 'External Solana') 
+          label: wallet.walletClientType === 'privy' ? 'Privy Embedded' : (w.meta?.name ?? 'External Solana') 
         });
-      } else if (w.chainType === 'ethereum') {
+      } else if (wallet.chainType === 'ethereum') {
         list.push({ address: w.address, type: 'EVM', label: 'Privy Ethereum' });
       }
     });
