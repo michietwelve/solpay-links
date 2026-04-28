@@ -139,7 +139,9 @@ export default function PayPage() {
         setIsInitializing(true);
         console.log("Triggering auto-creation of Solana wallet...");
         (createWallet as any)({ chainType: 'solana' }).then(() => {
-           console.log("Wallet creation triggered successfully");
+           console.log("Wallet creation triggered — reloading to pick up new wallet.");
+           // Reload so Privy's fresh state is picked up cleanly
+           window.location.reload();
         }).catch((err: any) => {
           console.error("Wallet creation failed:", err);
           setIsInitializing(false);
