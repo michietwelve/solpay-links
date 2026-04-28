@@ -144,6 +144,10 @@ export default function PayPage() {
       } else {
         // No Solana wallet or only Ethereum — keep in auth stage and create
         setStage("auth");
+        
+        // Show retry buttons after 3 seconds if stuck here
+        const timer = setTimeout(() => setShowRetry(true), 3000);
+        
         if (!isInitializing) {
           setIsInitializing(true);
           console.log("No Solana wallet found — auto-creating...");
@@ -151,6 +155,8 @@ export default function PayPage() {
             .then(() => setTimeout(() => window.location.reload(), 3000))
             .catch(() => setTimeout(() => window.location.reload(), 3000));
         }
+        
+        return () => clearTimeout(timer);
       }
     } else {
       setStage("auth");

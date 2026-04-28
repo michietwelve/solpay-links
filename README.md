@@ -20,6 +20,21 @@ Traditional cross-border payments are slow, expensive, and trapped behind "walle
 
 ---
 
+## 🏆 Frontier Hackathon Submission (Devnet)
+
+- **Live Dashboard**: [https://solpay-links-dwkq-eight.vercel.app](https://solpay-links-dwkq-eight.vercel.app)
+- **Actions API**: [https://solpay-links-production.up.railway.app](https://solpay-links-production.up.railway.app)
+- **Video Demo**: [Coming Soon]
+- **Testing Cluster**: Solana **Devnet**
+
+### How to Judge/Test:
+1. **Get Devnet SOL**: Visit [solfaucet.com](https://solfaucet.com) and fund your wallet.
+2. **Create a Link**: Log in to the [Dashboard](https://solpay-links-dwkq-eight.vercel.app) using your email or Google account (powered by Privy).
+3. **Share & Pay**: Copy your SolPay Link and paste it into any Action-compatible environment (e.g., [Dial.to](https://dial.to) or X).
+4. **Instant Confirmation**: Watch the dashboard update in real-time as our listener detects your transaction!
+
+---
+
 ## 🏗️ Architecture
 
 The project is structured as a high-performance monorepo:
