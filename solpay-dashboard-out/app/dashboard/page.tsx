@@ -170,11 +170,11 @@ export default function DashboardPage() {
               logout();
               solanaDisconnect();
             }}
-            className="text-xs font-medium text-zinc-500 hover:text-zinc-900 transition-colors"
+            className="text-xs font-medium text-zinc-500 hover:text-zinc-900 transition-colors mr-4"
           >
             Logout
           </button>
-        </div>  <button
+          <button
             onClick={() => setModal("create")}
             disabled={!address || address.startsWith("0x")}
             className="flex items-center gap-1.5 px-3.5 py-2 bg-zinc-900 text-white text-sm rounded-lg hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
