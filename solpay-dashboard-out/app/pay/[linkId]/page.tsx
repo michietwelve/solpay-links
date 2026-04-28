@@ -423,18 +423,20 @@ export default function PayPage() {
           </div>
 
           {stage === "moonpay" && (
-            <div className="bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden p-1">
+            <div className="bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden p-1 min-h-[500px]">
               <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
                 <p className="text-sm font-medium">Buy crypto with card</p>
                 <button onClick={() => setStage("form")} className="text-zinc-400 hover:text-zinc-700 text-xl">×</button>
               </div>
-              <ComponentAny
-                apiKey={MOONPAY_API_KEY}
-                currencyCode={moonpayCurrency}
-                walletAddress={walletAddr ?? undefined}
-                baseCurrencyCode="usd"
-                visible
-              />
+              <div className="h-[500px]">
+                <ComponentAny
+                  apiKey={MOONPAY_API_KEY}
+                  currencyCode={moonpayCurrency}
+                  walletAddress={walletAddr ?? undefined}
+                  baseCurrencyCode="usd"
+                  visible
+                />
+              </div>
             </div>
           )}
         </div>
