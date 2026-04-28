@@ -428,14 +428,22 @@ export default function PayPage() {
                 <p className="text-sm font-medium">Buy crypto with card</p>
                 <button onClick={() => setStage("form")} className="text-zinc-400 hover:text-zinc-700 text-xl">×</button>
               </div>
-              <div className="h-[500px]">
-                <ComponentAny
-                  apiKey={MOONPAY_API_KEY}
-                  currencyCode={moonpayCurrency}
-                  walletAddress={walletAddr ?? undefined}
-                  baseCurrencyCode="usd"
-                  visible
-                />
+              <div className="h-[500px] flex flex-col">
+                {!MOONPAY_API_KEY ? (
+                  <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-4">
+                    <div className="p-3 bg-amber-50 text-amber-600 rounded-full">⚠️</div>
+                    <p className="text-sm text-zinc-600 font-medium">MoonPay API Key Missing</p>
+                    <p className="text-xs text-zinc-400">Please add NEXT_PUBLIC_MOONPAY_API_KEY to your Vercel Environment Variables and redeploy.</p>
+                  </div>
+                ) : (
+                  <ComponentAny
+                    apiKey={MOONPAY_API_KEY}
+                    currencyCode={moonpayCurrency}
+                    walletAddress={walletAddr ?? undefined}
+                    baseCurrencyCode="usd"
+                    visible
+                  />
+                )}
               </div>
             </div>
           )}

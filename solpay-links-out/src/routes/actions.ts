@@ -152,8 +152,9 @@ router.post("/:linkId/pay", async (req: Request, res: Response): Promise<void> =
     serialisedTx = serialiseTransaction(transaction);
     amountHuman = human;
   } catch (err) {
-    console.error("[POST /actions/:linkId/pay] build tx error:", err);
-    actionError(res, 500, "Failed to build payment transaction. Please try again.");
+    const msg = (err as Error).message;
+    console.error("[POST /actions/:linkId/pay] build tx error:", msg);
+    actionError(res, 500, `Failed to build transaction: ${msg}`);
     return;
   }
 
