@@ -119,16 +119,15 @@ export default function PayPage() {
     if (!ready) return;
 
     if (authenticated && user) {
-      // Check ALL linked wallets - any type, any chain
-      const anyWallet = wallets[0];
-      const linkedWallet = user.linkedAccounts.find(
-        (acc: any) => acc.type === 'wallet' && acc.address
+      // STRICTLY look for a Solana wallet address
+      const solanaWallet = wallets.find((w: any) => w.chainType === 'solana');
+      const linkedSolana = user.linkedAccounts.find(
+        (acc: any) => acc.type === 'wallet' && (acc as any).chainType === 'solana'
       );
 
-      // Pick whichever address we can find
-      const addr = (anyWallet?.address) ?? ((linkedWallet as any)?.address ?? null);
+      const addr = solanaWallet?.address ?? (linkedSolana as any)?.address ?? null;
 
-      if (addr) {
+      if (addr && !addr.startsWith('0x')) {
         setWalletAddr(addr);
         setStage("form");
         return;
