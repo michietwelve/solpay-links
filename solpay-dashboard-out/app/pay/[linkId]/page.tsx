@@ -118,8 +118,17 @@ export default function PayPage() {
     if (!link || !link.active) return;
     if (!ready) return;
 
-    if (authenticated) {
-      // Find any Solana wallet (embedded or external)
+    if (authenticated && user) {
+      // 1. Source of truth check: user.linkedAccounts (faster than useWallets)
+      const solAccount = user.linkedAccounts.find(acc => acc.type === 'wallet' && (acc as any).chainType === 'solana');
+      
+      if (solAccount) {
+        setWalletAddr(solAccount.address);
+        setStage("form");
+        return;
+      }
+
+      // 2. Fallback check: wallets array
       const solanaWallet = wallets.find(w => (w as any).chainType === "solana");
       
       if (solanaWallet) {
@@ -129,7 +138,9 @@ export default function PayPage() {
         // Logged in but NO Solana wallet — FORCE create it now
         setIsInitializing(true);
         console.log("Triggering auto-creation of Solana wallet...");
-        (createWallet as any)({ chainType: 'solana' }).catch((err: any) => {
+        (createWallet as any)({ chainType: 'solana' }).then(() => {
+           console.log("Wallet creation triggered successfully");
+        }).catch((err: any) => {
           console.error("Wallet creation failed:", err);
           setIsInitializing(false);
         });
@@ -143,7 +154,7 @@ export default function PayPage() {
     } else {
       setStage("auth");
     }
-  }, [ready, authenticated, wallets, link, isInitializing, createWallet]);
+  }, [ready, authenticated, user, wallets, link, isInitializing, createWallet]);
 
   // ── Step 3: Send payment via Actions API ─────────────────────────────────────
 
@@ -301,9 +312,23 @@ export default function PayPage() {
                 <div className="w-6 h-6 border-2 border-zinc-200 border-t-zinc-900 rounded-full animate-spin" />
                 <p className="text-sm text-zinc-500 font-medium">Preparing your secure checkout...</p>
                 {showRetry && (
-                  <button onClick={() => (createWallet as any)({ chainType: 'solana' })} className="mt-2 text-xs text-purple-600 font-bold hover:underline">
-                    Taking too long? Click to initialize wallet manually.
-                  </button>
+                  <div className="mt-4 flex flex-col items-center gap-2">
+                    <button 
+                      onClick={() => {
+                        alert("Initializing Solana wallet... please wait 2 seconds.");
+                        (createWallet as any)({ chainType: 'solana' });
+                      }} 
+                      className="text-xs text-purple-600 font-bold hover:underline"
+                    >
+                      Still stuck? Click to force initialize
+                    </button>
+                    <button 
+                      onClick={() => window.location.reload()}
+                      className="text-[10px] text-zinc-400 hover:text-zinc-600 underline"
+                    >
+                      Nothing happened? Refresh page
+                    </button>
+                  </div>
                 )}
               </div>
             ) : (
