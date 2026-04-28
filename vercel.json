@@ -1,6 +1,0 @@
-{
-  "buildCommand": "cd solpay-dashboard-out && npm run build",
-  "outputDirectory": "solpay-dashboard-out/.next",
-  "installCommand": "cd solpay-dashboard-out && npm install",
-  "framework": "nextjs"
-}
