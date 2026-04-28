@@ -119,36 +119,38 @@ export default function PayPage() {
     if (!ready) return;
 
     if (authenticated && user) {
-      // 1. Source of truth check: user.linkedAccounts (faster than useWallets)
-      const solAccount = user.linkedAccounts.find(acc => acc.type === 'wallet' && (acc as any).chainType === 'solana');
-      
-      if (solAccount) {
-        setWalletAddr((solAccount as any).address);
+      // Check ALL linked wallets - any type, any chain
+      const anyWallet = wallets[0];
+      const linkedWallet = user.linkedAccounts.find(
+        (acc: any) => acc.type === 'wallet' && acc.address
+      );
+
+      // Pick whichever address we can find
+      const addr = (anyWallet?.address) ?? ((linkedWallet as any)?.address ?? null);
+
+      if (addr) {
+        setWalletAddr(addr);
         setStage("form");
         return;
       }
 
-      // 2. Fallback check: wallets array
-      const solanaWallet = wallets.find(w => (w as any).chainType === "solana");
-      
-      if (solanaWallet) {
-        setWalletAddr(solanaWallet.address);
-        setStage("form");
-      } else if (!isInitializing) {
-        // Logged in but NO Solana wallet — FORCE create it now
+      // No wallet at all — try to create one
+      if (!isInitializing) {
         setIsInitializing(true);
-        console.log("Triggering auto-creation of Solana wallet...");
-        (createWallet as any)({ chainType: 'solana' }).then(() => {
-           console.log("Wallet creation triggered — reloading to pick up new wallet.");
-           // Reload so Privy's fresh state is picked up cleanly
-           window.location.reload();
-        }).catch((err: any) => {
-          console.error("Wallet creation failed:", err);
-          setIsInitializing(false);
-        });
-        
+        console.log("No wallet found — auto-creating Solana wallet...");
+        (createWallet as any)({ chainType: 'solana' })
+          .then(() => {
+            console.log("Wallet created — reloading in 3s to pick up new state.");
+            setTimeout(() => window.location.reload(), 3000);
+          })
+          .catch((err: any) => {
+            console.error("createWallet error:", err);
+            // Wallet may already exist — reload and hope Privy syncs it
+            setTimeout(() => window.location.reload(), 3000);
+          });
+
         setStage("auth");
-        const timer = setTimeout(() => setShowRetry(true), 8000);
+        const timer = setTimeout(() => setShowRetry(true), 6000);
         return () => clearTimeout(timer);
       } else {
         setStage("auth");
@@ -314,21 +316,18 @@ export default function PayPage() {
                 <div className="w-6 h-6 border-2 border-zinc-200 border-t-zinc-900 rounded-full animate-spin" />
                 <p className="text-sm text-zinc-500 font-medium">Preparing your secure checkout...</p>
                 {showRetry && (
-                  <div className="mt-4 flex flex-col items-center gap-2">
-                    <button 
-                      onClick={() => {
-                        alert("Initializing Solana wallet... please wait 2 seconds.");
-                        (createWallet as any)({ chainType: 'solana' });
-                      }} 
-                      className="text-xs text-purple-600 font-bold hover:underline"
-                    >
-                      Still stuck? Click to force initialize
-                    </button>
+                  <div className="mt-4 flex flex-col items-center gap-3">
                     <button 
                       onClick={() => window.location.reload()}
+                      className="text-xs text-purple-600 font-bold hover:underline"
+                    >
+                      Still stuck? Click to refresh
+                    </button>
+                    <button 
+                      onClick={() => logout()}
                       className="text-[10px] text-zinc-400 hover:text-zinc-600 underline"
                     >
-                      Nothing happened? Refresh page
+                      Sign out and try again
                     </button>
                   </div>
                 )}
