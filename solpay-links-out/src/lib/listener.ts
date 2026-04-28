@@ -21,7 +21,7 @@ const PROGRAM_ID = new PublicKey(
 function parseSolPayLinkId(logs: string[]): string | null {
   // Look for "Program log: SolPay:XXXXXXXXXX"
   for (const log of logs) {
-    const match = log.match(/SolPay:([A-Za-z0-9_-]{10})/);
+    const match = log.match(/SolPay:([A-Za-z0-9_-]{1,32})/);
     if (match) return match[1];
   }
   return null;

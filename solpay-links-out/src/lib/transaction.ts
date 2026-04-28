@@ -39,7 +39,7 @@ function buildMemoInstruction(text: string): TransactionInstruction {
 function calculateFee(amount: bigint): bigint {
   if (!TREASURY || PLATFORM_FEE_BPS === 0) return 0n;
   // Safety check: skip fee if treasury is clearly a placeholder or invalid length
-  if (TREASURY.includes("11111") || TREASURY.length < 32) return 0n;
+  if (TREASURY?.includes("11111") || TREASURY?.length < 32) return 0n;
   return (amount * BigInt(PLATFORM_FEE_BPS)) / 10_000n;
 }
 
