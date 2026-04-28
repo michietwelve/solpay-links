@@ -127,37 +127,33 @@ export default function PayPage() {
 
       const addr = solanaWallet?.address ?? (linkedSolana as any)?.address ?? null;
 
+      // Nuclear Guard: If address is EVM, do NOT allow to form stage
       if (addr && !addr.startsWith('0x')) {
         setWalletAddr(addr);
         setStage("form");
-        return;
-      }
-
-      // No wallet at all — try to create one
-      if (!isInitializing) {
-        setIsInitializing(true);
-        console.log("No wallet found — auto-creating Solana wallet...");
-        (createWallet as any)({ chainType: 'solana' })
-          .then(() => {
-            console.log("Wallet created — reloading in 3s to pick up new state.");
-            setTimeout(() => window.location.reload(), 3000);
-          })
-          .catch((err: any) => {
-            console.error("createWallet error:", err);
-            // Wallet may already exist — reload and hope Privy syncs it
-            setTimeout(() => window.location.reload(), 3000);
-          });
-
-        setStage("auth");
-        const timer = setTimeout(() => setShowRetry(true), 6000);
-        return () => clearTimeout(timer);
       } else {
+        // No Solana wallet or only Ethereum — keep in auth stage and create
         setStage("auth");
+        if (!isInitializing) {
+          setIsInitializing(true);
+          console.log("No Solana wallet found — auto-creating...");
+          (createWallet as any)({ chainType: 'solana' })
+            .then(() => setTimeout(() => window.location.reload(), 3000))
+            .catch(() => setTimeout(() => window.location.reload(), 3000));
+        }
       }
     } else {
       setStage("auth");
     }
   }, [ready, authenticated, user, wallets, link, isInitializing, createWallet]);
+
+  // Failsafe: Reset stage if EVM address somehow slips through
+  useEffect(() => {
+    if (stage === "form" && walletAddr?.startsWith('0x')) {
+      setStage("auth");
+      setWalletAddr(null);
+    }
+  }, [stage, walletAddr]);
 
   // ── Step 3: Send payment via Actions API ─────────────────────────────────────
 
@@ -446,6 +442,19 @@ export default function PayPage() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* --- Version & Diagnostics --- */}
+        <div className="mt-8 flex flex-col items-center gap-2 opacity-30 hover:opacity-100 transition-opacity">
+          <p className="text-[10px] text-zinc-500 font-mono">Build v1.5 • Solana Enforced</p>
+          <button 
+            onClick={() => {
+              window.location.href = window.location.pathname + '?v=' + Date.now();
+            }}
+            className="text-[10px] text-zinc-400 underline hover:text-zinc-600"
+          >
+            Force Refresh Build
+          </button>
         </div>
       </div>
     );
