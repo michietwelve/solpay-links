@@ -123,7 +123,7 @@ export default function PayPage() {
       const solAccount = user.linkedAccounts.find(acc => acc.type === 'wallet' && (acc as any).chainType === 'solana');
       
       if (solAccount) {
-        setWalletAddr(solAccount.address);
+        setWalletAddr((solAccount as any).address);
         setStage("form");
         return;
       }
