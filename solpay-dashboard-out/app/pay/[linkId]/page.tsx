@@ -361,7 +361,7 @@ export default function PayPage() {
           <div className="bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden relative">
             <div className="absolute top-0 right-0 p-2">
               <span className="text-[8px] text-red-600 font-bold font-mono animate-pulse uppercase tracking-widest bg-red-50 px-1.5 py-0.5 rounded border border-red-100">
-                v1.6 LIVE
+                v1.7 LIVE
               </span>
             </div>
             <div className="px-6 pt-6 pb-5 border-b border-zinc-100">
@@ -461,7 +461,7 @@ export default function PayPage() {
 
         {/* --- Version & Diagnostics --- */}
         <div className="mt-8 flex flex-col items-center gap-2 opacity-100 transition-opacity">
-          <p className="text-[10px] text-red-600 font-bold font-mono animate-pulse">Build v1.6 • Solana Enforced</p>
+          <p className="text-[10px] text-red-600 font-bold font-mono animate-pulse">Build v1.7 • Total Reliability</p>
           <button 
             onClick={() => {
               window.location.href = window.location.pathname + '?v=' + Date.now();
