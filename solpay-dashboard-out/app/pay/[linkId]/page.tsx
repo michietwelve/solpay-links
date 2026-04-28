@@ -348,7 +348,12 @@ export default function PayPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-3">
-          <div className="bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden">
+          <div className="bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden relative">
+            <div className="absolute top-0 right-0 p-2">
+              <span className="text-[8px] text-red-600 font-bold font-mono animate-pulse uppercase tracking-widest bg-red-50 px-1.5 py-0.5 rounded border border-red-100">
+                v1.6 LIVE
+              </span>
+            </div>
             <div className="px-6 pt-6 pb-5 border-b border-zinc-100">
               <div className="flex items-start justify-between">
                 <div>
