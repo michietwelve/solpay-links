@@ -129,36 +129,48 @@ export default function PayPage() {
     if (!ready) return;
 
     if (authenticated && user) {
-      // STRICTLY look for a Solana wallet address
-      const solanaWallet = wallets.find((w: any) => w.chainType === 'solana');
+      // 1. Check Privy wallets array for a Solana wallet
+      const solanaWallet = wallets.find((w: any) => w.walletClientType === 'privy' && w.chainType === 'solana');
+      
+      // 2. Check user's linked accounts as a fallback
       const linkedSolana = user.linkedAccounts.find(
         (acc: any) => acc.type === 'wallet' && (acc as any).chainType === 'solana'
       );
 
       const addr = solanaWallet?.address ?? (linkedSolana as any)?.address ?? null;
 
-      // Nuclear Guard: If address is EVM, do NOT allow to form stage
+      // 3. Validation: Must be a non-EVM address
       if (addr && !addr.startsWith('0x')) {
         setWalletAddr(addr);
         setStage("form");
       } else {
-        // No Solana wallet or only Ethereum — keep in auth stage and create
+        // No Solana wallet found - but we ARE authenticated
         setStage("auth");
         
-        // Show retry buttons after 3 seconds if stuck here
-        const timer = setTimeout(() => setShowRetry(true), 3000);
+        // Show retry/manual buttons after 4 seconds
+        const timer = setTimeout(() => setShowRetry(true), 4000);
         
-        if (!isInitializing) {
+        // Attempt auto-creation ONLY ONCE
+        if (!isInitializing && createWallet) {
           setIsInitializing(true);
-          console.log("No Solana wallet found — auto-creating...");
+          console.log("[auth] Attempting to create Solana embedded wallet...");
           (createWallet as any)({ chainType: 'solana' })
-            .then(() => setTimeout(() => window.location.reload(), 3000))
-            .catch(() => setTimeout(() => window.location.reload(), 3000));
+            .then((newWallet: any) => {
+              console.log("[auth] Wallet created:", newWallet.address);
+              setWalletAddr(newWallet.address);
+              setStage("form");
+            })
+            .catch((err: any) => {
+              console.error("[auth] Wallet creation failed:", err);
+              setErrMsg("We couldn't automatically create your Solana wallet. Please try the manual button below.");
+              setShowRetry(true);
+            });
         }
         
         return () => clearTimeout(timer);
       }
     } else {
+      // Not authenticated yet
       setStage("auth");
     }
   }, [ready, authenticated, user, wallets, link, isInitializing, createWallet]);
@@ -327,18 +339,24 @@ export default function PayPage() {
                 <div className="w-6 h-6 border-2 border-zinc-200 border-t-zinc-900 rounded-full animate-spin" />
                 <p className="text-sm text-zinc-500 font-medium">Preparing your secure checkout...</p>
                 {showRetry && (
-                  <div className="mt-4 flex flex-col items-center gap-3">
+                  <div className="mt-4 flex flex-col items-center gap-4 w-full">
+                    <button 
+                      onClick={() => (createWallet as any)({ chainType: 'solana' })}
+                      className="w-full py-3 bg-zinc-900 text-white text-xs font-bold rounded-xl hover:bg-zinc-800"
+                    >
+                      Generate Solana Wallet
+                    </button>
                     <button 
                       onClick={() => window.location.reload()}
-                      className="text-xs text-purple-600 font-bold hover:underline"
+                      className="text-xs text-zinc-400 hover:text-zinc-600 underline"
                     >
-                      Still stuck? Click to refresh
+                      Stuck? Refresh Page
                     </button>
                     <button 
                       onClick={() => logout()}
-                      className="text-[10px] text-zinc-400 hover:text-zinc-600 underline"
+                      className="text-[10px] text-zinc-300 hover:text-zinc-500 underline"
                     >
-                      Sign out and try again
+                      Sign out and switch account
                     </button>
                   </div>
                 )}
