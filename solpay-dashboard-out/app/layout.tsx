@@ -14,7 +14,7 @@ import "./globals.css";
 import { PrivyProvider } from "@privy-io/react-auth";
 
 const RPC = process.env.NEXT_PUBLIC_RPC_ENDPOINT ?? "https://api.devnet.solana.com";
-const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID ?? "";
+const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID ?? "cmoh2gc1n004c0cl4svxkhsxx";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const wallets = useMemo(() => [new PhantomWalletAdapter()], []);

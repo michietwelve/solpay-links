@@ -96,6 +96,16 @@ export default function PayPage() {
   // ── Step 1: Fetch link metadata ─────────────────────────────────────────────
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      if (stage === "loading") {
+        setErrMsg("Authentication is taking longer than expected. Please check your connection or refresh the page.");
+        setShowRetry(true);
+      }
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, [stage]);
+
+  useEffect(() => {
     if (!linkId) return;
     fetch(`${API_BASE}/pay/${linkId}`)
       .then(r => r.json())
@@ -107,7 +117,7 @@ export default function PayPage() {
         }
       })
       .catch(() => {
-        setErrMsg("Could not load payment link. Please try again.");
+        setErrMsg("Could not load payment link. Please check your internet connection.");
         setStage("error");
       });
   }, [linkId]);
