@@ -91,6 +91,7 @@ export default function PayPage() {
   const [errMsg,     setErrMsg]     = useState<string | null>(null);
   const [walletAddr, setWalletAddr] = useState<string | null>(null);
   const [showRetry, setShowRetry] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
 
   // ── Step 1: Fetch link metadata ─────────────────────────────────────────────
 
@@ -104,7 +105,6 @@ export default function PayPage() {
           setStage("inactive");
           return;
         }
-        // Privy readiness drives the next transition
       })
       .catch(() => {
         setErrMsg("Could not load payment link. Please try again.");
@@ -116,33 +116,34 @@ export default function PayPage() {
 
   useEffect(() => {
     if (!link || !link.active) return;
-    if (!ready) return; // Privy not initialised yet
+    if (!ready) return;
 
     if (authenticated) {
-      // Find the best wallet: prefer any Solana wallet
-      const embeddedSolana = wallets.find(
-        w => (w as any).walletClientType === "privy" && (w as any).chainType === "solana"
-      );
-      const externalSolana = wallets.find(
-        w => (w as any).chainType === "solana"
-      );
+      // Find any Solana wallet (embedded or external)
+      const solanaWallet = wallets.find(w => (w as any).chainType === "solana");
       
-      const activeWallet = embeddedSolana ?? externalSolana;
-      
-      if (activeWallet) {
-        setWalletAddr(activeWallet.address);
+      if (solanaWallet) {
+        setWalletAddr(solanaWallet.address);
         setStage("form");
-      } else {
-        // Logged in but no Solana wallet yet — try to trigger creation
+      } else if (!isInitializing) {
+        // Logged in but NO Solana wallet — FORCE create it now
+        setIsInitializing(true);
+        console.log("Triggering auto-creation of Solana wallet...");
+        createWallet().catch(err => {
+          console.error("Wallet creation failed:", err);
+          setIsInitializing(false);
+        });
+        
         setStage("auth");
-        // Privy's createWallet is often needed if createOnLogin didn't fire
         const timer = setTimeout(() => setShowRetry(true), 8000);
         return () => clearTimeout(timer);
+      } else {
+        setStage("auth");
       }
     } else {
       setStage("auth");
     }
-  }, [ready, authenticated, wallets, link]);
+  }, [ready, authenticated, wallets, link, isInitializing, createWallet]);
 
   // ── Step 3: Send payment via Actions API ─────────────────────────────────────
 
@@ -159,7 +160,6 @@ export default function PayPage() {
     setErrMsg(null);
 
     try {
-      // 1. Ask Actions API to build the transaction
       const payUrl = link.isOpenAmount
         ? `${API_BASE}/actions/${link.id}/pay?amount=${parsedAmount}`
         : `${API_BASE}/actions/${link.id}/pay`;
@@ -176,24 +176,13 @@ export default function PayPage() {
       }
 
       const { transaction: txBase64 } = await postRes.json();
-
-      // 2. Decode the base64 transaction
       const txBytes = Buffer.from(txBase64, "base64");
       const tx      = Transaction.from(txBytes);
 
-      // 3. Sign via Privy embedded wallet
-      const embeddedWallet = wallets.find(
-        w => (w as any).walletClientType === "privy" && (w as any).chainType === "solana"
-      );
+      const activeWallet = wallets.find(w => w.address === walletAddr);
+      if (!activeWallet) throw new Error("Wallet not found. Please reconnect.");
 
-      if (!embeddedWallet) {
-        throw new Error("No Privy embedded wallet found. Please reconnect.");
-      }
-
-      // Privy's signTransaction returns the signed Transaction object
-      const signedTx = await (embeddedWallet as any).signTransaction(tx);
-
-      // 4. Broadcast directly to the RPC
+      const signedTx = await (activeWallet as any).signTransaction(tx);
       const connection = new Connection(RPC, "confirmed");
       const sig = await connection.sendRawTransaction(
         signedTx.serialize({ requireAllSignatures: true, verifySignatures: false })
@@ -203,7 +192,6 @@ export default function PayPage() {
       setTxSig(sig);
       setStage("success");
 
-      // Redirect after 3 s if the merchant specified a URL
       if (link.redirectUrl) {
         setTimeout(() => router.push(link.redirectUrl!), 3000);
       }
@@ -218,7 +206,6 @@ export default function PayPage() {
   //  Render
   // ─────────────────────────────────────────────────────────────────────────────
 
-  // ── Shared card shell ───────────────────────────────────────────────────────
   const Card = ({ children }: { children: React.ReactNode }) => (
     <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden">
@@ -227,7 +214,6 @@ export default function PayPage() {
     </div>
   );
 
-  // ── Loading ─────────────────────────────────────────────────────────────────
   if (stage === "loading" || !ready) {
     return (
       <Card>
@@ -239,7 +225,6 @@ export default function PayPage() {
     );
   }
 
-  // ── Inactive link ───────────────────────────────────────────────────────────
   if (stage === "inactive" && link) {
     return (
       <Card>
@@ -256,23 +241,21 @@ export default function PayPage() {
     );
   }
 
-  // ── Error ───────────────────────────────────────────────────────────────────
   if (stage === "error") {
     return (
       <Card>
         <div className="px-8 py-16 text-center">
           <p className="text-sm text-red-600">{errMsg ?? "Something went wrong."}</p>
+          <button onClick={() => window.location.reload()} className="mt-4 text-xs underline">Try Again</button>
         </div>
       </Card>
     );
   }
 
-  // ── Success ─────────────────────────────────────────────────────────────────
   if (stage === "success" && link) {
     return (
       <Card>
         <div className="px-8 py-14 text-center space-y-4">
-          {/* Animated check */}
           <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto">
             <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -292,20 +275,15 @@ export default function PayPage() {
               {txSig.slice(0, 20)}…{txSig.slice(-8)}
             </a>
           )}
-          {link.redirectUrl && (
-            <p className="text-xs text-zinc-400">Redirecting you shortly…</p>
-          )}
         </div>
       </Card>
     );
   }
 
-  // ── Auth (not logged in) ─────────────────────────────────────────────────────
   if (stage === "auth" && link) {
     return (
       <Card>
         <div className="px-8 py-10 text-center space-y-6">
-          {/* Header */}
           <div>
             <div className="w-10 h-10 bg-zinc-900 rounded-xl flex items-center justify-center mx-auto mb-4">
               <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 16 16">
@@ -317,44 +295,23 @@ export default function PayPage() {
             <p className="text-sm text-zinc-500 mt-1">{link.description}</p>
           </div>
 
-          {/* Amount chip */}
-          {!link.isOpenAmount && link.amountHuman && (
-            <div className="inline-flex items-center gap-1.5 bg-zinc-50 border border-zinc-200 rounded-full px-4 py-1.5">
-              <span className="text-xl font-semibold tracking-tight">{link.amountHuman}</span>
-              <span className="text-sm text-zinc-500 font-medium">{link.token}</span>
-            </div>
-          )}
-
           <div className="space-y-3">
             {authenticated ? (
               <div className="flex flex-col items-center gap-3 py-4">
                 <div className="w-6 h-6 border-2 border-zinc-200 border-t-zinc-900 rounded-full animate-spin" />
                 <p className="text-sm text-zinc-500 font-medium">Preparing your secure checkout...</p>
                 {showRetry && (
-                  <button
-                    onClick={() => createWallet()}
-                    className="mt-2 text-xs text-purple-600 font-bold hover:underline"
-                  >
+                  <button onClick={() => createWallet()} className="mt-2 text-xs text-purple-600 font-bold hover:underline">
                     Taking too long? Click to initialize wallet manually.
                   </button>
                 )}
               </div>
             ) : (
               <>
-                <p className="text-sm text-zinc-500">
-                  Sign in to pay — no wallet required.
-                </p>
-                <button
-                  onClick={login}
-                  className="w-full py-3 bg-zinc-900 text-white text-sm font-medium rounded-xl hover:bg-zinc-700 transition-colors shadow-lg shadow-zinc-200"
-                >
+                <p className="text-sm text-zinc-500">Sign in to pay — no wallet required.</p>
+                <button onClick={login} className="w-full py-3 bg-zinc-900 text-white text-sm font-medium rounded-xl hover:bg-zinc-700 shadow-lg shadow-zinc-200">
                   Continue with email or wallet
                 </button>
-                <p className="text-xs text-zinc-400">
-                  Powered by{" "}
-                  <a href="https://privy.io" target="_blank" rel="noreferrer" className="underline">Privy</a>
-                  {" "}· no seed phrase needed
-                </p>
               </>
             )}
           </div>
@@ -363,48 +320,37 @@ export default function PayPage() {
     );
   }
 
-  // ── Payment form ─────────────────────────────────────────────────────────────
   if ((stage === "form" || stage === "moonpay" || stage === "sending") && link) {
     const moonpayCurrency = MOONPAY_CURRENCY[link.token] ?? "sol";
-    const isLoading = stage === "sending";
+    const isSending = stage === "sending";
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-3">
-
-          {/* ── Main payment card ── */}
           <div className="bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden">
-
-            {/* Card header */}
             <div className="px-6 pt-6 pb-5 border-b border-zinc-100">
               <div className="flex items-start justify-between">
                 <div>
                   <h1 className="text-base font-semibold">{link.label}</h1>
                   <p className="text-xs text-zinc-400 mt-0.5">{link.description}</p>
                 </div>
-                {/* Token badge */}
                 <span className="shrink-0 text-xs font-medium bg-zinc-100 text-zinc-700 px-2.5 py-1 rounded-full ml-3">
                   {link.token}
                 </span>
               </div>
             </div>
 
-            {/* Amount section */}
             <div className="px-6 py-5">
               {link.isOpenAmount ? (
                 <div className="space-y-1.5">
-                  <label className="text-xs text-zinc-500 font-medium">
-                    Amount ({link.token})
-                  </label>
+                  <label className="text-xs text-zinc-500 font-medium">Amount ({link.token})</label>
                   <input
                     type="number"
-                    min="0.000001"
-                    step="0.01"
                     value={amount}
                     onChange={e => setAmount(e.target.value)}
                     placeholder={`0.00 ${link.token}`}
-                    disabled={isLoading}
-                    className="w-full text-2xl font-semibold tracking-tight border-0 border-b-2 border-zinc-200 focus:border-zinc-900 outline-none py-1 bg-transparent transition-colors placeholder:text-zinc-300"
+                    disabled={isSending}
+                    className="w-full text-2xl font-semibold tracking-tight border-0 border-b-2 border-zinc-200 focus:border-zinc-900 outline-none py-1 bg-transparent transition-colors"
                   />
                 </div>
               ) : (
@@ -414,37 +360,15 @@ export default function PayPage() {
                 </div>
               )}
 
-              {/* Recipient */}
               <div className="mt-4 flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-zinc-100 flex items-center justify-center shrink-0">
-                  <svg className="w-3.5 h-3.5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
+                <div className="w-6 h-6 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full" />
                 </div>
                 <span className="text-xs font-mono text-zinc-400">
-                  {link.recipientWallet.slice(0, 6)}…{link.recipientWallet.slice(-6)}
+                  Paying from {walletAddr?.slice(0, 6)}…{walletAddr?.slice(-6)}
                 </span>
               </div>
 
-              {/* Wallet in use */}
-              {walletAddr && (
-                <div className="mt-2 flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full" />
-                  </div>
-                  <span className="text-xs font-mono text-zinc-400">
-                    Paying from {walletAddr.slice(0, 6)}…{walletAddr.slice(-6)}
-                  </span>
-                  <button
-                    onClick={logout}
-                    className="ml-auto text-xs text-zinc-400 hover:text-zinc-700 underline underline-offset-2"
-                  >
-                    Change
-                  </button>
-                </div>
-              )}
-
-              {/* Error banner */}
               {errMsg && (
                 <div className="mt-4 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">
                   <p className="text-xs text-red-700">{errMsg}</p>
@@ -452,98 +376,41 @@ export default function PayPage() {
               )}
             </div>
 
-            {/* Actions */}
             <div className="px-6 pb-6 space-y-3">
-              {/* Primary CTA — pay on-chain */}
               <button
                 onClick={handlePay}
-                disabled={isLoading || (link.isOpenAmount && !amount)}
-                className="w-full py-3 bg-zinc-900 text-white text-sm font-medium rounded-xl hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                disabled={isSending || (link.isOpenAmount && !amount)}
+                className="w-full py-3 bg-zinc-900 text-white text-sm font-medium rounded-xl hover:bg-zinc-700 disabled:opacity-40 transition-colors flex items-center justify-center gap-2"
               >
-                {isLoading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Sending…
-                  </>
-                ) : (
-                  <>
-                    Pay {link.isOpenAmount && amount ? `${amount} ${link.token}` : (link.amountHuman ?? "") + " " + link.token}
-                  </>
-                )}
+                {isSending ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</> : `Pay ${link.isOpenAmount && amount ? `${amount} ${link.token}` : (link.amountHuman ?? "") + " " + link.token}`}
               </button>
 
-              {/* Secondary CTA — MoonPay ramp */}
               <button
                 onClick={() => setStage("moonpay")}
-                disabled={isLoading}
-                className="w-full py-3 bg-white text-zinc-700 text-sm font-medium rounded-xl border border-zinc-200 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                disabled={isSending}
+                className="w-full py-3 bg-white text-zinc-700 text-sm font-medium rounded-xl border border-zinc-200 hover:bg-zinc-50 transition-colors flex items-center justify-center gap-2"
               >
-                {/* MoonPay logo mark */}
-                <svg width="16" height="16" viewBox="0 0 32 32" fill="none">
-                  <circle cx="16" cy="16" r="16" fill="#7B3FE4"/>
-                  <path d="M22 10c-3.31 0-6 2.69-6 6 0 1.1.3 2.12.82 3H10v3h14v-3h-2.82A5.98 5.98 0 0022 16c0-1.1-.3-2.12-.82-3H22v-3z" fill="white"/>
-                </svg>
+                <svg width="16" height="16" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="16" fill="#7B3FE4"/><path d="M22 10c-3.31 0-6 2.69-6 6 0 1.1.3 2.12.82 3H10v3h14v-3h-2.82A5.98 5.98 0 0022 16c0-1.1-.3-2.12-.82-3H22v-3z" fill="white"/></svg>
                 Buy crypto &amp; pay with card
               </button>
             </div>
           </div>
 
-          {/* ── MoonPay widget (inline, below the card) ── */}
           {stage === "moonpay" && (
-            <div className="bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100">
-                <p className="text-sm font-medium">Buy {link.token} with card</p>
-                <button
-                  onClick={() => setStage("form")}
-                  className="text-zinc-400 hover:text-zinc-700 text-xl leading-none"
-                >
-                  ×
-                </button>
+            <div className="bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden p-1">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
+                <p className="text-sm font-medium">Buy crypto with card</p>
+                <button onClick={() => setStage("form")} className="text-zinc-400 hover:text-zinc-700 text-xl">×</button>
               </div>
-              <div className="p-1">
-                {/*
-                  MoonPayBuyWidget opens the ramp inside an iframe.
-                  We pre-fill:
-                    - currencyCode  → the token the payer needs
-                    - walletAddress → their Privy wallet, so funds land there directly
-                  After the purchase, MoonPay calls onTransactionCompleted and the
-                  user can click "Pay" above to send the on-chain transaction.
-                */}
-                {/* @ts-ignore */}
-                <ComponentAny
-                  apiKey={MOONPAY_API_KEY}
-                  currencyCode={moonpayCurrency}
-                  walletAddress={walletAddr ?? undefined}
-                  baseCurrencyCode="usd"
-                  baseCurrencyAmount={
-                    link.isOpenAmount
-                      ? undefined
-                      : link.amountHuman ?? undefined
-                  }
-                  onTransactionCompleted={async (props: any) => {
-                    setStage("form");
-                    setErrMsg(null);
-                  }}
-                  visible
-                />
-              </div>
-              <p className="text-xs text-zinc-400 text-center px-5 pb-4">
-                After your purchase completes, click{" "}
-                <span className="font-medium text-zinc-700">Pay</span> above to
-                send the on-chain transaction.
-              </p>
+              <ComponentAny
+                apiKey={MOONPAY_API_KEY}
+                currencyCode={moonpayCurrency}
+                walletAddress={walletAddr ?? undefined}
+                baseCurrencyCode="usd"
+                visible
+              />
             </div>
           )}
-
-          {/* Footer attribution */}
-          <p className="text-center text-xs text-zinc-400">
-            Secured by{" "}
-            <a href="https://privy.io" target="_blank" rel="noreferrer" className="underline">Privy</a>
-            {" "}·{" "}
-            <a href="https://moonpay.com" target="_blank" rel="noreferrer" className="underline">MoonPay</a>
-            {" "}·{" "}
-            <a href="https://solana.com" target="_blank" rel="noreferrer" className="underline">Solana</a>
-          </p>
         </div>
       </div>
     );
