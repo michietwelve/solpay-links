@@ -83,7 +83,10 @@ export default function PayPage() {
   // Privy
   const { ready, authenticated, login, logout, user } = usePrivy();
   const { wallets } = useWallets();
-  const { createWallet: createSolanaWallet } = useSolanaWallets();
+  const { wallets: solanaWallets, createWallet: createSolanaWallet } = useSolanaWallets();
+  
+  // Combine all available wallets to search through
+  const allWallets = [...wallets, ...solanaWallets];
 
   // Local state
   const [link,       setLink]       = useState<LinkData | null>(null);
@@ -134,8 +137,8 @@ export default function PayPage() {
     if (!ready) return;
 
     if (authenticated && user) {
-      // 1. Check Privy wallets array for a Solana wallet
-      const solanaWallet = wallets.find((w: any) => w.walletClientType === 'privy' && w.chainType === 'solana');
+      // 1. Check Privy wallets array for a Solana wallet (across both generic and solana-specific hooks)
+      const solanaWallet = allWallets.find((w: any) => w.walletClientType === 'privy' && w.chainType === 'solana');
       
       // 2. Check user's linked accounts as a fallback
       const linkedSolana = user.linkedAccounts.find(
@@ -178,7 +181,7 @@ export default function PayPage() {
       // Not authenticated yet
       setStage("auth");
     }
-  }, [ready, authenticated, user, wallets, link, isInitializing, createSolanaWallet]);
+  }, [ready, authenticated, user, wallets, solanaWallets, link, isInitializing, createSolanaWallet]);
 
   // Failsafe: Reset stage if EVM address somehow slips through
   useEffect(() => {
@@ -222,7 +225,7 @@ export default function PayPage() {
       const txBytes = Buffer.from(txBase64, "base64");
       const tx      = Transaction.from(txBytes);
 
-      const activeWallet = wallets.find(w => w.address === walletAddr);
+      const activeWallet = allWallets.find(w => w.address === walletAddr);
       if (!activeWallet) throw new Error("Wallet not found. Please reconnect.");
 
       const signedTx = await (activeWallet as any).signTransaction(tx);
@@ -243,7 +246,7 @@ export default function PayPage() {
       setErrMsg((err as Error).message ?? "Transaction failed. Please try again.");
       setStage("form");
     }
-  }, [link, walletAddr, amount, wallets, router]);
+  }, [link, walletAddr, amount, wallets, solanaWallets, router]);
 
   // ─────────────────────────────────────────────────────────────────────────────
   //  Render
