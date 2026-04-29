@@ -20,7 +20,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
-import { useSolanaWallets } from "@privy-io/react-auth/solana";
+import { useSolanaWallets, useFundWallet } from "@privy-io/react-auth/solana";
 import {
   Connection,
   Transaction,
@@ -84,6 +84,7 @@ export default function PayPage() {
   const { ready, authenticated, login, logout, user } = usePrivy();
   const { wallets } = useWallets();
   const { wallets: solanaWallets, createWallet: createSolanaWallet } = useSolanaWallets();
+  const { fundWallet } = useFundWallet();
   
   // Combine all available wallets to search through
   const allWallets = [...wallets, ...solanaWallets];
@@ -213,6 +214,20 @@ export default function PayPage() {
       setAirdropStatus("error");
     }
   }, [walletAddr]);
+
+  // ── Step 3b: Privy Fund Wallet (card onramp) ─────────────────────────────
+
+  const handleFundWallet = useCallback(async () => {
+    if (!walletAddr) return;
+    try {
+      await fundWallet(walletAddr, {
+        cluster: { name: "devnet" },
+        amount: "5",
+      });
+    } catch (e) {
+      console.error("[fundWallet]", e);
+    }
+  }, [walletAddr, fundWallet]);
 
   // ── Step 3: Send payment via Actions API ─────────────────────────────────────
 
@@ -559,15 +574,13 @@ export default function PayPage() {
                       visible
                     />
                   ) : (
-                    <a
-                      href={`https://global-stg.transak.com/?network=solana&cryptoCurrencyCode=SOL${walletAddr ? `&walletAddress=${walletAddr}` : ""}&disableWalletAddressForm=true`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="w-full py-2.5 bg-violet-600 text-white text-sm font-medium rounded-xl hover:bg-violet-700 transition-colors flex items-center justify-center gap-2"
+                    <button
+                      onClick={handleFundWallet}
+                      className="w-full py-2.5 bg-violet-600 text-white text-sm font-medium rounded-xl hover:bg-violet-700 active:scale-95 transition-all flex items-center justify-center gap-2"
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>
-                      Buy SOL with card (via Transak)
-                    </a>
+                      Buy crypto with card
+                    </button>
                   )}
                 </div>
               </div>
