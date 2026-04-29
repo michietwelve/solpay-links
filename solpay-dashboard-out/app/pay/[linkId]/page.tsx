@@ -98,8 +98,8 @@ export default function PayPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (stage === "loading") {
-        setErrMsg("The payment link is taking longer than expected to load. Please check your connection or refresh the page.");
-        setShowRetry(true);
+        setErrMsg("Loading is taking longer than expected. Please check your connection or refresh the page.");
+        setStage("error");
       }
     }, 10000);
     return () => clearTimeout(timer);
@@ -108,8 +108,8 @@ export default function PayPage() {
   useEffect(() => {
     if (!linkId) return;
     fetch(`${API_BASE}/pay/${linkId}`)
-      .then(r => {
-        if (!r.ok) throw new Error("Link not found or API error");
+      .then(async r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
       .then((data: LinkData) => {
@@ -128,11 +128,12 @@ export default function PayPage() {
   // ── Step 2: Decide auth vs form once Privy is ready ──────────────────────────
 
   useEffect(() => {
-    if (!link || !link.active || !ready) return;
+    if (!link || !link.active) return;
+    if (!ready) return;
 
     if (authenticated && user) {
-      // 1. Look for ANY Solana wallet connected via Privy
-      const solanaWallet = wallets.find((w: any) => w.chainType === 'solana');
+      // 1. Check Privy wallets array for a Solana wallet
+      const solanaWallet = wallets.find((w: any) => w.walletClientType === 'privy' && w.chainType === 'solana');
       
       // 2. Check user's linked accounts as a fallback
       const linkedSolana = user.linkedAccounts.find(
@@ -145,10 +146,12 @@ export default function PayPage() {
       if (addr && !addr.startsWith('0x')) {
         setWalletAddr(addr);
         setStage("form");
-        setShowRetry(false); // Reset retry if we found a wallet
       } else {
         // No Solana wallet found - but we ARE authenticated
         setStage("auth");
+        
+        // Show retry/manual buttons after 4 seconds
+        const timer = setTimeout(() => setShowRetry(true), 4000);
         
         // Attempt auto-creation ONLY ONCE
         if (!isInitializing && createWallet) {
@@ -166,6 +169,8 @@ export default function PayPage() {
               setShowRetry(true);
             });
         }
+        
+        return () => clearTimeout(timer);
       }
     } else {
       // Not authenticated yet
@@ -173,16 +178,13 @@ export default function PayPage() {
     }
   }, [ready, authenticated, user, wallets, link, isInitializing, createWallet]);
 
-  // Separate timer for the "auth" stage to avoid resetting it on every wallets update
+  // Failsafe: Reset stage if EVM address somehow slips through
   useEffect(() => {
-    if (stage === "auth" && authenticated) {
-      const timer = setTimeout(() => {
-        setShowRetry(true);
-      }, 5000);
-      return () => clearTimeout(timer);
+    if (stage === "form" && walletAddr?.startsWith('0x')) {
+      setStage("auth");
+      setWalletAddr(null);
     }
-  }, [stage, authenticated]);
-
+  }, [stage, walletAddr]);
 
   // ── Step 3: Send payment via Actions API ─────────────────────────────────────
 
@@ -253,25 +255,12 @@ export default function PayPage() {
     </div>
   );
 
-  if (stage === "loading" || !ready) {
+  if (stage === "error") {
     return (
       <Card>
         <div className="px-8 py-16 text-center">
-          <div className="w-8 h-8 border-2 border-zinc-300 border-t-zinc-900 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-sm text-zinc-400">Loading payment link…</p>
-          {showRetry && (
-            <div className="mt-6 space-y-3">
-              <p className="text-xs text-red-500 max-w-[200px] mx-auto leading-relaxed">
-                {errMsg ?? "Taking a while? The network might be congested."}
-              </p>
-              <button 
-                onClick={() => window.location.reload()}
-                className="text-xs font-medium text-zinc-900 bg-zinc-100 px-4 py-2 rounded-lg hover:bg-zinc-200 transition-colors"
-              >
-                Refresh Page
-              </button>
-            </div>
-          )}
+          <p className="text-sm text-red-600">{errMsg ?? "Something went wrong."}</p>
+          <button onClick={() => window.location.reload()} className="mt-4 text-xs underline">Try Again</button>
         </div>
       </Card>
     );
@@ -286,19 +275,19 @@ export default function PayPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
             </svg>
           </div>
-          <h1 className="text-base font-medium mb-2">{link.label}</h1>
+          <h1 className="text-base font-medium mb-2">{link.label || "Link Inactive"}</h1>
           <p className="text-sm text-zinc-500">{link.inactiveReason ?? "This payment link is no longer active."}</p>
         </div>
       </Card>
     );
   }
 
-  if (stage === "error") {
+  if (stage === "loading" || !ready) {
     return (
       <Card>
         <div className="px-8 py-16 text-center">
-          <p className="text-sm text-red-600">{errMsg ?? "Something went wrong."}</p>
-          <button onClick={() => window.location.reload()} className="mt-4 text-xs underline">Try Again</button>
+          <div className="w-8 h-8 border-2 border-zinc-300 border-t-zinc-900 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm text-zinc-400">Loading payment link…</p>
         </div>
       </Card>
     );
@@ -352,7 +341,6 @@ export default function PayPage() {
               <div className="flex flex-col items-center gap-3 py-4">
                 <div className="w-6 h-6 border-2 border-zinc-200 border-t-zinc-900 rounded-full animate-spin" />
                 <p className="text-sm text-zinc-500 font-medium">Preparing your secure checkout...</p>
-                {errMsg && <p className="text-xs text-red-500 text-center px-4">{errMsg}</p>}
                 {showRetry && (
                   <div className="mt-4 flex flex-col items-center gap-4 w-full">
                     <button 

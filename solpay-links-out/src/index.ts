@@ -85,16 +85,11 @@ app.listen(PORT, () => {
   // Start on-chain event listener for payment confirmations
   const rpc = process.env.RPC_ENDPOINT ?? "https://api.devnet.solana.com";
   const connection = new Connection(rpc, "confirmed");
-  
-  try {
-    const unsubscribe = startEventListener(connection);
-    // Clean shutdown
-    process.on("SIGTERM", () => { unsubscribe(); process.exit(0); });
-    process.on("SIGINT",  () => { unsubscribe(); process.exit(0); });
-  } catch (err) {
-    console.error("❌ Failed to start payment listener:", err);
-    console.warn("API will continue running but on-chain payments won't be automatically detected.");
-  }
+  const unsubscribe = startEventListener(connection);
+
+  // Clean shutdown
+  process.on("SIGTERM", () => { unsubscribe(); process.exit(0); });
+  process.on("SIGINT",  () => { unsubscribe(); process.exit(0); });
 });
 
 export default app;
