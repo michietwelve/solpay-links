@@ -20,6 +20,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import {
   Connection,
   Transaction,
@@ -80,8 +81,9 @@ export default function PayPage() {
   const linkId   = params.linkId;
 
   // Privy
-  const { ready, authenticated, login, logout, user, createWallet } = usePrivy();
+  const { ready, authenticated, login, logout, user } = usePrivy();
   const { wallets } = useWallets();
+  const { createWallet: createSolanaWallet } = useSolanaWallets();
 
   // Local state
   const [link,       setLink]       = useState<LinkData | null>(null);
@@ -154,10 +156,10 @@ export default function PayPage() {
         const timer = setTimeout(() => setShowRetry(true), 4000);
         
         // Attempt auto-creation ONLY ONCE
-        if (!isInitializing && createWallet) {
+        if (!isInitializing && createSolanaWallet) {
           setIsInitializing(true);
           console.log("[auth] Attempting to create Solana embedded wallet...");
-          (createWallet as any)({ chainType: 'solana' })
+          createSolanaWallet()
             .then((newWallet: any) => {
               console.log("[auth] Wallet created:", newWallet.address);
               setWalletAddr(newWallet.address);
@@ -176,7 +178,7 @@ export default function PayPage() {
       // Not authenticated yet
       setStage("auth");
     }
-  }, [ready, authenticated, user, wallets, link, isInitializing, createWallet]);
+  }, [ready, authenticated, user, wallets, link, isInitializing, createSolanaWallet]);
 
   // Failsafe: Reset stage if EVM address somehow slips through
   useEffect(() => {
@@ -344,7 +346,7 @@ export default function PayPage() {
                 {showRetry && (
                   <div className="mt-4 flex flex-col items-center gap-4 w-full">
                     <button 
-                      onClick={() => (createWallet as any)({ chainType: 'solana' })}
+                      onClick={() => createSolanaWallet()}
                       className="w-full py-3 bg-zinc-900 text-white text-xs font-bold rounded-xl hover:bg-zinc-800"
                     >
                       Generate Solana Wallet
