@@ -12,6 +12,7 @@ import {
   getAssociatedTokenAddressSync,
   createAssociatedTokenAccountInstruction,
   TOKEN_PROGRAM_ID,
+  TOKEN_2022_PROGRAM_ID,
 } from "@solana/spl-token";
 import { PaymentLink, TOKEN_MINT, TOKEN_DECIMALS } from "../types";
 
@@ -101,6 +102,14 @@ async function buildSolTransferTx(
 
 // ─── SPL token transfer ───────────────────────────────────────────────────
 
+// Detect whether a mint uses the standard Token Program or Token-2022
+async function getMintTokenProgram(connection: Connection, mint: PublicKey): Promise<PublicKey> {
+  const info = await connection.getAccountInfo(mint);
+  if (!info) throw new Error(`Mint ${mint.toBase58()} not found on chain`);
+  if (info.owner.equals(TOKEN_2022_PROGRAM_ID)) return TOKEN_2022_PROGRAM_ID;
+  return TOKEN_PROGRAM_ID;
+}
+
 async function buildSplTransferTx(
   connection: Connection,
   payer: PublicKey,
@@ -112,8 +121,11 @@ async function buildSplTransferTx(
   const mint = new PublicKey(mintAddress);
   const decimals = TOKEN_DECIMALS[link.token];
 
-  const payerAta = getAssociatedTokenAddressSync(mint, payer);
-  const recipientAta = getAssociatedTokenAddressSync(mint, recipient);
+  // Detect correct token program for this mint (Token or Token-2022)
+  const tokenProgram = await getMintTokenProgram(connection, mint);
+
+  const payerAta = getAssociatedTokenAddressSync(mint, payer, false, tokenProgram);
+  const recipientAta = getAssociatedTokenAddressSync(mint, recipient, false, tokenProgram);
 
   const { blockhash, lastValidBlockHeight } =
     await connection.getLatestBlockhash("confirmed");
@@ -135,7 +147,8 @@ async function buildSplTransferTx(
         payer,
         recipientAta,
         recipient,
-        mint
+        mint,
+        tokenProgram
       )
     );
   }
@@ -153,14 +166,14 @@ async function buildSplTransferTx(
       netAmount,
       decimals,
       [],
-      TOKEN_PROGRAM_ID
+      tokenProgram
     )
   );
 
   // Platform fee to treasury ATA
   if (fee > 0n && TREASURY) {
     const treasuryPubkey = new PublicKey(TREASURY);
-    const treasuryAta = getAssociatedTokenAddressSync(mint, treasuryPubkey);
+    const treasuryAta = getAssociatedTokenAddressSync(mint, treasuryPubkey, false, tokenProgram);
 
     const treasuryAtaInfo = await connection.getAccountInfo(treasuryAta);
     if (!treasuryAtaInfo) {
@@ -169,7 +182,8 @@ async function buildSplTransferTx(
           payer,
           treasuryAta,
           treasuryPubkey,
-          mint
+          mint,
+          tokenProgram
         )
       );
     }
@@ -183,7 +197,7 @@ async function buildSplTransferTx(
         fee,
         decimals,
         [],
-        TOKEN_PROGRAM_ID
+        tokenProgram
       )
     );
   }
