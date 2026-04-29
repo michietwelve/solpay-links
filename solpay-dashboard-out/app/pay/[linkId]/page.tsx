@@ -565,23 +565,21 @@ export default function PayPage() {
                       <p className="text-xs text-zinc-500">Purchase SOL instantly with a credit or debit card</p>
                     </div>
                   </div>
-                  {MOONPAY_API_KEY ? (
-                    <ComponentAny
-                      apiKey={MOONPAY_API_KEY}
-                      currencyCode={MOONPAY_CURRENCY[link.token] ?? "sol"}
-                      walletAddress={walletAddr ?? undefined}
-                      baseCurrencyCode="usd"
-                      visible
-                    />
-                  ) : (
-                    <button
-                      onClick={handleFundWallet}
-                      className="w-full py-2.5 bg-violet-600 text-white text-sm font-medium rounded-xl hover:bg-violet-700 active:scale-95 transition-all flex items-center justify-center gap-2"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>
-                      Buy crypto with card
-                    </button>
-                  )}
+                  <button
+                    onClick={handleFundWallet}
+                    className="w-full py-2.5 bg-violet-600 text-white text-sm font-medium rounded-xl hover:bg-violet-700 active:scale-95 transition-all flex items-center justify-center gap-2"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>
+                    Buy crypto with card
+                  </button>
+                  <a
+                    href={`https://global-stg.transak.com/?network=solana&cryptoCurrencyCode=SOL${walletAddr ? `&walletAddress=${walletAddr}` : ""}&disableWalletAddressForm=true`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-600 underline underline-offset-2"
+                  >
+                    ↗ External card onramp (Transak)
+                  </a>
                 </div>
               </div>
             </div>
@@ -590,7 +588,7 @@ export default function PayPage() {
 
         {/* --- Version & Diagnostics --- */}
         <div className="mt-8 flex flex-col items-center gap-2 opacity-100 transition-opacity">
-          <p className="text-[10px] text-red-600 font-bold font-mono animate-pulse">Build v1.7 • Total Reliability</p>
+          <p className="text-[10px] text-red-600 font-bold font-mono animate-pulse">Build v1.8 • Final Stability</p>
           <button 
             onClick={() => {
               window.location.href = window.location.pathname + '?v=' + Date.now();
