@@ -243,7 +243,15 @@ export default function PayPage() {
       }
     } catch (err) {
       console.error("[handlePay]", err);
-      setErrMsg((err as Error).message ?? "Transaction failed. Please try again.");
+      let msg = (err as Error).message ?? "Transaction failed. Please try again.";
+      if (
+        msg.includes("found no record of a prior credit") || 
+        msg.includes("insufficient lamports") || 
+        msg.includes("insufficient funds")
+      ) {
+        msg = "Your new wallet is empty! Please click 'Buy crypto & pay with card' below to fund it first.";
+      }
+      setErrMsg(msg);
       setStage("form");
     }
   }, [link, walletAddr, amount, wallets, solanaWallets, router]);
