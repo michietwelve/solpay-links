@@ -29,7 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <PrivyProvider
           appId={PRIVY_APP_ID}
           config={{
-            loginMethods: ["email", "google"],
+            loginMethods: ["email", "google", "wallet"],
             appearance: {
               theme: "light",
               accentColor: "#18181b",
