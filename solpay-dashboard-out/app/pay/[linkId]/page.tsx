@@ -97,6 +97,7 @@ export default function PayPage() {
   const [walletAddr, setWalletAddr] = useState<string | null>(null);
   const [showRetry, setShowRetry] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
+  const [airdropStatus, setAirdropStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
 
   // ── Step 1: Fetch link metadata ─────────────────────────────────────────────
 
@@ -190,6 +191,28 @@ export default function PayPage() {
       setWalletAddr(null);
     }
   }, [stage, walletAddr]);
+
+  // ── Step 3a: Devnet Airdrop helper ──────────────────────────────────────────
+
+  const handleAirdrop = useCallback(async () => {
+    if (!walletAddr) return;
+    setAirdropStatus("loading");
+    try {
+      const connection = new Connection(RPC, "confirmed");
+      const sig = await connection.requestAirdrop(
+        new PublicKey(walletAddr),
+        LAMPORTS_PER_SOL // 1 SOL
+      );
+      await connection.confirmTransaction(sig, "confirmed");
+      setAirdropStatus("done");
+      // Clear any previous error so user can retry paying
+      setErrMsg(null);
+      setStage("form");
+    } catch (e) {
+      console.error("[airdrop]", e);
+      setAirdropStatus("error");
+    }
+  }, [walletAddr]);
 
   // ── Step 3: Send payment via Actions API ─────────────────────────────────────
 
@@ -473,26 +496,62 @@ export default function PayPage() {
           </div>
 
           {stage === "moonpay" && (
-            <div className="bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden p-1 min-h-[500px]">
+            <div className="bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
-                <p className="text-sm font-medium">Buy crypto with card</p>
+                <p className="text-sm font-medium">Fund your wallet</p>
                 <button onClick={() => setStage("form")} className="text-zinc-400 hover:text-zinc-700 text-xl">×</button>
               </div>
-              <div className="h-[500px] flex flex-col">
-                {!MOONPAY_API_KEY ? (
-                  <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-4">
-                    <div className="p-3 bg-amber-50 text-amber-600 rounded-full">⚠️</div>
-                    <p className="text-sm text-zinc-600 font-medium">MoonPay API Key Missing</p>
-                    <p className="text-xs text-zinc-400">Please add NEXT_PUBLIC_MOONPAY_API_KEY to your Vercel Environment Variables and redeploy.</p>
+              <div className="p-5 space-y-4">
+                {/* Devnet Airdrop — always available for testing */}
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🚰</span>
+                    <div>
+                      <p className="text-sm font-semibold">Devnet Faucet</p>
+                      <p className="text-xs text-zinc-500">Get 1 free SOL for testing — instant, no card needed</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleAirdrop}
+                    disabled={airdropStatus === "loading" || airdropStatus === "done"}
+                    className="w-full py-2.5 bg-zinc-900 text-white text-sm font-medium rounded-xl hover:bg-zinc-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                  >
+                    {airdropStatus === "loading" && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                    {airdropStatus === "done" ? "✅ 1 SOL airdropped! Returning to pay…" : 
+                     airdropStatus === "loading" ? "Requesting airdrop…" : 
+                     airdropStatus === "error" ? "Faucet busy — try again" : 
+                     "Request 1 SOL from faucet"}
+                  </button>
+                </div>
+
+                {/* MoonPay — only shown when API key is configured */}
+                {MOONPAY_API_KEY ? (
+                  <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">💳</span>
+                      <div>
+                        <p className="text-sm font-semibold">Buy with card</p>
+                        <p className="text-xs text-zinc-500">Purchase crypto instantly with a credit or debit card</p>
+                      </div>
+                    </div>
+                    <ComponentAny
+                      apiKey={MOONPAY_API_KEY}
+                      currencyCode={MOONPAY_CURRENCY[link.token] ?? "sol"}
+                      walletAddress={walletAddr ?? undefined}
+                      baseCurrencyCode="usd"
+                      visible
+                    />
                   </div>
                 ) : (
-                  <ComponentAny
-                    apiKey={MOONPAY_API_KEY}
-                    currencyCode={moonpayCurrency}
-                    walletAddress={walletAddr ?? undefined}
-                    baseCurrencyCode="usd"
-                    visible
-                  />
+                  <div className="rounded-xl border border-zinc-100 bg-zinc-50 p-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">💳</span>
+                      <div>
+                        <p className="text-sm font-semibold text-zinc-500">Buy with card</p>
+                        <p className="text-xs text-zinc-400">MoonPay integration available — configure API key to enable</p>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
