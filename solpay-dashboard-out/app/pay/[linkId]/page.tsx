@@ -499,7 +499,7 @@ export default function PayPage() {
             <div className="bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
                 <p className="text-sm font-medium">Fund your wallet</p>
-                <button onClick={() => setStage("form")} className="text-zinc-400 hover:text-zinc-700 text-xl">×</button>
+                <button onClick={() => { setStage("form"); setAirdropStatus("idle"); }} className="text-zinc-400 hover:text-zinc-700 text-xl">×</button>
               </div>
               <div className="p-5 space-y-4">
                 {/* Devnet Airdrop — always available for testing */}
@@ -508,32 +508,49 @@ export default function PayPage() {
                     <span className="text-lg">🚰</span>
                     <div>
                       <p className="text-sm font-semibold">Devnet Faucet</p>
-                      <p className="text-xs text-zinc-500">Get 1 free SOL for testing — instant, no card needed</p>
+                      <p className="text-xs text-zinc-500">Get free SOL for testing — instant, no card needed</p>
                     </div>
                   </div>
                   <button
-                    onClick={handleAirdrop}
+                    onClick={() => { setAirdropStatus("idle"); handleAirdrop(); }}
                     disabled={airdropStatus === "loading" || airdropStatus === "done"}
                     className="w-full py-2.5 bg-zinc-900 text-white text-sm font-medium rounded-xl hover:bg-zinc-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
                   >
                     {airdropStatus === "loading" && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-                    {airdropStatus === "done" ? "✅ 1 SOL airdropped! Returning to pay…" : 
+                    {airdropStatus === "done" ? "✅ SOL airdropped! Returning to pay…" : 
                      airdropStatus === "loading" ? "Requesting airdrop…" : 
-                     airdropStatus === "error" ? "Faucet busy — try again" : 
-                     "Request 1 SOL from faucet"}
+                     airdropStatus === "error" ? "⟳ Faucet busy — click to retry" : 
+                     "Request SOL from faucet"}
                   </button>
+                  <a
+                    href="https://faucet.solana.com/?token=SOL"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-700 underline underline-offset-2"
+                  >
+                    ↗ Or use the official web faucet (paste your wallet address)
+                  </a>
+                  {walletAddr && (
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(walletAddr); }}
+                      className="w-full py-1.5 bg-zinc-100 text-zinc-600 text-xs font-mono rounded-lg hover:bg-zinc-200 transition-colors truncate px-2"
+                      title="Click to copy wallet address"
+                    >
+                      📋 {walletAddr}
+                    </button>
+                  )}
                 </div>
 
-                {/* MoonPay — only shown when API key is configured */}
-                {MOONPAY_API_KEY ? (
-                  <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">💳</span>
-                      <div>
-                        <p className="text-sm font-semibold">Buy with card</p>
-                        <p className="text-xs text-zinc-500">Purchase crypto instantly with a credit or debit card</p>
-                      </div>
+                {/* Buy with card via Transak (no API key needed) */}
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">💳</span>
+                    <div>
+                      <p className="text-sm font-semibold">Buy with card</p>
+                      <p className="text-xs text-zinc-500">Purchase SOL instantly with a credit or debit card</p>
                     </div>
+                  </div>
+                  {MOONPAY_API_KEY ? (
                     <ComponentAny
                       apiKey={MOONPAY_API_KEY}
                       currencyCode={MOONPAY_CURRENCY[link.token] ?? "sol"}
@@ -541,18 +558,18 @@ export default function PayPage() {
                       baseCurrencyCode="usd"
                       visible
                     />
-                  </div>
-                ) : (
-                  <div className="rounded-xl border border-zinc-100 bg-zinc-50 p-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">💳</span>
-                      <div>
-                        <p className="text-sm font-semibold text-zinc-500">Buy with card</p>
-                        <p className="text-xs text-zinc-400">MoonPay integration available — configure API key to enable</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                  ) : (
+                    <a
+                      href={`https://global-stg.transak.com/?network=solana&cryptoCurrencyCode=SOL${walletAddr ? `&walletAddress=${walletAddr}` : ""}&disableWalletAddressForm=true`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="w-full py-2.5 bg-violet-600 text-white text-sm font-medium rounded-xl hover:bg-violet-700 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>
+                      Buy SOL with card (via Transak)
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
           )}
