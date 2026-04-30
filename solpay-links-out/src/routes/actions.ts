@@ -136,7 +136,10 @@ router.post("/:linkId/pay", async (req: Request, res: Response): Promise<void> =
     return;
   }
 
-  // 4. Build the transaction
+  // 4. Record this pending payment attempt FIRST so we have a reference ID
+  const record = await createPaymentRecord(linkId, account, amountBaseUnits, link.token);
+
+  // 5. Build the transaction using the record.id as the reference
   let serialisedTx: string;
   let amountHuman: string;
 
@@ -146,7 +149,8 @@ router.post("/:linkId/pay", async (req: Request, res: Response): Promise<void> =
       connection,
       account,
       link,
-      amountBaseUnits
+      amountBaseUnits,
+      record.id
     );
 
     serialisedTx = serialiseTransaction(transaction);
@@ -157,9 +161,6 @@ router.post("/:linkId/pay", async (req: Request, res: Response): Promise<void> =
     actionError(res, 500, `Failed to build transaction: ${msg}`);
     return;
   }
-
-  // 5. Record this pending payment attempt
-  await createPaymentRecord(linkId, account, amountBaseUnits, link.token);
 
   // 6. Return the signed-ready transaction to the wallet
   const body: ActionPostResponse = {

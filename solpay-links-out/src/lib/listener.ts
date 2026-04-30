@@ -12,7 +12,8 @@
  */
 
 import { Connection, PublicKey, Logs } from "@solana/web3.js";
-import { incrementPaymentCount } from "./store";
+import { incrementPaymentCount, confirmPayment } from "./store";
+import { prisma } from "./db";
 
 const PROGRAM_ID = new PublicKey(
   "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
@@ -32,6 +33,10 @@ function parseSolPayLinkId(logs: string[]): string | null {
 interface WebhookPayload {
   event: "payment.confirmed";
   signature: string;
+  linkId?: string;
+  payer?: string;
+  amount?: string;
+  token?: string;
   timestamp: string;
 }
 
@@ -65,13 +70,33 @@ export function startEventListener(connection: Connection): () => void {
 
       const { signature, logs: logLines } = logs;
 
-      const linkId = parseSolPayLinkId(logLines);
-      if (!linkId) return;
+      const refId = parseSolPayLinkId(logLines);
+      if (!refId) return;
 
-      console.log(`[listener] Payment confirmed for link ${linkId}: ${signature}`);
+      console.log(`[listener] Payment confirmed for ref ${refId}: ${signature}`);
 
-      // Credit the link in our store
-      await incrementPaymentCount(linkId);
+      let linkId = refId;
+      let payer: string | undefined;
+      let amount: string | undefined;
+      let token: string | undefined;
+
+      if (refId.length === 10) {
+        // Old style: refId is linkId
+        await incrementPaymentCount(refId);
+      } else {
+        // New style: refId is recordId
+        const record = await prisma.paymentRecord.findUnique({ where: { id: refId } });
+        if (record) {
+          await confirmPayment(refId, signature);
+          linkId = record.linkId;
+          payer = record.payerWallet;
+          amount = record.amountLamports;
+          token = record.token;
+        } else {
+          console.warn(`[listener] Could not find PaymentRecord for id ${refId}`);
+          return;
+        }
+      }
 
       // Fire webhooks — in production, look up merchant webhook URL from DB
       const webhookUrl = process.env.WEBHOOK_URL;
@@ -79,6 +104,10 @@ export function startEventListener(connection: Connection): () => void {
         await deliverWebhook(webhookUrl, {
           event: "payment.confirmed",
           signature,
+          linkId,
+          payer,
+          amount,
+          token,
           timestamp: new Date().toISOString(),
         });
       }

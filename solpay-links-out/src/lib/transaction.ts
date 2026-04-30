@@ -50,7 +50,8 @@ async function buildSolTransferTx(
   connection: Connection,
   payer: PublicKey,
   link: PaymentLink,
-  amountLamports: bigint
+  amountLamports: bigint,
+  referenceId: string
 ): Promise<Transaction> {
   const recipient = new PublicKey(link.recipientWallet);
   const { blockhash, lastValidBlockHeight } =
@@ -90,7 +91,7 @@ async function buildSolTransferTx(
   }
 
   // 1. Mandatory tracking memo for our listener
-  tx.add(buildMemoInstruction(`SolPay:${link.id}`));
+  tx.add(buildMemoInstruction(`SolPay:${referenceId}`));
 
   // 2. Optional user-visible memo
   if (link.memo) {
@@ -115,7 +116,8 @@ async function buildSplTransferTx(
   payer: PublicKey,
   link: PaymentLink,
   amountRaw: bigint,         // in token's smallest unit
-  mintAddress: string
+  mintAddress: string,
+  referenceId: string
 ): Promise<Transaction> {
   const recipient = new PublicKey(link.recipientWallet);
   const mint = new PublicKey(mintAddress);
@@ -203,7 +205,7 @@ async function buildSplTransferTx(
   }
 
   // 1. Mandatory tracking memo for our listener
-  tx.add(buildMemoInstruction(`SolPay:${link.id}`));
+  tx.add(buildMemoInstruction(`SolPay:${referenceId}`));
 
   // 2. Optional user-visible memo
   if (link.memo) {
@@ -219,7 +221,8 @@ export async function buildPaymentTransaction(
   connection: Connection,
   payerWallet: string,
   link: PaymentLink,
-  amountLamports: bigint          // canonical amount in token's base unit
+  amountLamports: bigint,          // canonical amount in token's base unit
+  referenceId: string
 ): Promise<{ transaction: Transaction; amountHuman: string }> {
   const payer = new PublicKey(payerWallet);
   const decimals = TOKEN_DECIMALS[link.token];
@@ -234,7 +237,8 @@ export async function buildPaymentTransaction(
       connection,
       payer,
       link,
-      amountLamports
+      amountLamports,
+      referenceId
     );
   } else {
     const mint = TOKEN_MINT[link.token];
@@ -244,7 +248,8 @@ export async function buildPaymentTransaction(
       payer,
       link,
       amountLamports,
-      mint
+      mint,
+      referenceId
     );
   }
 
