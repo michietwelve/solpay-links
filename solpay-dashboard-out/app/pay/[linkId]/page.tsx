@@ -285,9 +285,11 @@ export default function PayPage() {
       if (
         msg.includes("found no record of a prior credit") || 
         msg.includes("insufficient lamports") || 
-        msg.includes("insufficient funds")
+        msg.includes("insufficient funds") ||
+        msg.includes("InvalidAccountData") ||
+        msg.includes("invalid account data")
       ) {
-        msg = "Your new wallet is empty! Please click 'Buy crypto & pay with card' below to fund it first.";
+        msg = "Your wallet doesn't have enough funds! Please click 'Buy crypto' below to fund it first.";
       }
       setErrMsg(msg);
       setStage("form");
