@@ -28,6 +28,7 @@ import {
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 import { MoonPayBuyWidget } from "@moonpay/moonpay-react";
+import confetti from "canvas-confetti";
 const ComponentAny = MoonPayBuyWidget as any;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -110,6 +111,18 @@ export default function PayPage() {
       }
     }, 10000);
     return () => clearTimeout(timer);
+  }, [stage]);
+
+  // Trigger confetti on success
+  useEffect(() => {
+    if (stage === "success") {
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#10b981', '#34d399', '#059669', '#a7f3d0']
+      });
+    }
   }, [stage]);
 
   useEffect(() => {
@@ -349,25 +362,27 @@ export default function PayPage() {
   if (stage === "success" && link) {
     return (
       <Card>
-        <div className="px-8 py-14 text-center space-y-4">
-          <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto">
-            <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        <div className="px-8 py-14 text-center space-y-4 animate-in fade-in zoom-in duration-500">
+          <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto shadow-[0_0_40px_rgba(16,185,129,0.2)]">
+            <svg className="w-10 h-10 text-emerald-500 animate-[bounce_1s_ease-in-out_infinite]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-lg font-semibold">Payment sent!</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-zinc-900">Payment sent!</h2>
           <p className="text-sm text-zinc-500">
-            Your payment to <span className="font-medium text-zinc-800">{link.label}</span> has been confirmed on-chain.
+            Your payment to <span className="font-semibold text-zinc-800">{link.label}</span> has been confirmed on-chain.
           </p>
           {txSig && (
-            <a
-              href={`https://explorer.solana.com/tx/${txSig}?cluster=devnet`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-block text-xs font-mono text-zinc-400 hover:text-zinc-700 underline underline-offset-2 break-all"
-            >
-              {txSig.slice(0, 20)}…{txSig.slice(-8)}
-            </a>
+            <div className="pt-4">
+              <a
+                href={`https://explorer.solana.com/tx/${txSig}?cluster=devnet`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-xs font-mono text-zinc-600 font-medium rounded-full transition-colors"
+              >
+                View on Explorer ↗
+              </a>
+            </div>
           )}
         </div>
       </Card>
@@ -498,7 +513,7 @@ export default function PayPage() {
                 disabled={isSending || (link.isOpenAmount && !amount)}
                 className="w-full py-3 bg-zinc-900 text-white text-sm font-medium rounded-xl hover:bg-zinc-700 disabled:opacity-40 transition-colors flex items-center justify-center gap-2"
               >
-                {isSending ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</> : `Pay ${link.isOpenAmount && amount ? `${amount} ${link.token}` : (link.amountHuman ?? "") + " " + link.token}`}
+                {isSending ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing on Solana…</> : `Pay ${link.isOpenAmount && amount ? `${amount} ${link.token}` : (link.amountHuman ?? "") + " " + link.token}`}
               </button>
 
               <button
@@ -589,16 +604,31 @@ export default function PayPage() {
         </div>
 
         {/* --- Version & Diagnostics --- */}
-        <div className="mt-8 flex flex-col items-center gap-2 opacity-100 transition-opacity">
-          <p className="text-[10px] text-red-600 font-bold font-mono animate-pulse">Build v1.8 • Final Stability</p>
-          <button 
-            onClick={() => {
-              window.location.href = window.location.pathname + '?v=' + Date.now();
-            }}
-            className="text-[10px] text-zinc-400 underline hover:text-zinc-600"
-          >
-            Force Refresh Build
-          </button>
+        <div className="mt-8 flex flex-col items-center gap-3 opacity-100 transition-opacity">
+          <div className="flex items-center gap-3">
+            <p className="text-[10px] text-zinc-400 font-mono">Build v1.8 • Final Stability</p>
+            <button 
+              onClick={() => window.location.href = window.location.pathname + '?v=' + Date.now()}
+              className="text-[10px] text-zinc-400 hover:text-zinc-600 underline"
+            >
+              Force Refresh
+            </button>
+          </div>
+          
+          {/* Judge Test Mode Override */}
+          {link?.token !== "SOL" && (
+            <button
+              onClick={() => {
+                if (link) {
+                  setLink({ ...link, token: "SOL" });
+                  setErrMsg(null);
+                }
+              }}
+              className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100 hover:bg-emerald-100 transition-colors"
+            >
+              🧪 Hackathon Demo: Switch to SOL to test easily
+            </button>
+          )}
         </div>
       </div>
     );

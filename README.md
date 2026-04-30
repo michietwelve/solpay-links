@@ -15,7 +15,7 @@ Traditional cross-border payments are slow, expensive, and trapped behind "walle
 ### Key Features
 - **Instant Blinks**: Share a payment link on X, WhatsApp, or Discord. It renders as a native payment card in Phantom, Backpack, and other Action-compliant wallets.
 - **Merchant Dashboard**: A sleek, high-performance interface for creating links, tracking revenue, and managing customers.
-- **No-Crypto-Needed Onboarding**: Integrated with **Privy** for email/social login and **MoonPay** for direct fiat-to-USDC/SOL purchases.
+- **No-Crypto-Needed Onboarding**: Integrated with **Privy** for email/social login and native fiat-to-crypto funding (via **Transak**).
 - **Infrastructure Grade**: Real-time on-chain payment detection via our proprietary Memo-based listener.
 
 ---
@@ -28,10 +28,11 @@ Traditional cross-border payments are slow, expensive, and trapped behind "walle
 - **Testing Cluster**: Solana **Devnet**
 
 ### How to Judge/Test:
-1. **Get Devnet SOL**: Visit [solfaucet.com](https://solfaucet.com) and fund your wallet.
-2. **Create a Link**: Log in to the [Dashboard](https://solpay-links-dwkq-eight.vercel.app) using your email or Google account (powered by Privy).
-3. **Share & Pay**: Copy your SolPay Link and paste it into any Action-compatible environment (e.g., [Dial.to](https://dial.to) or X).
-4. **Instant Confirmation**: Watch the dashboard update in real-time as our listener detects your transaction!
+1. **Create a Link**: Log in to the [Dashboard](https://solpay-links-dwkq-eight.vercel.app) using your email or Google account.
+2. **Fund Your Embedded Wallet**: Open your new payment link. If your wallet is empty, click the **"Devnet Faucet"** button in the "Fund your wallet" panel to instantly get 5 SOL.
+3. **Use the Hackathon Override**: If your link requires USDC but you only have faucet SOL, scroll to the bottom of the page and click the green **"🧪 Hackathon Demo: Switch to SOL to test easily"** button.
+4. **Pay & Watch the Magic**: Click **Pay**, watch the loading micro-animations, and enjoy the confetti on the success screen!
+5. **Instant Confirmation**: Check your dashboard to see the revenue update in real-time.
 
 ---
 
@@ -56,8 +57,8 @@ An optional on-chain program for governed payments, escrow, and platform fee dis
 - **Languages**: TypeScript, Rust
 - **Blockchain**: Solana Web3.js, SPL Token
 - **Auth**: Privy (Embedded Wallets)
-- **Payments**: MoonPay (Fiat-to-Crypto)
-- **Styling**: Tailwind CSS
+- **Fiat Onramp**: Privy Native / Transak
+- **Styling**: Tailwind CSS, Framer Motion, Canvas Confetti
 - **API**: Express, Zod (Validation)
 
 ---
