@@ -1,6 +1,6 @@
 /**
  * lib/api.ts
- * Typed fetch client for the SolPay Links Express API.
+ * Typed fetch client for the BiePay Links Express API.
  * All dashboard components import from here — never raw fetch.
  */
 

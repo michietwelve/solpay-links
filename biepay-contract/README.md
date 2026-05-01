@@ -1,6 +1,6 @@
-# SolPay Links — Anchor Smart Contract
+# BiePay Links — Anchor Smart Contract
 
-On-chain payment vault for SolPay Links. Every payment link is a PDA account.
+On-chain payment vault for BiePay Links. Every payment link is a PDA account.
 Payments flow wallet-to-wallet through the program — the program enforces all
 business rules (expiry, capacity, fee split) on-chain so neither the merchant
 nor the API server can tamper with them.
@@ -171,7 +171,7 @@ program.addEventListener("PaymentMade", (event) => {
 
 ## Integration with the Actions API
 
-The API backend (`solpay-links-api`) builds unsigned transactions and returns
+The API backend (`biepay-links-api`) builds unsigned transactions and returns
 them to Phantom. For the on-chain path, it constructs either `pay_sol` or
 `pay_spl` instructions using `@coral-xyz/anchor` and the generated IDL — the
 same IDL the client SDK uses.
@@ -186,7 +186,7 @@ on-chain.
 ## Folder structure
 
 ```
-programs/solpay-links/
+programs/biepay-links/
 └── src/
     └── lib.rs          # Entire program (instructions, accounts, events, errors)
 
@@ -194,7 +194,7 @@ app/src/
 └── client.ts           # TypeScript client SDK
 
 tests/
-└── solpay_links.ts     # Full lifecycle test suite (11 tests)
+└── biepay_links.ts     # Full lifecycle test suite (11 tests)
 
 migrations/
 └── deploy.ts           # Anchor migration script

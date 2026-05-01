@@ -12,7 +12,7 @@ export default function Home() {
             <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-emerald-400 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20">
               <Zap className="w-6 h-6 text-black fill-black" />
             </div>
-            <span className="text-xl font-bold tracking-tight">SolPay Links</span>
+            <span className="text-xl font-bold tracking-tight">BiePay Links</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-400">
             <a href="#features" className="hover:text-white transition-colors">Features</a>
@@ -88,7 +88,7 @@ export default function Home() {
                   </div>
                   <h3 className="text-3xl font-bold leading-tight">Turn your Twitter into a Store.</h3>
                   <p className="text-zinc-400">
-                    When you share a SolPay Link on Twitter, it automatically transforms into a 
+                    When you share a BiePay Link on Twitter, it automatically transforms into a 
                     Solana Blink. Your customers can pay without ever leaving their feed.
                   </p>
                 </div>
@@ -168,10 +168,10 @@ export default function Home() {
         <div className="max-w-7xl mx-auto flex flex-col md:row items-center justify-between gap-8">
           <div className="flex items-center gap-2.5 opacity-50">
             <Zap className="w-5 h-5 text-white" />
-            <span className="text-lg font-bold tracking-tight">SolPay Links</span>
+            <span className="text-lg font-bold tracking-tight">BiePay Links</span>
           </div>
           <p className="text-zinc-500 text-sm">
-            © 2026 SolPay Links. All rights reserved.
+            © 2026 BiePay Links. All rights reserved.
           </p>
           <div className="flex gap-6 text-sm text-zinc-500">
             <a href="#" className="hover:text-white transition-colors">Twitter</a>

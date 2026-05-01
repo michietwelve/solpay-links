@@ -5,7 +5,7 @@ import { actionError } from "../middleware/actions";
 /**
  * GET /pay/:linkId
  *
- * Returns JSON that the hosted payment page (solpay-dashboard) consumes to
+ * Returns JSON that the hosted payment page (biepay-dashboard) consumes to
  * render a self-contained checkout experience using Privy (embedded wallet)
  * and MoonPay (fiat-to-crypto ramp) for users who don't have a Solana wallet.
  *

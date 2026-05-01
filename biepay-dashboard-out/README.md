@@ -1,4 +1,4 @@
-# SolPay Links — Merchant Dashboard
+# BiePay Links — Merchant Dashboard
 
 Next.js 14 App Router dashboard for creating and managing Solana payment links.
 
@@ -7,7 +7,7 @@ Next.js 14 App Router dashboard for creating and managing Solana payment links.
 ```bash
 npm install
 cp .env.example .env.local
-# Set NEXT_PUBLIC_API_URL to your running solpay-links-api URL
+# Set NEXT_PUBLIC_API_URL to your running biepay-links-api URL
 npm run dev
 # Open http://localhost:3001
 ```

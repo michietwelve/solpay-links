@@ -45,7 +45,7 @@ app.use("/pay", payRouter);
 app.get("/health", (_req, res) => {
   res.json({
     status: "ok",
-    service: "solpay-links-api",
+    service: "biepay-links-api",
     version: "0.1.0",
     rpc: process.env.RPC_ENDPOINT ?? "devnet",
     timestamp: new Date().toISOString(),
@@ -75,7 +75,7 @@ app.use(
 // ─── Start ────────────────────────────────────────────────────────────────
 
 app.listen(PORT, () => {
-  console.log(`\n🚀 SolPay Links API running on port ${PORT}`);
+  console.log(`\n🚀 BiePay Links API running on port ${PORT}`);
   console.log(`   Health : http://localhost:${PORT}/health`);
   console.log(`   Actions: http://localhost:${PORT}/actions/:linkId`);
   console.log(`   Links  : http://localhost:${PORT}/api/links`);

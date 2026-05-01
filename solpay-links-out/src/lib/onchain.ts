@@ -1,5 +1,5 @@
 /**
- * solpay-links-api / src/lib/onchain.ts
+ * biepay-links-api / src/lib/onchain.ts
  *
  * Replaces the raw web3.js transaction builder (transaction.ts) when you want
  * the API to build PROGRAM instructions (pay_sol / pay_spl) instead of bare
@@ -175,7 +175,7 @@ export async function buildPaymentTransaction(
   }
 
   // Optional on-chain memo (same as before)
-  const memoText = link.memo ?? `SolPay:${link.id}`;
+  const memoText = link.memo ?? `BiePay:${link.id}`;
   tx.add({
     keys: [],
     programId: MEMO_PROGRAM_ID,

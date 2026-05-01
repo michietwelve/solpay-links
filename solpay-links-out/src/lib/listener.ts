@@ -1,7 +1,7 @@
 /**
  * src/lib/listener.ts
  *
- * Subscribes to SolPay Links program logs via `onLogs`.
+ * Subscribes to BiePay Links program logs via `onLogs`.
  * On every confirmed PaymentMade event:
  *   1. Updates the payment record in the store
  *   2. Fires merchant webhooks (if configured)
@@ -19,10 +19,10 @@ const PROGRAM_ID = new PublicKey(
   "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
 );
 
-function parseSolPayLinkId(logs: string[]): string | null {
-  // Look for "Program log: SolPay:XXXXXXXXXX"
+function parseBiePayLinkId(logs: string[]): string | null {
+  // Look for "Program log: BiePay:XXXXXXXXXX"
   for (const log of logs) {
-    const match = log.match(/SolPay:([A-Za-z0-9_-]{1,32})/);
+    const match = log.match(/BiePay:([A-Za-z0-9_-]{1,32})/);
     if (match) return match[1];
   }
   return null;
@@ -61,7 +61,7 @@ async function deliverWebhook(url: string, payload: WebhookPayload): Promise<voi
 // ─── Listener ────────────────────────────────────────────────────────────────
 
 export function startEventListener(connection: Connection): () => void {
-  console.log("[listener] Subscribing to SolPay Links program logs...");
+  console.log("[listener] Subscribing to BiePay Links program logs...");
 
   const subscriptionId = connection.onLogs(
     PROGRAM_ID,
@@ -70,7 +70,7 @@ export function startEventListener(connection: Connection): () => void {
 
       const { signature, logs: logLines } = logs;
 
-      const refId = parseSolPayLinkId(logLines);
+      const refId = parseBiePayLinkId(logLines);
       if (!refId) return;
 
       console.log(`[listener] Payment confirmed for ref ${refId}: ${signature}`);

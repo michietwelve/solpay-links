@@ -1,7 +1,7 @@
 {
-  "name": "solpay-links-api",
+  "name": "biepay-links-api",
   "version": "0.1.0",
-  "description": "SolPay Links — Solana Actions API backend",
+  "description": "BiePay Links — Solana Actions API backend",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",

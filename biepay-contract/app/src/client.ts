@@ -1,12 +1,12 @@
 /**
- * SolPay Links — on-chain client SDK
+ * BiePay Links — on-chain client SDK
  *
  * Wraps every program instruction with clean TypeScript helpers.
  * Drop this into the API backend or the merchant dashboard — same interface.
  *
  * Usage:
- *   import { SolPayClient } from "./app/src/client";
- *   const client = new SolPayClient(connection, wallet);
+ *   import { BiePayClient } from "./app/src/client";
+ *   const client = new BiePayClient(connection, wallet);
  *   const { tx, pda } = await client.createLink({ ... });
  */
 
@@ -106,7 +106,7 @@ export interface PaymentLinkAccount {
   bump: number;
 }
 
-export class SolPayClient {
+export class BiePayClient {
   program: Program;
 
   constructor(

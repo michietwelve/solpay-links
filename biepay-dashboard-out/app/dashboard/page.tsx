@@ -101,7 +101,7 @@ export default function DashboardPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 12m18 0v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6m18 0V9M3 12V9m18-3a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 9m18 0V9" />
             </svg>
           </div>
-          <h1 className="text-xl font-medium">SolPay Links</h1>
+          <h1 className="text-xl font-medium">BiePay Links</h1>
           <p className="text-sm text-zinc-500">Log in to manage your merchant links</p>
           <button
             onClick={login}
@@ -126,7 +126,7 @@ export default function DashboardPage() {
               <circle cx="8" cy="8" r="2" fill="white"/>
             </svg>
           </div>
-          <span className="font-medium text-sm">SolPay Links</span>
+          <span className="font-medium text-sm">BiePay Links</span>
           <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">beta</span>
         </div>
         <div className="flex items-center gap-4">

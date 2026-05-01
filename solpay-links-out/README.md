@@ -1,4 +1,4 @@
-# SolPay Links — Actions API Backend
+# BiePay Links — Actions API Backend
 
 Stripe-grade payment links for the Solana economy. Built on the Solana Actions / Blinks spec — every link is a shareable URL that Phantom, Backpack, and any Actions-aware wallet renders as a native payment UI.
 
@@ -17,7 +17,7 @@ POST /api/links          ← create a payment link
        ┌─────────────────────────────────────────────────┐
        │  Payer receives:                                 │
        │  https://dial.to/?action=solana-action:          │
-       │    https://api.solpay.link/actions/aBc1234XyZ   │
+       │    https://api.biepay.link/actions/aBc1234XyZ   │
        └─────────────────────────────────────────────────┘
                │
                │  Phantom / Backpack fetches:
@@ -81,7 +81,7 @@ Returns Blink metadata for a payment link.
 ```json
 {
   "type": "action",
-  "icon": "https://solpay.link/icon.png",
+  "icon": "https://biepay.link/icon.png",
   "title": "Invoice #42 — Acme Corp",
   "description": "Payment for web development services",
   "label": "Pay 500 USDC",
@@ -89,7 +89,7 @@ Returns Blink metadata for a payment link.
     "actions": [
       {
         "type": "transaction",
-        "href": "https://api.solpay.link/actions/aBc1234XyZ/pay",
+        "href": "https://api.biepay.link/actions/aBc1234XyZ/pay",
         "label": "Pay 500 USDC"
       }
     ]
@@ -162,8 +162,8 @@ Create a new payment link.
   "link": { ... },
   "urls": {
     "blinkUrl":   "https://dial.to/?action=solana-action:https%3A%2F%2F...",
-    "actionUrl":  "solana-action:https://api.solpay.link/actions/aBc1234XyZ",
-    "payPageUrl": "https://solpay.link/pay/aBc1234XyZ"
+    "actionUrl":  "solana-action:https://api.biepay.link/actions/aBc1234XyZ",
+    "payPageUrl": "https://biepay.link/pay/aBc1234XyZ"
   }
 }
 ```

@@ -1,5 +1,5 @@
 /**
- * SolPay Links — Anchor test suite
+ * BiePay Links — Anchor test suite
  * Run with: anchor test
  *
  * Covers:
@@ -54,7 +54,7 @@ function shortId(): string {
 
 // ─── Test suite ───────────────────────────────────────────────────────────────
 
-describe("solpay_links", () => {
+describe("biepay_links", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 

@@ -91,7 +91,7 @@ async function buildSolTransferTx(
   }
 
   // 1. Mandatory tracking memo for our listener
-  tx.add(buildMemoInstruction(`SolPay:${referenceId}`));
+  tx.add(buildMemoInstruction(`BiePay:${referenceId}`));
 
   // 2. Optional user-visible memo
   if (link.memo) {
@@ -205,7 +205,7 @@ async function buildSplTransferTx(
   }
 
   // 1. Mandatory tracking memo for our listener
-  tx.add(buildMemoInstruction(`SolPay:${referenceId}`));
+  tx.add(buildMemoInstruction(`BiePay:${referenceId}`));
 
   // 2. Optional user-visible memo
   if (link.memo) {

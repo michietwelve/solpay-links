@@ -22,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
-        <title>SolPay Links</title>
+        <title>BiePay Links</title>
         <meta name="description" content="Stripe-grade payment links for Solana" />
       </head>
       <body>

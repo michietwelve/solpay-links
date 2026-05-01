@@ -20,7 +20,7 @@ const FEE_BPS_DENOM: u64 = 10_000;
 // ─── Program ──────────────────────────────────────────────────────────────────
 
 #[program]
-pub mod solpay_links {
+pub mod biepay_links {
     use super::*;
 
     // ── create_link ──────────────────────────────────────────────────────────
@@ -31,14 +31,14 @@ pub mod solpay_links {
         let link = &mut ctx.accounts.payment_link;
 
         // Validate params
-        require!(params.label.len() <= MAX_LABEL_LEN, SolPayError::LabelTooLong);
-        require!(params.description.len() <= MAX_DESC_LEN, SolPayError::DescTooLong);
+        require!(params.label.len() <= MAX_LABEL_LEN, BiePayError::LabelTooLong);
+        require!(params.description.len() <= MAX_DESC_LEN, BiePayError::DescTooLong);
         if let Some(ref m) = params.memo {
-            require!(m.len() <= MAX_MEMO_LEN, SolPayError::MemoTooLong);
+            require!(m.len() <= MAX_MEMO_LEN, BiePayError::MemoTooLong);
         }
         require!(
             params.max_payments == 0 || params.max_payments > 0,
-            SolPayError::InvalidMaxPayments
+            BiePayError::InvalidMaxPayments
         ); // always true; explicit guard left for clarity
 
         let clock = Clock::get()?;
@@ -81,15 +81,15 @@ pub mod solpay_links {
         let clock = Clock::get()?;
 
         // ── Guards ───────────────────────────────────────────────────────────
-        require!(link.status == LinkStatus::Active, SolPayError::LinkNotActive);
-        require!(link.token_mint.is_none(), SolPayError::WrongTokenType);
+        require!(link.status == LinkStatus::Active, BiePayError::LinkNotActive);
+        require!(link.token_mint.is_none(), BiePayError::WrongTokenType);
         if link.expires_at > 0 {
-            require!(clock.unix_timestamp < link.expires_at, SolPayError::LinkExpired);
+            require!(clock.unix_timestamp < link.expires_at, BiePayError::LinkExpired);
         }
         if link.max_payments > 0 {
             require!(
                 link.payment_count < link.max_payments,
-                SolPayError::LinkAtCapacity
+                BiePayError::LinkAtCapacity
             );
         }
 
@@ -97,15 +97,15 @@ pub mod solpay_links {
         let amount = if link.amount > 0 {
             link.amount             // fixed — ignore caller-supplied value
         } else {
-            require!(pay_amount > 0, SolPayError::AmountRequired);
+            require!(pay_amount > 0, BiePayError::AmountRequired);
             pay_amount
         };
 
-        require!(amount >= 1_000, SolPayError::AmountTooSmall); // min 0.000001 SOL
+        require!(amount >= 1_000, BiePayError::AmountTooSmall); // min 0.000001 SOL
 
         // ── Fee split ────────────────────────────────────────────────────────
         let fee = fee_amount(amount, link.fee_bps);
-        let net = amount.checked_sub(fee).ok_or(SolPayError::ArithmeticOverflow)?;
+        let net = amount.checked_sub(fee).ok_or(BiePayError::ArithmeticOverflow)?;
 
         // Transfer net → recipient
         anchor_lang::system_program::transfer(
@@ -137,9 +137,9 @@ pub mod solpay_links {
 
         // ── State update ─────────────────────────────────────────────────────
         link.payment_count  = link.payment_count.checked_add(1)
-            .ok_or(SolPayError::ArithmeticOverflow)?;
+            .ok_or(BiePayError::ArithmeticOverflow)?;
         link.total_received = link.total_received.checked_add(amount)
-            .ok_or(SolPayError::ArithmeticOverflow)?;
+            .ok_or(BiePayError::ArithmeticOverflow)?;
 
         if link.max_payments > 0 && link.payment_count >= link.max_payments {
             link.status = LinkStatus::Completed;
@@ -167,19 +167,19 @@ pub mod solpay_links {
         let clock = Clock::get()?;
 
         // ── Guards ───────────────────────────────────────────────────────────
-        require!(link.status == LinkStatus::Active, SolPayError::LinkNotActive);
-        require!(link.token_mint.is_some(), SolPayError::WrongTokenType);
+        require!(link.status == LinkStatus::Active, BiePayError::LinkNotActive);
+        require!(link.token_mint.is_some(), BiePayError::WrongTokenType);
         require!(
             link.token_mint.unwrap() == ctx.accounts.mint.key(),
-            SolPayError::MintMismatch
+            BiePayError::MintMismatch
         );
         if link.expires_at > 0 {
-            require!(clock.unix_timestamp < link.expires_at, SolPayError::LinkExpired);
+            require!(clock.unix_timestamp < link.expires_at, BiePayError::LinkExpired);
         }
         if link.max_payments > 0 {
             require!(
                 link.payment_count < link.max_payments,
-                SolPayError::LinkAtCapacity
+                BiePayError::LinkAtCapacity
             );
         }
 
@@ -187,14 +187,14 @@ pub mod solpay_links {
         let amount = if link.amount > 0 {
             link.amount
         } else {
-            require!(pay_amount > 0, SolPayError::AmountRequired);
+            require!(pay_amount > 0, BiePayError::AmountRequired);
             pay_amount
         };
-        require!(amount >= 1, SolPayError::AmountTooSmall);
+        require!(amount >= 1, BiePayError::AmountTooSmall);
 
         // ── Fee split ────────────────────────────────────────────────────────
         let fee = fee_amount(amount, link.fee_bps);
-        let net = amount.checked_sub(fee).ok_or(SolPayError::ArithmeticOverflow)?;
+        let net = amount.checked_sub(fee).ok_or(BiePayError::ArithmeticOverflow)?;
         let decimals = ctx.accounts.mint.decimals;
 
         // Net → recipient ATA
@@ -237,9 +237,9 @@ pub mod solpay_links {
 
         // ── State update ─────────────────────────────────────────────────────
         link.payment_count  = link.payment_count.checked_add(1)
-            .ok_or(SolPayError::ArithmeticOverflow)?;
+            .ok_or(BiePayError::ArithmeticOverflow)?;
         link.total_received = link.total_received.checked_add(amount)
-            .ok_or(SolPayError::ArithmeticOverflow)?;
+            .ok_or(BiePayError::ArithmeticOverflow)?;
 
         if link.max_payments > 0 && link.payment_count >= link.max_payments {
             link.status = LinkStatus::Completed;
@@ -264,7 +264,7 @@ pub mod solpay_links {
     /// Rent is returned to the merchant.
     pub fn cancel_link(ctx: Context<CancelLink>) -> Result<()> {
         let link = &mut ctx.accounts.payment_link;
-        require!(link.status == LinkStatus::Active, SolPayError::LinkNotActive);
+        require!(link.status == LinkStatus::Active, BiePayError::LinkNotActive);
 
         link.status = LinkStatus::Cancelled;
 
@@ -422,7 +422,7 @@ pub struct PaySol<'info> {
     /// CHECK: validated against payment_link.recipient inside instruction.
     #[account(
         mut,
-        address = payment_link.recipient @ SolPayError::RecipientMismatch
+        address = payment_link.recipient @ BiePayError::RecipientMismatch
     )]
     pub recipient: AccountInfo<'info>,
 
@@ -470,7 +470,7 @@ pub struct PaySpl<'info> {
 
     /// CHECK: validated against payment_link.recipient.
     #[account(
-        address = payment_link.recipient @ SolPayError::RecipientMismatch
+        address = payment_link.recipient @ BiePayError::RecipientMismatch
     )]
     pub recipient: AccountInfo<'info>,
 
@@ -481,7 +481,7 @@ pub struct PaySpl<'info> {
         associated_token::mint      = mint,
         associated_token::authority = treasury,
         constraint = treasury_ata.is_none() || treasury.is_some()
-            @ SolPayError::MissingTreasury
+            @ BiePayError::MissingTreasury
     )]
     pub treasury_ata: Option<Account<'info, TokenAccount>>,
 
@@ -503,7 +503,7 @@ pub struct CancelLink<'info> {
             &payment_link.link_id,
         ],
         bump = payment_link.bump,
-        has_one = merchant @ SolPayError::Unauthorized,
+        has_one = merchant @ BiePayError::Unauthorized,
     )]
     pub payment_link: Account<'info, PaymentLink>,
 
@@ -522,9 +522,9 @@ pub struct CloseLink<'info> {
             &payment_link.link_id,
         ],
         bump = payment_link.bump,
-        has_one = merchant @ SolPayError::Unauthorized,
+        has_one = merchant @ BiePayError::Unauthorized,
         constraint = payment_link.status != LinkStatus::Active
-            @ SolPayError::CannotCloseActiveLink,
+            @ BiePayError::CannotCloseActiveLink,
     )]
     pub payment_link: Account<'info, PaymentLink>,
 
@@ -567,7 +567,7 @@ pub struct LinkCancelled {
 // ─── Errors ───────────────────────────────────────────────────────────────────
 
 #[error_code]
-pub enum SolPayError {
+pub enum BiePayError {
     #[msg("Payment link is not active")]
     LinkNotActive,
     #[msg("Payment link has expired")]
