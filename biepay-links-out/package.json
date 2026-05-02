@@ -1,0 +1,37 @@
+{
+  "name": "biepay-links-api",
+  "version": "0.1.0",
+  "description": "BiePay Links — Solana Actions API backend",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "prisma generate && tsc",
+    "start": "prisma generate && prisma db push && node dist/index.js",
+    "postinstall": "prisma generate",
+    "db:push": "prisma db push",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.1.0",
+    "@solana/actions": "^1.6.3",
+    "@solana/spl-token": "^0.4.9",
+    "@solana/web3.js": "^1.98.0",
+    "bs58": "^5.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "morgan": "^1.10.0",
+    "nanoid": "^3.3.8",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/morgan": "^1.9.9",
+    "@types/node": "^22.10.7",
+    "prisma": "^6.1.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

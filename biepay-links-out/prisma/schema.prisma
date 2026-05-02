@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model PaymentLink {
+  id              String   @id
+  recipientWallet String
+  amountLamports  String?
+  token           String
+  label           String
+  description     String
+  memo            String?
+  expiresAt       DateTime?
+  maxPayments     Int?
+  paymentCount    Int      @default(0)
+  redirectUrl     String?
+  status          String   @default("active")
+  createdAt       DateTime @default(now())
+  merchantId      String?
+  payments        PaymentRecord[]
+}
+
+model PaymentRecord {
+  id              String   @id
+  linkId          String
+  payerWallet     String
+  amountLamports  String
+  token           String
+  signature       String?
+  status          String   @default("pending")
+  createdAt       DateTime @default(now())
+  confirmedAt     DateTime?
+  link            PaymentLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+}

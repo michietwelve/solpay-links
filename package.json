@@ -1,13 +1,13 @@
 {
-  "name": "solpay-links-monorepo",
+  "name": "biepay-links-monorepo",
   "version": "1.0.0",
   "description": "The Social Commerce Layer for Solana",
   "scripts": {
-    "dev:dashboard": "cd solpay-dashboard-out && npm run dev",
-    "dev:api": "cd solpay-links-out && npm run dev",
+    "dev:dashboard": "cd biepay-dashboard-out && npm run dev",
+    "dev:api": "cd biepay-links-out && npm run dev",
     "dev": "concurrently \"npm run dev:dashboard\" \"npm run dev:api\"",
-    "build": "cd solpay-dashboard-out && npm install && npm run build",
-    "install": "cd solpay-dashboard-out && npm install"
+    "build": "cd biepay-dashboard-out && npm install && npm run build",
+    "install": "cd biepay-dashboard-out && npm install"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
