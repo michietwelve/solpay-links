@@ -29,6 +29,7 @@ import {
 } from "@solana/web3.js";
 import { MoonPayBuyWidget } from "@moonpay/moonpay-react";
 import confetti from "canvas-confetti";
+import Logo     from "../../../components/layout/Logo";
 const ComponentAny = MoonPayBuyWidget as any;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -394,12 +395,7 @@ export default function PayPage() {
       <Card>
         <div className="px-8 py-10 text-center space-y-6">
           <div>
-            <div className="w-10 h-10 bg-zinc-900 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 16 16">
-                <path d="M8 1 L14 4.5 L14 11.5 L8 15 L2 11.5 L2 4.5 Z" fill="none" stroke="white" strokeWidth="1.5"/>
-                <circle cx="8" cy="8" r="2" fill="white"/>
-              </svg>
-            </div>
+            <Logo className="w-12 h-12 mx-auto mb-6 shadow-xl" variant="gold" />
             <h1 className="text-lg font-semibold">{link.label}</h1>
             <p className="text-sm text-zinc-500 mt-1">{link.description}</p>
           </div>
@@ -628,7 +624,11 @@ export default function PayPage() {
             >
               🧪 Hackathon Demo: Switch to SOL to test easily
             </button>
-          )}
+          {/* Branding footer */}
+          <div className="mt-8 flex flex-col items-center gap-3">
+            <Logo className="w-8 h-8 opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-default" variant="gold" />
+            <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest">Powered by BiePay</span>
+          </div>
         </div>
       </div>
     );

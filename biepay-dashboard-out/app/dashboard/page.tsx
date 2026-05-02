@@ -10,6 +10,7 @@ import ShareModal     from "../../components/dashboard/ShareModal";
 import ProfileMenu    from "../../components/dashboard/ProfileMenu";
 import WithdrawModal  from "../../components/dashboard/WithdrawModal";
 import SuccessModal   from "../../components/dashboard/SuccessModal";
+import Logo           from "../../components/layout/Logo";
 
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
@@ -183,17 +184,15 @@ export default function DashboardPage() {
   if (!authenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-zinc-50">
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 bg-zinc-900 rounded-xl mx-auto flex items-center justify-center">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 12m18 0v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6m18 0V9M3 12V9m18-3a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 9m18 0V9" />
-            </svg>
+        <div className="text-center space-y-6">
+          <Logo className="w-16 h-16 mx-auto shadow-xl" />
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900">BiePay Links</h1>
+            <p className="text-sm text-zinc-500">Log in to manage your merchant links</p>
           </div>
-          <h1 className="text-xl font-medium">BiePay Links</h1>
-          <p className="text-sm text-zinc-500">Log in to manage your merchant links</p>
           <button
             onClick={login}
-            className="px-8 py-2.5 bg-zinc-900 text-white rounded-xl font-medium hover:bg-zinc-800 transition-colors"
+            className="px-10 py-3 bg-zinc-900 text-white rounded-2xl font-semibold hover:bg-zinc-800 transition-all shadow-lg shadow-zinc-200"
           >
             Connect
           </button>
@@ -208,14 +207,9 @@ export default function DashboardPage() {
       {/* Topbar */}
       <header className="bg-white border-b border-zinc-200 px-6 h-14 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-3">
-          <div className="w-7 h-7 bg-zinc-900 rounded-lg flex items-center justify-center">
-            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 16 16">
-              <path d="M8 1 L14 4.5 L14 11.5 L8 15 L2 11.5 L2 4.5 Z" fill="none" stroke="white" strokeWidth="1.5"/>
-              <circle cx="8" cy="8" r="2" fill="white"/>
-            </svg>
-          </div>
-          <span className="font-medium text-sm">BiePay Links</span>
-          <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">beta</span>
+          <Logo className="w-7 h-7" variant="gold" />
+          <span className="font-bold text-sm tracking-tight">BiePay Links</span>
+          <span className="text-[10px] bg-zinc-900 text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">beta</span>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex flex-col items-end gap-1">
