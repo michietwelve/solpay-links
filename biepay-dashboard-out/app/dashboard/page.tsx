@@ -53,7 +53,7 @@ export default function DashboardPage() {
 
     // Remove duplicates
     return list.filter((v, i, a) => a.findIndex(t => t.address === v.address) === i);
-  }, [publicKey, privyWallets]);
+  }, [publicKey, privyWallets, solanaWallets, user]);
 
   const activeAddress = useMemo(() => {
     if (selectedAddress && allAddresses.some(a => a.address === selectedAddress)) {
