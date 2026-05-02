@@ -5,17 +5,17 @@ import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { useLinks, useStats, createLink, deleteLink } from "../../hooks/useLinks";
 import { formatAmount, timeAgo, getShareUrls, getEffectiveStatus } from "../../lib/api";
 import type { PaymentLink, CreateLinkResponse } from "../../lib/api";
-import CreateLinkForm from "../../components/dashboard/CreateLinkForm";
 import ShareModal     from "../../components/dashboard/ShareModal";
 import ProfileMenu    from "../../components/dashboard/ProfileMenu";
-import WithdrawModal   from "../../components/dashboard/WithdrawModal";
+import WithdrawModal  from "../../components/dashboard/WithdrawModal";
+import SuccessModal   from "../../components/dashboard/SuccessModal";
 
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import { Connection, Transaction, SystemProgram, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
-type Modal = "create" | "share" | "withdraw" | null;
+type Modal = "create" | "share" | "withdraw" | "success" | "settings" | "profile" | null;
 
 export default function DashboardPage() {
   const { ready, authenticated, user, login, logout, linkWallet } = usePrivy();
@@ -78,6 +78,7 @@ export default function DashboardPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [detailLink, setDetailLink] = useState<PaymentLink | null>(null);
   const [withdrawSource, setWithdrawSource] = useState<string | null>(null);
+  const [successData, setSuccessData] = useState<{ title: string; message: string; txSig?: string } | null>(null);
 
   const filtered = links.filter(l =>
     (l.label.toLowerCase().includes(search.toLowerCase()) || l.id.includes(search)) &&
@@ -96,13 +97,22 @@ export default function DashboardPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Are you sure you want to delete this payment link? This action cannot be undone.")) return;
+    if (!confirm("Are you sure you want to delete this payment link?")) return;
     setIsDeleting(true);
     try {
       await deleteLink(id);
       setDetailLink(null);
+      setSuccessData({
+        title: "Link Deleted",
+        message: "The payment link has been permanently removed."
+      });
+      setModal("success");
     } catch (err) {
-      alert("Failed to delete link. Please try again.");
+      setSuccessData({
+        title: "Delete Failed",
+        message: "We couldn't delete this link. Please try again later."
+      });
+      setModal("success");
     } finally {
       setIsDeleting(false);
     }
@@ -143,9 +153,14 @@ export default function DashboardPage() {
       const sig = await connection.sendRawTransaction(signedTx.serialize());
       await connection.confirmTransaction(sig, "confirmed");
 
-      alert(`Success! Transferred ${(amount / LAMPORTS_PER_SOL).toFixed(4)} SOL to ${dest}\n\nSig: ${sig}`);
       setModal(null);
       setWithdrawSource(null);
+      setSuccessData({
+        title: "Withdrawal Successful!",
+        message: `Successfully transferred ${(amount / LAMPORTS_PER_SOL).toFixed(4)} SOL to your destination wallet.`,
+        txSig: sig
+      });
+      setModal("success");
     } catch (err: any) {
       console.error("Withdraw failed:", err);
       throw err; // WithdrawModal will handle the error display
@@ -217,7 +232,10 @@ export default function DashboardPage() {
               </select>
             )}
           </div>
-          <ProfileMenu />
+          <ProfileMenu 
+            onSettingsClick={() => setModal("settings")}
+            onProfileClick={() => setModal("profile")}
+          />
           <button
             onClick={() => setModal("create")}
             disabled={!address || address.startsWith("0x")}
@@ -519,7 +537,95 @@ export default function DashboardPage() {
           }}
         />
       )}
+      {/* Success modal */}
+      {modal === "success" && successData && (
+        <SuccessModal
+          title={successData.title}
+          message={successData.message}
+          txSig={successData.txSig}
+          onClose={() => {
+            setModal(null);
+            setSuccessData(null);
+          }}
+        />
+      )}
 
+      {/* Settings Panel */}
+      {modal === "settings" && (
+        <div className="fixed inset-0 z-[60] flex justify-end animate-in fade-in duration-300 bg-black/40 backdrop-blur-sm" onClick={() => setModal(null)}>
+          <div className="w-full max-w-md bg-white h-full shadow-2xl animate-in slide-in-from-right duration-500" onClick={e => e.stopPropagation()}>
+            <div className="p-8 space-y-8">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold">Settings</h2>
+                <button onClick={() => setModal(null)} className="text-3xl text-zinc-400 hover:text-zinc-900">×</button>
+              </div>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest mb-3 block">Email Notification</label>
+                  <div className="flex items-center justify-between p-4 bg-zinc-50 rounded-2xl">
+                    <span className="text-sm font-medium text-zinc-600">Notify on every payment</span>
+                    <div className="w-10 h-6 bg-zinc-900 rounded-full relative">
+                      <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm" />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest mb-3 block">Security</label>
+                  <button className="w-full p-4 bg-white border border-zinc-200 rounded-2xl text-sm font-medium flex items-center justify-between hover:bg-zinc-50 transition-colors">
+                    <span>Export Private Keys</span>
+                    <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-8 border-t border-zinc-100">
+                <button className="w-full py-4 bg-zinc-900 text-white font-semibold rounded-2xl">Save Changes</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Profile Panel */}
+      {modal === "profile" && (
+        <div className="fixed inset-0 z-[60] flex justify-end animate-in fade-in duration-300 bg-black/40 backdrop-blur-sm" onClick={() => setModal(null)}>
+          <div className="w-full max-w-md bg-white h-full shadow-2xl animate-in slide-in-from-right duration-500" onClick={e => e.stopPropagation()}>
+            <div className="p-0 overflow-y-auto h-full flex flex-col">
+              <div className="h-48 bg-zinc-900 relative">
+                <button onClick={() => setModal(null)} className="absolute right-6 top-6 text-white/50 hover:text-white text-3xl">×</button>
+                <div className="absolute -bottom-10 left-8 w-24 h-24 bg-white rounded-3xl shadow-xl flex items-center justify-center border-4 border-white">
+                  <div className="w-16 h-16 bg-zinc-900 text-white rounded-2xl flex items-center justify-center text-2xl font-bold uppercase">
+                    {user?.email?.address?.[0] ?? "B"}
+                  </div>
+                </div>
+              </div>
+              <div className="p-8 pt-16 space-y-8 flex-1">
+                <div>
+                  <h2 className="text-2xl font-bold text-zinc-900">{user?.email?.address?.split('@')[0] ?? "Merchant"}</h2>
+                  <p className="text-zinc-500 text-sm mt-1">Solana Merchant since April 2024</p>
+                </div>
+
+                <div className="space-y-4">
+                  <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest block">Public Display Name</label>
+                  <input className="w-full p-4 bg-zinc-50 border-none rounded-2xl text-sm" defaultValue={user?.email?.address?.split('@')[0]} />
+                </div>
+
+                <div className="space-y-4">
+                  <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest block">Biography</label>
+                  <textarea className="w-full p-4 bg-zinc-50 border-none rounded-2xl text-sm h-32 resize-none" placeholder="Write something about your business..." />
+                </div>
+              </div>
+              <div className="p-8 bg-zinc-50 border-t border-zinc-100">
+                <button className="w-full py-4 bg-emerald-500 text-white font-bold rounded-2xl shadow-lg shadow-emerald-200">Update Profile</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
