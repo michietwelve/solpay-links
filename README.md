@@ -40,7 +40,7 @@ Traditional cross-border payments are slow, expensive, and trapped behind "walle
 
 The project is structured as a high-performance monorepo:
 
-### 1. [Merchant Dashboard](./biepay-dashboard-out) (Next.js)
+### 1. [Merchant Dashboard](./solpay-dashboard-out) (Next.js)
 A premium merchant portal built with React 18, Tailwind CSS, and SWR for real-time data fetching. Uses Privy for seamless embedded wallet generation.
 
 ### 2. [Actions API](./biepay-links-out) (Express / Node.js)
@@ -79,20 +79,20 @@ An optional on-chain program for governed payments, escrow, and platform fee dis
 2. Install dependencies for both projects:
    ```bash
    # Frontend
-   cd biepay-dashboard-out && npm install
+   cd solpay-dashboard-out && npm install
    # Backend
    cd ../biepay-links-out && npm install
    ```
 
 3. Set up environment variables:
-   Create `.env.local` in `biepay-dashboard-out` and `.env` in `biepay-links-out` based on the `.env.example` files provided in each folder.
+   Create `.env.local` in `solpay-dashboard-out` and `.env` in `biepay-links-out` based on the `.env.example` files provided in each folder.
 
 4. Run the stack:
    ```bash
    # Start the API (Port 3001)
    cd biepay-links-out && npm run dev
    # Start the Dashboard (Port 3000)
-   cd biepay-dashboard-out && npm run dev
+   cd solpay-dashboard-out && npm run dev
    ```
 
 ---
