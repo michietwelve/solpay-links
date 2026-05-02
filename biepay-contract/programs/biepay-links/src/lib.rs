@@ -4,7 +4,7 @@ use anchor_spl::{
     token::{self, Mint, Token, TokenAccount, Transfer, TransferChecked},
 };
 
-declare_id!("SoLPaYLinks1111111111111111111111111111111");
+declare_id!("BiePayLinks1111111111111111111111111111111");
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 

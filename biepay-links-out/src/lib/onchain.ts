@@ -30,7 +30,7 @@ import { PaymentLink, TOKEN_MINT, TOKEN_DECIMALS } from "../types";
 // ─── Program constants ────────────────────────────────────────────────────────
 
 export const PROGRAM_ID = new PublicKey(
-  "SoLPaYLinks1111111111111111111111111111111"
+  "BiePayLinks1111111111111111111111111111111"
 );
 
 const MEMO_PROGRAM_ID = new PublicKey(
