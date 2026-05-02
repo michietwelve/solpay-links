@@ -4,7 +4,12 @@ import { useState, useRef, useEffect } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useWallet } from "@solana/wallet-adapter-react";
 
-export default function ProfileMenu() {
+interface ProfileMenuProps {
+  onSettingsClick: () => void;
+  onProfileClick: () => void;
+}
+
+export default function ProfileMenu({ onSettingsClick, onProfileClick }: ProfileMenuProps) {
   const { user, logout, authenticated } = usePrivy();
   const { disconnect } = useWallet();
   const [isOpen, setIsOpen] = useState(false);
@@ -53,7 +58,7 @@ export default function ProfileMenu() {
           
           <div className="py-1">
             <button 
-              onClick={() => { setIsOpen(false); alert("Settings coming soon!"); }}
+              onClick={() => { setIsOpen(false); onSettingsClick(); }}
               className="w-full text-left px-4 py-2 text-sm text-zinc-600 hover:bg-zinc-50 flex items-center gap-2 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -63,7 +68,7 @@ export default function ProfileMenu() {
               Account Settings
             </button>
             <button 
-              onClick={() => { setIsOpen(false); alert("Profile customisation coming soon!"); }}
+              onClick={() => { setIsOpen(false); onProfileClick(); }}
               className="w-full text-left px-4 py-2 text-sm text-zinc-600 hover:bg-zinc-50 flex items-center gap-2 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
