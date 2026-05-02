@@ -4,6 +4,7 @@ import {
   getLinkById,
   getAllLinks,
   getPaymentsForLink,
+  getEffectiveStatus,
 } from "../lib/store";
 import { CreateLinkSchema } from "../types";
 import { actionError } from "../middleware/actions";
@@ -58,6 +59,7 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
   }
   res.json({
     ...link,
+    status: getEffectiveStatus(link),
     amountLamports: link.amountLamports?.toString() ?? null,
   });
 });
@@ -74,6 +76,7 @@ router.get("/:id/payments", async (req: Request, res: Response): Promise<void> =
   res.json({
     link: {
       ...link,
+      status: getEffectiveStatus(link),
       amountLamports: link.amountLamports?.toString() ?? null,
     },
     payments: payments.map((p) => ({
@@ -92,6 +95,7 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
   res.json(
     links.map((l) => ({
       ...l,
+      status: getEffectiveStatus(l),
       amountLamports: l.amountLamports?.toString() ?? null,
     }))
   );

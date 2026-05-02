@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { getLinkById, getLinkStatus } from "../lib/store";
+import { getLinkById, getLinkStatus, getEffectiveStatus } from "../lib/store";
 import { actionError } from "../middleware/actions";
 
 /**
@@ -45,7 +45,7 @@ router.get("/:linkId", async (req: Request, res: Response): Promise<void> => {
     expiresAt: link.expiresAt,
     paymentCount: link.paymentCount,
     maxPayments: link.maxPayments,
-    status: link.status,
+    status: getEffectiveStatus(link),
     active,
     inactiveReason: reason ?? null,
   });

@@ -100,16 +100,30 @@ export async function incrementPaymentCount(id: string): Promise<void> {
   }
 }
 
+export function getEffectiveStatus(link: PaymentLink): LinkStatus {
+  if (link.status === "cancelled") return "cancelled";
+  if (link.status === "completed") return "completed";
+  if (link.expiresAt && new Date() > link.expiresAt) return "expired";
+  return "active";
+}
+
 export function getLinkStatus(link: PaymentLink): {
   active: boolean;
   reason?: string;
 } {
-  if (link.status === "cancelled") return { active: false, reason: "This payment link has been cancelled." };
-  if (link.status === "completed") return { active: false, reason: "This payment link has reached its payment limit." };
-  if (link.expiresAt && new Date() > link.expiresAt) {
-    return { active: false, reason: "This payment link has expired." };
+  const status = getEffectiveStatus(link);
+
+  switch (status) {
+    case "cancelled":
+      return { active: false, reason: "This payment link has been cancelled." };
+    case "completed":
+      return { active: false, reason: "This payment link has reached its payment limit." };
+    case "expired":
+      return { active: false, reason: "This payment link has expired." };
+    case "active":
+    default:
+      return { active: true };
   }
-  return { active: true };
 }
 
 // ─── Payment records ──────────────────────────────────────────────────────────
