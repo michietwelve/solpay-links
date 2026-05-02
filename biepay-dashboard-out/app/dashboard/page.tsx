@@ -12,6 +12,7 @@ import ProfileMenu    from "../../components/dashboard/ProfileMenu";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
+import { Connection, Transaction, SystemProgram, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 type Modal = "create" | "share" | null;
 
@@ -23,6 +24,7 @@ export default function DashboardPage() {
 
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
   const [isDeleting, setIsDeleting]           = useState(false);
+  const [isWithdrawing, setIsWithdrawing]     = useState(false);
   
   const allAddresses = useMemo(() => {
     const list: { address: string; type: string; label: string }[] = [];
@@ -101,6 +103,59 @@ export default function DashboardPage() {
       alert("Failed to delete link. Please try again.");
     } finally {
       setIsDeleting(false);
+    }
+  }
+
+  async function handleWithdraw(sourceAddress: string) {
+    const dest = prompt("Enter the destination Solana address (e.g. your Phantom address):");
+    if (!dest) return;
+    
+    try {
+      new PublicKey(dest); // Validate
+    } catch {
+      alert("Invalid Solana address.");
+      return;
+    }
+
+    const wallet = solanaWallets.find(w => w.address === sourceAddress);
+    if (!wallet) return;
+
+    setIsWithdrawing(true);
+    try {
+      const RPC = process.env.NEXT_PUBLIC_RPC_ENDPOINT ?? "https://api.devnet.solana.com";
+      const connection = new Connection(RPC, "confirmed");
+      
+      const balance = await connection.getBalance(new PublicKey(sourceAddress));
+      const fee = 5000; // rough estimate for tx fee
+      const amount = balance - fee;
+
+      if (amount <= 0) {
+        alert("Insufficient balance to cover fees.");
+        return;
+      }
+
+      const tx = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: new PublicKey(sourceAddress),
+          toPubkey: new PublicKey(dest),
+          lamports: amount,
+        })
+      );
+
+      const { blockhash } = await connection.getLatestBlockhash();
+      tx.recentBlockhash = blockhash;
+      tx.feePayer = new PublicKey(sourceAddress);
+
+      const signedTx = await (wallet as any).signTransaction(tx);
+      const sig = await connection.sendRawTransaction(signedTx.serialize());
+      await connection.confirmTransaction(sig, "confirmed");
+
+      alert(`Success! Transferred ${(amount / LAMPORTS_PER_SOL).toFixed(4)} SOL to ${dest}\n\nSig: ${sig}`);
+    } catch (err: any) {
+      console.error("Withdraw failed:", err);
+      alert("Withdrawal failed: " + err.message);
+    } finally {
+      setIsWithdrawing(false);
     }
   }
 
@@ -205,9 +260,25 @@ export default function DashboardPage() {
               const privySol = allAddresses.find(a => a.label === 'Privy Embedded' && a.type === 'SOL');
               if (privySol) {
                 return (
-                  <div className="px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-xl flex flex-col gap-0.5">
-                    <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">Privy Embedded</span>
-                    <span className="text-xs text-white font-mono">{privySol.address.slice(0,4)}...{privySol.address.slice(-4)}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-xl flex flex-col gap-0.5">
+                      <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">Privy Embedded</span>
+                      <span className="text-xs text-white font-mono">{privySol.address.slice(0,4)}...{privySol.address.slice(-4)}</span>
+                    </div>
+                    <button
+                      onClick={() => handleWithdraw(privySol.address)}
+                      disabled={isWithdrawing}
+                      className="px-4 py-2 bg-white text-zinc-900 border border-zinc-200 rounded-xl text-xs font-medium hover:bg-zinc-50 transition-all flex items-center gap-2"
+                    >
+                      {isWithdrawing ? (
+                        <div className="w-3 h-3 border-2 border-zinc-900/30 border-t-zinc-900 rounded-full animate-spin" />
+                      ) : (
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                      )}
+                      Withdraw
+                    </button>
                   </div>
                 );
               }
