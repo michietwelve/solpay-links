@@ -5,6 +5,7 @@ import {
   getAllLinks,
   getPaymentsForLink,
   getEffectiveStatus,
+  deleteLink,
 } from "../lib/store";
 import { CreateLinkSchema } from "../types";
 import { actionError } from "../middleware/actions";
@@ -99,6 +100,18 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
       amountLamports: l.amountLamports?.toString() ?? null,
     }))
   );
+});
+
+// ─── DELETE /api/links/:id  ───────────────────────────────────────────────
+
+router.delete("/:id", async (req: Request, res: Response): Promise<void> => {
+  const link = await getLinkById(req.params.id as string);
+  if (!link) {
+    actionError(res, 404, "Link not found.");
+    return;
+  }
+  await deleteLink(req.params.id as string);
+  res.status(204).end();
 });
 
 export default router;

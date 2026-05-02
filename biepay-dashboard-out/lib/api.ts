@@ -113,6 +113,9 @@ export const linksApi = {
 
   payments: (id: string): Promise<{ link: PaymentLink; payments: PaymentRecord[] }> =>
     apiFetch(`/api/links/${id}/payments`),
+
+  delete: (id: string): Promise<void> =>
+    apiFetch(`/api/links/${id}`, { method: "DELETE" }),
 };
 
 // ─── Analytics helpers (client-side, derived from link list) ─────────────────

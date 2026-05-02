@@ -2,14 +2,16 @@
 
 import { useState, useMemo } from "react";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
-import { useLinks, useStats, createLink } from "../../hooks/useLinks";
+import { useLinks, useStats, createLink, deleteLink } from "../../hooks/useLinks";
 import { formatAmount, timeAgo, getShareUrls } from "../../lib/api";
 import type { PaymentLink, CreateLinkResponse } from "../../lib/api";
 import CreateLinkForm from "../../components/dashboard/CreateLinkForm";
 import ShareModal     from "../../components/dashboard/ShareModal";
+import ProfileMenu    from "../../components/dashboard/ProfileMenu";
 
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { useSolanaWallets } from "@privy-io/react-auth/solana";
 
 type Modal = "create" | "share" | null;
 
@@ -17,8 +19,10 @@ export default function DashboardPage() {
   const { ready, authenticated, user, login, logout, linkWallet } = usePrivy();
   const { wallets: privyWallets } = useWallets();
   const { publicKey, disconnect: solanaDisconnect } = useWallet();
+  const { wallets: solanaWallets, createWallet: createSolanaWallet } = useSolanaWallets();
 
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting]           = useState(false);
   
   const allAddresses = useMemo(() => {
     const list: { address: string; type: string; label: string }[] = [];
@@ -78,6 +82,19 @@ export default function DashboardPage() {
     setModal(null);
     setShareLink({ id: result.link.id, label: result.link.label });
     setModal("share");
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Are you sure you want to delete this payment link? This action cannot be undone.")) return;
+    setIsDeleting(true);
+    try {
+      await deleteLink(id);
+      setDetailLink(null);
+    } catch (err) {
+      alert("Failed to delete link. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   const statusPill = (s: PaymentLink["status"]) => {
@@ -144,21 +161,10 @@ export default function DashboardPage() {
                 ))}
               </select>
             )}
-            {!address && authenticated && (
-              <span className="text-[10px] text-amber-600 font-medium px-2 py-0.5 bg-amber-50 rounded border border-amber-100">
-                Wait, initializing Solana...
-              </span>
-            )}
           </div>
-          <button
-            onClick={() => {
-              logout();
-              solanaDisconnect();
-            }}
-            className="text-xs font-medium text-zinc-500 hover:text-zinc-900 transition-colors mr-4"
-          >
-            Logout
-          </button>
+          <ProfileMenu />
+        </div>
+      </header>
           <button
             onClick={() => setModal("create")}
             disabled={!address || address.startsWith("0x")}
@@ -184,12 +190,35 @@ export default function DashboardPage() {
               </svg>
             </div>
             <div>
-              <h3 className="text-white font-semibold">Solana Wallet Connection</h3>
-              <p className="text-zinc-400 text-sm">Connect your Phantom or Backpack wallet to create payment links.</p>
+              <h3 className="text-white font-semibold">Wallet Management</h3>
+              <p className="text-zinc-400 text-sm">Manage your external and embedded Solana wallets.</p>
             </div>
           </div>
-          <div className="custom-wallet-button">
-            <WalletMultiButton />
+          <div className="flex items-center gap-4">
+            {/* Show Privy Embedded Status */}
+            {(() => {
+              const privySol = privyWallets.find((w: any) => w.walletClientType === 'privy' && w.chainType === 'solana');
+              if (privySol) {
+                return (
+                  <div className="px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-xl flex flex-col gap-0.5">
+                    <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">Privy Embedded</span>
+                    <span className="text-xs text-white font-mono">{privySol.address.slice(0,4)}...{privySol.address.slice(-4)}</span>
+                  </div>
+                );
+              }
+              return (
+                <button
+                  onClick={() => createSolanaWallet?.()}
+                  className="px-4 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-medium hover:bg-emerald-500/20 transition-all"
+                >
+                  Generate Embedded Wallet
+                </button>
+              );
+            })()}
+            
+            <div className="custom-wallet-button">
+              <WalletMultiButton />
+            </div>
           </div>
         </div>
 
@@ -364,6 +393,26 @@ export default function DashboardPage() {
                   Share this link
                 </button>
               )}
+              
+              <div className="pt-4 border-t border-zinc-100">
+                <button
+                  onClick={() => handleDelete(detailLink.id)}
+                  disabled={isDeleting}
+                  className="w-full py-2.5 text-sm bg-white text-red-600 border border-red-100 rounded-lg hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
+                >
+                  {isDeleting ? (
+                    <div className="w-4 h-4 border-2 border-red-600/30 border-t-red-600 rounded-full animate-spin" />
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  )}
+                  Delete Link
+                </button>
+                <p className="text-[10px] text-zinc-400 text-center mt-3 leading-relaxed">
+                  Permanently remove this link and all its payment history from your dashboard.
+                </p>
+              </div>
             </div>
           </div>
         </>

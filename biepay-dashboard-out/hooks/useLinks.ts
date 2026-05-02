@@ -65,3 +65,8 @@ export async function createLink(
   await globalMutate(key => Array.isArray(key) && key[0] === "/api/links");
   return result;
 }
+
+export async function deleteLink(id: string): Promise<void> {
+  await linksApi.delete(id);
+  await globalMutate(key => Array.isArray(key) && key[0] === "/api/links");
+}

@@ -35,5 +35,5 @@ model PaymentRecord {
   status          String   @default("pending")
   createdAt       DateTime @default(now())
   confirmedAt     DateTime?
-  link            PaymentLink @relation(fields: [linkId], references: [id])
+  link            PaymentLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
 }

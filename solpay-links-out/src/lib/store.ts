@@ -100,6 +100,10 @@ export async function incrementPaymentCount(id: string): Promise<void> {
   }
 }
 
+export async function deleteLink(id: string): Promise<void> {
+  await prisma.paymentLink.delete({ where: { id } });
+}
+
 export function getEffectiveStatus(link: PaymentLink): LinkStatus {
   if (link.status === "cancelled") return "cancelled";
   if (link.status === "completed") return "completed";
