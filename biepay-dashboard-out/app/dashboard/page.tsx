@@ -5,6 +5,7 @@ import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { useLinks, useStats, createLink, deleteLink } from "../../hooks/useLinks";
 import { formatAmount, timeAgo, getShareUrls, getEffectiveStatus } from "../../lib/api";
 import type { PaymentLink, CreateLinkResponse } from "../../lib/api";
+import CreateLinkForm from "../../components/dashboard/CreateLinkForm";
 import ShareModal     from "../../components/dashboard/ShareModal";
 import ProfileMenu    from "../../components/dashboard/ProfileMenu";
 import WithdrawModal  from "../../components/dashboard/WithdrawModal";
