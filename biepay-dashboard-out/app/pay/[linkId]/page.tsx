@@ -624,6 +624,7 @@ export default function PayPage() {
             >
               🧪 Hackathon Demo: Switch to SOL to test easily
             </button>
+          )}
           {/* Branding footer */}
           <div className="mt-8 flex flex-col items-center gap-3">
             <Logo className="w-8 h-8 opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-default" variant="gold" />
