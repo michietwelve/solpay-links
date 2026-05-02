@@ -8,13 +8,14 @@ import type { PaymentLink, CreateLinkResponse } from "../../lib/api";
 import CreateLinkForm from "../../components/dashboard/CreateLinkForm";
 import ShareModal     from "../../components/dashboard/ShareModal";
 import ProfileMenu    from "../../components/dashboard/ProfileMenu";
+import WithdrawModal   from "../../components/dashboard/WithdrawModal";
 
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import { Connection, Transaction, SystemProgram, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
-type Modal = "create" | "share" | null;
+type Modal = "create" | "share" | "withdraw" | null;
 
 export default function DashboardPage() {
   const { ready, authenticated, user, login, logout, linkWallet } = usePrivy();
@@ -76,6 +77,7 @@ export default function DashboardPage() {
   const [search, setSearch]     = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [detailLink, setDetailLink] = useState<PaymentLink | null>(null);
+  const [withdrawSource, setWithdrawSource] = useState<string | null>(null);
 
   const filtered = links.filter(l =>
     (l.label.toLowerCase().includes(search.toLowerCase()) || l.id.includes(search)) &&
@@ -106,21 +108,13 @@ export default function DashboardPage() {
     }
   }
 
-  async function handleWithdraw(sourceAddress: string) {
-    const dest = prompt("Enter the destination Solana address (e.g. your Phantom address):");
-    if (!dest) return;
+  async function handleWithdraw(dest: string) {
+    if (!withdrawSource) return;
     
-    try {
-      new PublicKey(dest); // Validate
-    } catch {
-      alert("Invalid Solana address.");
-      return;
-    }
-
+    const sourceAddress = withdrawSource;
     const wallet = solanaWallets.find(w => w.address === sourceAddress);
     if (!wallet) return;
 
-    setIsWithdrawing(true);
     try {
       const RPC = process.env.NEXT_PUBLIC_RPC_ENDPOINT ?? "https://api.devnet.solana.com";
       const connection = new Connection(RPC, "confirmed");
@@ -130,8 +124,7 @@ export default function DashboardPage() {
       const amount = balance - fee;
 
       if (amount <= 0) {
-        alert("Insufficient balance to cover fees.");
-        return;
+        throw new Error("Insufficient balance to cover fees.");
       }
 
       const tx = new Transaction().add(
@@ -151,11 +144,11 @@ export default function DashboardPage() {
       await connection.confirmTransaction(sig, "confirmed");
 
       alert(`Success! Transferred ${(amount / LAMPORTS_PER_SOL).toFixed(4)} SOL to ${dest}\n\nSig: ${sig}`);
+      setModal(null);
+      setWithdrawSource(null);
     } catch (err: any) {
       console.error("Withdraw failed:", err);
-      alert("Withdrawal failed: " + err.message);
-    } finally {
-      setIsWithdrawing(false);
+      throw err; // WithdrawModal will handle the error display
     }
   }
 
@@ -266,7 +259,10 @@ export default function DashboardPage() {
                       <span className="text-xs text-white font-mono">{privySol.address.slice(0,4)}...{privySol.address.slice(-4)}</span>
                     </div>
                     <button
-                      onClick={() => handleWithdraw(privySol.address)}
+                      onClick={() => {
+                        setWithdrawSource(privySol.address);
+                        setModal("withdraw");
+                      }}
                       disabled={isWithdrawing}
                       className="px-4 py-2 bg-white text-zinc-900 border border-zinc-200 rounded-xl text-xs font-medium hover:bg-zinc-50 transition-all flex items-center gap-2"
                     >
@@ -510,6 +506,18 @@ export default function DashboardPage() {
             </div>
           </div>
         </>
+      )}
+      {/* Withdraw modal */}
+      {modal === "withdraw" && withdrawSource && (
+        <WithdrawModal
+          sourceAddress={withdrawSource}
+          suggestedDest={publicKey?.toBase58()}
+          onConfirm={handleWithdraw}
+          onClose={() => {
+            setModal(null);
+            setWithdrawSource(null);
+          }}
+        />
       )}
 
     </div>
