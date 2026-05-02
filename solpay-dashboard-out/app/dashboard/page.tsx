@@ -163,8 +163,6 @@ export default function DashboardPage() {
             )}
           </div>
           <ProfileMenu />
-        </div>
-      </header>
           <button
             onClick={() => setModal("create")}
             disabled={!address || address.startsWith("0x")}
