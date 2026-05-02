@@ -80,12 +80,31 @@ export default function DashboardPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [detailLink, setDetailLink] = useState<PaymentLink | null>(null);
   const [withdrawSource, setWithdrawSource] = useState<string | null>(null);
+  const [balance, setBalance] = useState<number | null>(null);
   const [successData, setSuccessData] = useState<{ title: string; message: string; txSig?: string } | null>(null);
 
   const filtered = links.filter(l =>
     (l.label.toLowerCase().includes(search.toLowerCase()) || l.id.includes(search)) &&
     (!statusFilter || l.status === statusFilter)
   );
+
+  const RPC = process.env.NEXT_PUBLIC_RPC_ENDPOINT ?? "https://api.devnet.solana.com";
+
+  // Real-time balance fetching
+  const refreshBalance = async () => {
+    if (!address || address.startsWith("0x")) return;
+    try {
+      const connection = new Connection(RPC, "confirmed");
+      const bal = await connection.getBalance(new PublicKey(address));
+      setBalance(bal / LAMPORTS_PER_SOL);
+    } catch (e) {
+      console.error("Balance fetch failed:", e);
+    }
+  };
+
+  useMemo(() => {
+    refreshBalance();
+  }, [address]);
 
   function openShare(l: PaymentLink) {
     setShareLink({ id: l.id, label: l.label });
@@ -151,18 +170,23 @@ export default function DashboardPage() {
       tx.recentBlockhash = blockhash;
       tx.feePayer = new PublicKey(sourceAddress);
 
-      const signedTx = await (wallet as any).signTransaction(tx);
       const sig = await connection.sendRawTransaction(signedTx.serialize());
       await connection.confirmTransaction(sig, "confirmed");
 
+      // Immediate UI update
+      setBalance(0); 
       setModal(null);
       setWithdrawSource(null);
+      
       setSuccessData({
         title: "Withdrawal Successful!",
         message: `Successfully transferred ${(amount / LAMPORTS_PER_SOL).toFixed(4)} SOL to your destination wallet.`,
         txSig: sig
       });
       setModal("success");
+
+      // Final refresh
+      setTimeout(refreshBalance, 2000);
     } catch (err: any) {
       console.error("Withdraw failed:", err);
       throw err; // WithdrawModal will handle the error display
@@ -327,15 +351,21 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-4 gap-4 mb-8">
           {[
-            { label: "Total volume", value: `$${stats.totalVolume.toFixed(2)}`, delta: "↑ 23% this week", up: true },
+            { 
+              label: "Available balance", 
+              value: balance !== null ? `${balance.toFixed(4)} SOL` : "—", 
+              delta: "Withdraw anytime", 
+              up: true,
+              highlight: true 
+            },
+            { label: "Lifetime volume", value: `$${stats.totalVolume.toFixed(2)}`, delta: "gross revenue", up: true },
             { label: "Payments received", value: String(stats.totalPayments), delta: "all time", up: true },
             { label: "Active links", value: String(stats.activeLinks), delta: "across all tokens", up: true },
-            { label: "Platform fees", value: `$${stats.platformFees.toFixed(2)}`, delta: "0.5% rate", up: false },
           ].map(s => (
-            <div key={s.label} className="bg-white border border-zinc-200 rounded-xl p-5">
-              <p className="text-xs text-zinc-400 font-medium mb-2">{s.label}</p>
-              <p className="text-2xl font-medium tracking-tight">{s.value}</p>
-              <p className={`text-xs mt-1.5 ${s.up ? "text-emerald-600" : "text-zinc-400"}`}>{s.delta}</p>
+            <div key={s.label} className={`border rounded-xl p-5 ${(s as any).highlight ? "bg-zinc-900 text-white border-zinc-900" : "bg-white border-zinc-200"}`}>
+              <p className={`text-xs font-medium mb-2 ${(s as any).highlight ? "text-zinc-400" : "text-zinc-400"}`}>{s.label}</p>
+              <p className="text-2xl font-bold tracking-tight">{s.value}</p>
+              <p className={`text-xs mt-1.5 ${s.up ? ((s as any).highlight ? "text-[#c5a36e]" : "text-emerald-600") : "text-zinc-400"}`}>{s.delta}</p>
             </div>
           ))}
         </div>
