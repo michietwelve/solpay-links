@@ -58,7 +58,7 @@ describe("biepay_links", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
-  const program = anchor.workspace.SolpayLinks as Program;
+  const program = anchor.workspace.BiepayLinks as Program;
   const connection = provider.connection;
 
   // Test keypairs
