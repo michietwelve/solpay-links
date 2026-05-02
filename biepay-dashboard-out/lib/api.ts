@@ -127,6 +127,13 @@ export interface DashboardStats {
   platformFees: number;
 }
 
+export function getEffectiveStatus(link: PaymentLink): LinkStatus {
+  if (link.status === "cancelled") return "cancelled";
+  if (link.status === "completed") return "completed";
+  if (link.expiresAt && new Date() > new Date(link.expiresAt)) return "expired";
+  return "active";
+}
+
 export function computeStats(links: PaymentLink[]): DashboardStats {
   const FEE_BPS = 50;
 
@@ -135,7 +142,8 @@ export function computeStats(links: PaymentLink[]): DashboardStats {
   let activeLinks = 0;
 
   for (const l of links) {
-    if (l.status === "active") activeLinks++;
+    const status = getEffectiveStatus(l);
+    if (status === "active") activeLinks++;
     totalPayments += l.paymentCount;
 
     if (l.amountLamports !== null) {
