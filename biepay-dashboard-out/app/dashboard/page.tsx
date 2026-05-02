@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { useLinks, useStats, createLink, deleteLink } from "../../hooks/useLinks";
-import { formatAmount, timeAgo, getShareUrls } from "../../lib/api";
+import { formatAmount, timeAgo, getShareUrls, getEffectiveStatus } from "../../lib/api";
 import type { PaymentLink, CreateLinkResponse } from "../../lib/api";
 import CreateLinkForm from "../../components/dashboard/CreateLinkForm";
 import ShareModal     from "../../components/dashboard/ShareModal";
@@ -206,7 +206,20 @@ export default function DashboardPage() {
               }
               return (
                 <button
-                  onClick={() => createSolanaWallet?.()}
+                  onClick={() => {
+                    console.log("Creating Solana wallet...");
+                    if (!createSolanaWallet) {
+                      console.error("createSolanaWallet function is missing. Is Privy configured for Solana?");
+                      alert("Privy is not ready. Please refresh.");
+                      return;
+                    }
+                    createSolanaWallet()
+                      .then(w => console.log("Wallet created:", w))
+                      .catch(e => {
+                        console.error("Wallet creation failed:", e);
+                        alert("Wallet creation failed. Check browser console for details.");
+                      });
+                  }}
                   className="px-4 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-medium hover:bg-emerald-500/20 transition-all"
                 >
                   Generate Embedded Wallet
@@ -304,8 +317,8 @@ export default function DashboardPage() {
                       {l.paymentCount}{l.maxPayments !== null ? `/${l.maxPayments}` : ""}
                     </td>
                     <td className="px-5 py-3.5">
-                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusPill(l.status)}`}>
-                        {l.status}
+                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusPill(getEffectiveStatus(l))}`}>
+                        {getEffectiveStatus(l)}
                       </span>
                     </td>
                     <td className="px-5 py-3.5 text-xs text-zinc-400">{timeAgo(l.createdAt)}</td>
