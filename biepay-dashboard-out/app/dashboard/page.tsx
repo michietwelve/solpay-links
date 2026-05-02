@@ -44,6 +44,13 @@ export default function DashboardPage() {
       }
     });
 
+    // Fallback: Check solanaWallets hook for embedded wallets not yet in privyWallets array
+    solanaWallets.forEach(w => {
+      if (w.walletClientType === 'privy') {
+        list.push({ address: w.address, type: 'SOL', label: 'Privy Embedded' });
+      }
+    });
+
     // Remove duplicates
     return list.filter((v, i, a) => a.findIndex(t => t.address === v.address) === i);
   }, [publicKey, privyWallets]);
@@ -195,7 +202,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-4">
             {/* Show Privy Embedded Status */}
             {(() => {
-              const privySol = privyWallets.find((w: any) => w.walletClientType === 'privy' && w.chainType === 'solana');
+              const privySol = allAddresses.find(a => a.label === 'Privy Embedded' && a.type === 'SOL');
               if (privySol) {
                 return (
                   <div className="px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-xl flex flex-col gap-0.5">
@@ -217,7 +224,12 @@ export default function DashboardPage() {
                       .then(w => console.log("Wallet created:", w))
                       .catch(e => {
                         console.error("Wallet creation failed:", e);
-                        alert("Wallet creation failed. Check browser console for details.");
+                        // If it failed because it exists, we'll just refresh
+                        if (String(e).includes("already has an embedded wallet")) {
+                          window.location.reload();
+                        } else {
+                          alert("Wallet creation failed. Check browser console for details.");
+                        }
                       });
                   }}
                   className="px-4 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-medium hover:bg-emerald-500/20 transition-all"
