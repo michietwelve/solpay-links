@@ -6,6 +6,7 @@ import { PublicKey } from "@solana/web3.js";
 interface WithdrawModalProps {
   sourceAddress: string;
   suggestedDest?: string | null;
+  balance?: number | null;
   onConfirm: (dest: string) => Promise<void>;
   onClose: () => void;
 }
@@ -13,6 +14,7 @@ interface WithdrawModalProps {
 export default function WithdrawModal({ 
   sourceAddress, 
   suggestedDest, 
+  balance,
   onConfirm, 
   onClose 
 }: WithdrawModalProps) {
@@ -107,7 +109,7 @@ export default function WithdrawModal({
           <div className="bg-zinc-50 rounded-xl p-4 space-y-2">
             <div className="flex justify-between text-xs">
               <span className="text-zinc-500">Transfer amount</span>
-              <span className="text-zinc-900 font-medium font-mono">Max Balance</span>
+              <span className="text-zinc-900 font-medium font-mono">{balance !== null && balance !== undefined ? `${balance.toFixed(4)} SOL` : "Calculating..."}</span>
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-zinc-500">Network fee</span>
