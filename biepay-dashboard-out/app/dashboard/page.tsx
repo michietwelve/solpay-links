@@ -262,6 +262,92 @@ export default function DashboardPage() {
     }
   }
 
+  async function handleSweep() {
+    if (!address || !publicKey) {
+      alert("Please connect your destination wallet (Phantom) first.");
+      return;
+    }
+    
+    if (!confirm("Sweep all SOL, USDC, and USDT from your Embedded Wallet to your connected wallet?")) return;
+    
+    setIsSweeping(true);
+    try {
+      const connection = new Connection(RPC, "confirmed");
+      const payer = new PublicKey(address);
+      const dest = publicKey;
+      const tx = new Transaction();
+      
+      // 1. Sweep SOL (leave 0.002 for rent/fees)
+      const bal = await connection.getBalance(payer);
+      const leave = 0.002 * LAMPORTS_PER_SOL;
+      if (bal > leave) {
+        tx.add(SystemProgram.transfer({
+          fromPubkey: payer,
+          toPubkey: dest,
+          lamports: bal - leave,
+        }));
+      }
+
+      // 2. Sweep USDC & USDT
+      const mints = {
+        USDC: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+        USDT: "EJwZwpRvqiS86SAt9ikRWB9S5bwGrnF399qcSip8T6Y3"
+      };
+
+      for (const [name, mintStr] of Object.entries(mints)) {
+        const mint = new PublicKey(mintStr);
+        const sourceAta = getAssociatedTokenAddressSync(mint, payer);
+        const destAta = getAssociatedTokenAddressSync(mint, dest);
+        
+        try {
+          const account = await connection.getTokenAccountBalance(sourceAta);
+          if (account.value.uiAmount && account.value.uiAmount > 0) {
+            tx.add(createTransferCheckedInstruction(
+              sourceAta,
+              mint,
+              destAta,
+              payer,
+              BigInt(account.value.amount),
+              6
+            ));
+          }
+        } catch (e) {
+          // ATA likely doesn't exist, skip
+        }
+      }
+
+      if (tx.instructions.length === 0) {
+        alert("No funds found to sweep.");
+        setIsSweeping(false);
+        return;
+      }
+
+      const activeWallet = solanaWallets.find(w => w.address === address);
+      if (!activeWallet) throw new Error("Embedded wallet not found.");
+
+      const { blockhash } = await connection.getLatestBlockhash();
+      tx.recentBlockhash = blockhash;
+      tx.feePayer = payer;
+
+      const signedTx = await activeWallet.signTransaction(tx);
+      const sig = await connection.sendRawTransaction(signedTx.serialize());
+      await connection.confirmTransaction(sig, "confirmed");
+
+      setSuccessData({
+        title: "Sweep Complete!",
+        message: "All available funds have been moved to your destination wallet.",
+        txSig: sig
+      });
+      setModal("success");
+      setTimeout(refreshBalance, 2000);
+    } catch (err: any) {
+      console.error("Sweep failed:", err);
+      alert("Sweep failed: " + (err.message || "Unknown error"));
+    } finally {
+      setIsSweeping(false);
+    }
+  }
+
   const statusPill = (s: PaymentLink["status"]) => {
     const map: Record<string, string> = {
       active:    "bg-emerald-50 text-emerald-800",
@@ -373,6 +459,10 @@ export default function DashboardPage() {
                       className="px-4 py-2 bg-white text-zinc-900 border border-zinc-200 rounded-xl text-xs font-medium hover:bg-zinc-50 transition-all flex items-center gap-2"
                     >
                       {isWithdrawing ? (
+                        <div className="w-3 h-3 border-2 border-zinc-900/30 border-t-zinc-900 rounded-full animate-spin" />
+                      ) : (
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                         </svg>
                       )}
                       Withdraw
