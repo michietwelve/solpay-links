@@ -169,7 +169,7 @@ export default function DashboardPage() {
       const { blockhash } = await connection.getLatestBlockhash();
       tx.recentBlockhash = blockhash;
       tx.feePayer = new PublicKey(sourceAddress);
-
+      const signedTx = await (wallet as any).signTransaction(tx);
       const sig = await connection.sendRawTransaction(signedTx.serialize());
       await connection.confirmTransaction(sig, "confirmed");
 
