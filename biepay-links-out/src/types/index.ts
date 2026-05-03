@@ -38,6 +38,16 @@ export interface PaymentLink {
   merchantId: string;            // links a link to a merchant account
 }
 
+export interface MerchantProfile {
+  merchantId: string;            // privy user id or main wallet
+  businessName: string | null;
+  logoUrl: string | null;
+  accentColor: string | null;    // hex code
+  webhookUrl: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // ─── In-memory store (swap for Postgres/Redis in prod) ──────────────────────
 
 export interface PaymentRecord {
@@ -77,6 +87,15 @@ export const PostPaymentSchema = z.object({
 });
 
 export type PostPaymentInput = z.infer<typeof PostPaymentSchema>;
+
+export const UpdateMerchantProfileSchema = z.object({
+  businessName: z.string().max(50).optional().nullable(),
+  logoUrl: z.string().url().optional().nullable(),
+  accentColor: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/).optional().nullable(),
+  webhookUrl: z.string().url().optional().nullable(),
+});
+
+export type UpdateMerchantProfileInput = z.infer<typeof UpdateMerchantProfileSchema>;
 
 // ─── Actions spec types (subset we use) ─────────────────────────────────────
 

@@ -12,7 +12,8 @@
  */
 
 import { Connection, PublicKey, Logs } from "@solana/web3.js";
-import { incrementPaymentCount, confirmPayment } from "./store";
+import { incrementPaymentCount, confirmPayment, getLinkById } from "./store";
+import { getMerchantProfile } from "./merchant";
 import { prisma } from "./db";
 
 const PROGRAM_ID = new PublicKey(
@@ -98,18 +99,23 @@ export function startEventListener(connection: Connection): () => void {
         }
       }
 
-      // Fire webhooks — in production, look up merchant webhook URL from DB
-      const webhookUrl = process.env.WEBHOOK_URL;
-      if (webhookUrl) {
-        await deliverWebhook(webhookUrl, {
-          event: "payment.confirmed",
-          signature,
-          linkId,
-          payer,
-          amount,
-          token,
-          timestamp: new Date().toISOString(),
-        });
+      // Fire webhooks — dynamically look up merchant webhook URL
+      const link = await getLinkById(linkId);
+      if (link) {
+        const merchant = await getMerchantProfile(link.merchantId);
+        const webhookUrl = merchant.webhookUrl || process.env.WEBHOOK_URL;
+        
+        if (webhookUrl) {
+          await deliverWebhook(webhookUrl, {
+            event: "payment.confirmed",
+            signature,
+            linkId,
+            payer,
+            amount,
+            token,
+            timestamp: new Date().toISOString(),
+          });
+        }
       }
     },
     "confirmed"

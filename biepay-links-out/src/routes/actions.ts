@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { Connection } from "@solana/web3.js";
 import { getLinkById, getLinkStatus, createPaymentRecord } from "../lib/store";
+import { getMerchantProfile } from "../lib/merchant";
 import {
   buildPaymentTransaction,
   serialiseTransaction,
@@ -70,8 +71,8 @@ router.get("/:linkId", async (req: Request, res: Response): Promise<void> => {
 
   const body: ActionGetResponse = {
     type: "action",
-    icon: ICON_URL,
-    title: link.label,
+    icon: merchant.logoUrl ?? ICON_URL,
+    title: merchant.businessName ?? link.label,
     description: link.description,
     label: active ? amountLabel : "Unavailable",
     disabled: !active,

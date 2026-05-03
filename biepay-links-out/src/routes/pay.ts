@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { getLinkById, getLinkStatus, getEffectiveStatus } from "../lib/store";
+import { getMerchantProfile } from "../lib/merchant";
 import { actionError } from "../middleware/actions";
 
 /**
@@ -22,6 +23,7 @@ router.get("/:linkId", async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
+  const merchant = await getMerchantProfile(link.merchantId);
   const { active, reason } = getLinkStatus(link);
 
   const decimals = link.token === "SOL" ? 9 : 6;
@@ -48,6 +50,11 @@ router.get("/:linkId", async (req: Request, res: Response): Promise<void> => {
     status: getEffectiveStatus(link),
     active,
     inactiveReason: reason ?? null,
+    merchant: {
+      businessName: merchant.businessName,
+      logoUrl: merchant.logoUrl,
+      accentColor: merchant.accentColor,
+    },
   });
 });
 
