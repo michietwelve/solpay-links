@@ -75,6 +75,18 @@ const MOONPAY_CURRENCY: Record<string, string> = {
   USDT: "usdt_sol",
 };
 
+const TOKEN_MINTS: Record<string, string | null> = {
+  SOL: null,
+  USDC: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+  USDT: "EJwZwpRvqiS86SAt9ikRWB9S5bwGrnF399qcSip8T6Y3",
+};
+
+const TOKEN_DECIMALS: Record<string, number> = {
+  SOL: 9,
+  USDC: 6,
+  USDT: 6,
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function PayPage() {
@@ -244,18 +256,68 @@ export default function PayPage() {
   }, [walletAddr, fundWallet]);
 
   // ── Step 3: Send payment via Actions API ─────────────────────────────────────
+  
+  const checkBalances = async (targetAmount: number, targetToken: string) => {
+    if (!walletAddr) return false;
+    try {
+      const connection = new Connection(RPC, "confirmed");
+      const userPubkey = new PublicKey(walletAddr);
+      
+      // 1. Always check SOL for gas (~0.005 SOL safety)
+      const solBal = await connection.getBalance(userPubkey);
+      if (solBal < 0.002 * LAMPORTS_PER_SOL) {
+        setErrMsg("You need at least 0.002 SOL to pay for transaction fees (gas).");
+        return false;
+      }
+
+      // 2. Check token balance if not SOL
+      if (targetToken !== "SOL") {
+        const mint = TOKEN_MINTS[targetToken];
+        if (!mint) return true;
+
+        try {
+          const tokenAccounts = await connection.getParsedTokenAccountsByOwner(userPubkey, {
+            mint: new PublicKey(mint),
+          });
+
+          const balance = tokenAccounts.value[0]?.account.data.parsed.info.tokenAmount.uiAmount ?? 0;
+          if (balance < targetAmount) {
+            setErrMsg(`Insufficient ${targetToken}! You have ${balance.toFixed(2)} but need ${targetAmount.toFixed(2)}.`);
+            return false;
+          }
+        } catch (e) {
+          // If ATA doesn't exist, balance is 0
+          setErrMsg(`You don't have any ${targetToken} in this wallet yet.`);
+          return false;
+        }
+      } else {
+        // Native SOL check
+        if (solBal / LAMPORTS_PER_SOL < targetAmount) {
+          setErrMsg(`Insufficient SOL! You have ${(solBal / LAMPORTS_PER_SOL).toFixed(4)} but need ${targetAmount.toFixed(4)}.`);
+          return false;
+        }
+      }
+      return true;
+    } catch (e) {
+      console.error("Balance check failed", e);
+      return true; // Proceed anyway if check fails to not block user
+    }
+  };
 
   const handlePay = useCallback(async () => {
     if (!link || !walletAddr) return;
 
-    const parsedAmount = link.isOpenAmount ? parseFloat(amount) : undefined;
-    if (link.isOpenAmount && (!parsedAmount || parsedAmount <= 0)) {
+    const parsedAmount = link.isOpenAmount ? parseFloat(amount) : parseFloat(link.amountHuman || "0");
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
       setErrMsg("Please enter a valid amount.");
       return;
     }
 
-    setStage("sending");
     setErrMsg(null);
+    const hasFunds = await checkBalances(parsedAmount, link.token);
+    if (!hasFunds) return;
+
+    setStage("sending");
 
     try {
       const payUrl = link.isOpenAmount
@@ -583,8 +645,16 @@ export default function PayPage() {
                     className="w-full py-2.5 bg-violet-600 text-white text-sm font-medium rounded-xl hover:bg-violet-700 active:scale-95 transition-all flex items-center justify-center gap-2"
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>
-                    Buy crypto with card
+                    Buy SOL with card
                   </button>
+                  <a
+                    href="https://faucet.circle.com/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-center gap-1.5 text-xs text-[#c5a36e] font-bold hover:underline"
+                  >
+                    ↗ Need Devnet USDC? Get it from the Circle Faucet
+                  </a>
                   <a
                     href={`https://global-stg.transak.com/?network=solana&cryptoCurrencyCode=SOL${walletAddr ? `&walletAddress=${walletAddr}` : ""}&disableWalletAddressForm=true`}
                     target="_blank"
