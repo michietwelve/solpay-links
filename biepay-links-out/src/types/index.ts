@@ -7,8 +7,8 @@ export type SupportedToken = (typeof SUPPORTED_TOKENS)[number];
 
 export const TOKEN_MINT: Record<SupportedToken, string | null> = {
   SOL: null, // native
-  USDC: "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr", // devnet standard USDC
-  USDT: "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr", // fallback to USDC mint for devnet testing
+  USDC: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU", // Official Devnet USDC
+  USDT: "EJwZwpRvqiS86SAt9ikRWB9S5bwGrnF399qcSip8T6Y3", // Devnet USDT
 };
 
 export const TOKEN_DECIMALS: Record<SupportedToken, number> = {
