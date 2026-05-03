@@ -13,7 +13,7 @@ router.get("/:merchantId", async (req: Request, res: Response) => {
     where: {
       status: "confirmed",
       link: {
-        merchantId
+        merchantId: merchantId as string
       }
     },
     include: {

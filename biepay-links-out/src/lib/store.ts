@@ -6,6 +6,7 @@ import {
   CreateLinkInput,
   TOKEN_DECIMALS,
   SupportedToken,
+  LinkStatus,
 } from "../types";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

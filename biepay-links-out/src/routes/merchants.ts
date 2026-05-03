@@ -7,7 +7,7 @@ const router = Router();
 // GET /api/merchants/:merchantId
 router.get("/:merchantId", async (req: Request, res: Response) => {
   const { merchantId } = req.params;
-  const profile = await getMerchantProfile(merchantId);
+  const profile = await getMerchantProfile(merchantId as string);
   res.json(profile);
 });
 
@@ -21,7 +21,7 @@ router.patch("/:merchantId", async (req: Request, res: Response) => {
     return;
   }
   
-  const profile = await updateMerchantProfile(merchantId, parsed.data);
+  const profile = await updateMerchantProfile(merchantId as string, parsed.data);
   res.json(profile);
 });
 
