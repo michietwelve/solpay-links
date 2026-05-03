@@ -8,6 +8,8 @@ import actionsRouter from "./routes/actions";
 import linksRouter from "./routes/links";
 import actionsJsonRouter from "./routes/actionsJson";
 import payRouter from "./routes/pay";
+import merchantsRouter from "./routes/merchants";
+import analyticsRouter from "./routes/analytics";
 import { startEventListener } from "./lib/listener";
 
 const app = express();
@@ -39,6 +41,12 @@ app.use("/api/links", linksRouter);
 
 // Hosted payment page data — consumed by /pay/[linkId] Next.js page
 app.use("/pay", payRouter);
+
+// Merchant profile settings
+app.use("/api/merchants", merchantsRouter);
+
+// Analytics
+app.use("/api/analytics", analyticsRouter);
 
 // ─── Health check ─────────────────────────────────────────────────────────
 

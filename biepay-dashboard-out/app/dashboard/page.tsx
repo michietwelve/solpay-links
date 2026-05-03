@@ -10,6 +10,8 @@ import ShareModal     from "../../components/dashboard/ShareModal";
 import ProfileMenu    from "../../components/dashboard/ProfileMenu";
 import WithdrawModal  from "../../components/dashboard/WithdrawModal";
 import SuccessModal   from "../../components/dashboard/SuccessModal";
+import StorefrontSettings from "../../components/dashboard/StorefrontSettings";
+import RevenueChart    from "../../components/dashboard/RevenueChart";
 import Logo           from "../../components/layout/Logo";
 
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -90,6 +92,9 @@ export default function DashboardPage() {
   const [withdrawSource, setWithdrawSource] = useState<string | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
   const [successData, setSuccessData] = useState<{ title: string; message: string; txSig?: string } | null>(null);
+  const [profile, setProfile] = useState<{ businessName: string | null; logoUrl: string | null; accentColor: string | null; webhookUrl: string | null } | null>(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
+  const [analyticsData, setAnalyticsData] = useState<any[]>([]);
 
   const filtered = links.filter(l =>
     (l.label.toLowerCase().includes(search.toLowerCase()) || l.id.includes(search)) &&
@@ -113,6 +118,60 @@ export default function DashboardPage() {
   useMemo(() => {
     refreshBalance();
   }, [address]);
+
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://biepay-links-production.up.railway.app";
+
+  const fetchProfile = async () => {
+    if (!user?.id) return;
+    setIsProfileLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/merchants/${user.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setProfile(data);
+      }
+    } catch (e) {
+      console.error("Profile fetch failed:", e);
+    } finally {
+      setIsProfileLoading(false);
+    }
+  };
+
+  const fetchAnalytics = async () => {
+    if (!user?.id) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/analytics/${user.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAnalyticsData(data);
+      }
+    } catch (e) {
+      console.error("Analytics fetch failed:", e);
+    }
+  };
+
+  useMemo(() => {
+    fetchProfile();
+    fetchAnalytics();
+  }, [user?.id]);
+
+  const handleSaveProfile = async (data: any) => {
+    if (!user?.id) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/merchants/${user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setProfile(updated);
+        // If logo or business name changed, it will propagate next time links are fetched
+      }
+    } catch (e) {
+      console.error("Profile save failed:", e);
+    }
+  };
 
   function openShare(l: PaymentLink) {
     setShareLink({ id: l.id, label: l.label });
@@ -594,30 +653,25 @@ export default function DashboardPage() {
                 <button onClick={() => setModal(null)} className="text-3xl text-zinc-400 hover:text-zinc-900">×</button>
               </div>
               
-              <div className="space-y-6">
-                <div>
-                  <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest mb-3 block">Email Notification</label>
-                  <div className="flex items-center justify-between p-4 bg-zinc-50 rounded-2xl">
-                    <span className="text-sm font-medium text-zinc-600">Notify on every payment</span>
-                    <div className="w-10 h-6 bg-zinc-900 rounded-full relative">
-                      <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm" />
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest mb-3 block">Security</label>
-                  <button className="w-full p-4 bg-white border border-zinc-200 rounded-2xl text-sm font-medium flex items-center justify-between hover:bg-zinc-50 transition-colors">
-                    <span>Export Private Keys</span>
-                    <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+              {isProfileLoading ? (
+                <div className="py-20 text-center text-zinc-400">Loading storefront settings...</div>
+              ) : profile ? (
+                <StorefrontSettings profile={profile} onSave={handleSaveProfile} />
+              ) : null}
 
               <div className="pt-8 border-t border-zinc-100">
-                <button className="w-full py-4 bg-zinc-900 text-white font-semibold rounded-2xl">Save Changes</button>
+                <div className="space-y-6">
+                  <div>
+                    <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest mb-3 block">Security</label>
+                    <button className="w-full p-4 bg-white border border-zinc-200 rounded-2xl text-sm font-medium flex items-center justify-between hover:bg-zinc-50 transition-colors">
+                      <span>Export Private Keys</span>
+                      <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
               </div>
             </div>
           </div>

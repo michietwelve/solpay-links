@@ -50,6 +50,11 @@ interface LinkData {
   status: string;
   active: boolean;
   inactiveReason: string | null;
+  merchant: {
+    businessName: string | null;
+    logoUrl: string | null;
+    accentColor: string | null;
+  };
 }
 
 type Stage =
@@ -511,20 +516,26 @@ export default function PayPage() {
       <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-3">
           <div className="bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden relative">
-            <div className="absolute top-0 right-0 p-2">
-              <span className="text-[8px] text-red-600 font-bold font-mono animate-pulse uppercase tracking-widest bg-red-50 px-1.5 py-0.5 rounded border border-red-100">
-                v1.7 LIVE
-              </span>
-            </div>
-            <div className="px-6 pt-6 pb-5 border-b border-zinc-100">
-              <div className="flex items-start justify-between">
+            <div className="absolute top-0 left-0 w-full h-1" style={{ backgroundColor: link.merchant.accentColor ?? "#c5a36e" }} />
+            
+            <div className="px-6 py-6 border-b border-zinc-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {link.merchant.logoUrl ? (
+                  <img src={link.merchant.logoUrl} alt={link.merchant.businessName || "Merchant"} className="w-10 h-10 rounded-xl object-cover border border-zinc-100 shadow-sm" />
+                ) : (
+                  <Logo className="w-10 h-10" />
+                )}
                 <div>
-                  <h1 className="text-base font-semibold">{link.label}</h1>
-                  <p className="text-xs text-zinc-400 mt-0.5">{link.description}</p>
+                  <h1 className="text-lg font-bold text-zinc-900 leading-tight">
+                    {link.merchant.businessName ?? link.label}
+                  </h1>
+                  {link.merchant.businessName && <p className="text-xs text-zinc-400 font-medium tracking-tight uppercase">Pay with BiePay</p>}
+                  {!link.merchant.businessName && link.description && <p className="text-xs text-zinc-400 line-clamp-1">{link.description}</p>}
                 </div>
-                <span className="shrink-0 text-xs font-medium bg-zinc-100 text-zinc-700 px-2.5 py-1 rounded-full ml-3">
-                  {link.token}
-                </span>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-wider">v1.8 LIVE</span>
+                <span className="text-[10px] font-medium text-zinc-300 mt-1">{link.token}</span>
               </div>
             </div>
 
@@ -568,7 +579,8 @@ export default function PayPage() {
               <button
                 onClick={handlePay}
                 disabled={isSending || (link.isOpenAmount && !amount)}
-                className="w-full py-3 bg-zinc-900 text-white text-sm font-medium rounded-xl hover:bg-zinc-700 disabled:opacity-40 transition-colors flex items-center justify-center gap-2"
+                className="w-full py-3 text-white text-sm font-medium rounded-xl disabled:opacity-40 transition-all flex items-center justify-center gap-2 active:scale-95"
+                style={{ backgroundColor: link.merchant.accentColor ?? "#18181b" }}
               >
                 {isSending ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing on Solana…</> : `Pay ${link.isOpenAmount && amount ? `${amount} ${link.token}` : (link.amountHuman ?? "") + " " + link.token}`}
               </button>
