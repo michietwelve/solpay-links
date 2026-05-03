@@ -300,7 +300,8 @@ export default function PayPage() {
       return true;
     } catch (e) {
       console.error("Balance check failed", e);
-      return true; // Proceed anyway if check fails to not block user
+      setErrMsg("Failed to verify wallet balance. Please ensure you are on a stable connection.");
+      return false; 
     }
   };
 
@@ -361,11 +362,9 @@ export default function PayPage() {
       if (
         msg.includes("found no record of a prior credit") || 
         msg.includes("insufficient lamports") || 
-        msg.includes("insufficient funds") ||
-        msg.includes("InvalidAccountData") ||
-        msg.includes("invalid account data")
+        msg.includes("insufficient funds")
       ) {
-        msg = "Your wallet doesn't have enough funds! Please click 'Buy crypto' below to fund it first.";
+        msg = `Your wallet doesn't have enough ${link.token} or SOL for gas. Please fund your wallet to continue.`;
       }
       setErrMsg(msg);
       setStage("form");
