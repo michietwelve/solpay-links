@@ -18,6 +18,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import { Connection, Transaction, SystemProgram, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { getAssociatedTokenAddressSync, createTransferCheckedInstruction, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 type Modal = "create" | "share" | "withdraw" | "success" | "settings" | "profile" | null;
 
@@ -30,6 +31,7 @@ export default function DashboardPage() {
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
   const [isDeleting, setIsDeleting]           = useState(false);
   const [isWithdrawing, setIsWithdrawing]     = useState(false);
+  const [isSweeping, setIsSweeping]           = useState(false);
   
   const allAddresses = useMemo(() => {
     const list: { address: string; type: string; label: string }[] = [];
@@ -371,13 +373,24 @@ export default function DashboardPage() {
                       className="px-4 py-2 bg-white text-zinc-900 border border-zinc-200 rounded-xl text-xs font-medium hover:bg-zinc-50 transition-all flex items-center gap-2"
                     >
                       {isWithdrawing ? (
-                        <div className="w-3 h-3 border-2 border-zinc-900/30 border-t-zinc-900 rounded-full animate-spin" />
-                      ) : (
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                         </svg>
                       )}
                       Withdraw
+                    </button>
+                    <button
+                      onClick={handleSweep}
+                      disabled={isSweeping || !publicKey}
+                      className="px-4 py-2 bg-zinc-900 text-[#c5a36e] border border-zinc-800 rounded-xl text-xs font-semibold hover:bg-zinc-800 transition-all flex items-center gap-2 group"
+                      title={!publicKey ? "Connect Phantom to sweep" : "Sweep all tokens to cold storage"}
+                    >
+                      {isSweeping ? (
+                        <div className="w-3 h-3 border-2 border-[#c5a36e]/30 border-t-[#c5a36e] rounded-full animate-spin" />
+                      ) : (
+                        <svg className="w-3.5 h-3.5 group-hover:animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                      )}
+                      Sweep to Cold Storage
                     </button>
                   </div>
                 );
