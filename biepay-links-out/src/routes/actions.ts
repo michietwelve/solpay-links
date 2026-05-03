@@ -41,6 +41,12 @@ router.get("/:linkId", async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
+  const merchant = await getMerchantProfile(link.merchantId);
+  if (!merchant) {
+    actionError(res, 404, "Merchant profile not found.");
+    return;
+  }
+
   const { active, reason } = getLinkStatus(link);
 
   // ── Build the response ──────────────────────────────────────────────────
