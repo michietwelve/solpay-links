@@ -32,39 +32,47 @@ export default function DashboardPage() {
   const allAddresses = useMemo(() => {
     const list: { address: string; type: string; label: string }[] = [];
     
-    if (publicKey) {
-      list.push({ address: publicKey.toBase58(), type: 'SOL', label: 'Phantom/Adapter' });
-    }
-    
-    privyWallets.forEach(w => {
-      const wallet = w as any;
-      if (wallet.chainType === 'solana') {
-        list.push({ 
-          address: w.address, 
-          type: 'SOL', 
-          label: wallet.walletClientType === 'privy' ? 'Privy Embedded' : (w.meta?.name ?? 'External Solana') 
-        });
-      } else if (wallet.chainType === 'ethereum') {
-        list.push({ address: w.address, type: 'EVM', label: 'Privy Ethereum' });
-      }
-    });
-
-    // Fallback: Check solanaWallets hook for embedded wallets not yet in privyWallets array
+    // Always include Embedded first if it exists to ensure stability
     solanaWallets.forEach(w => {
       if (w.walletClientType === 'privy') {
         list.push({ address: w.address, type: 'SOL', label: 'Privy Embedded' });
       }
     });
 
+    privyWallets.forEach(w => {
+      const wallet = w as any;
+      if (wallet.chainType === 'solana' && wallet.walletClientType !== 'privy') {
+        list.push({ 
+          address: w.address, 
+          type: 'SOL', 
+          label: w.meta?.name ?? 'External Solana' 
+        });
+      }
+    });
+
+    if (publicKey) {
+      const addr = publicKey.toBase58();
+      // Only add if not already in list (some wallets show up in both)
+      if (!list.some(l => l.address === addr)) {
+        list.push({ address: addr, type: 'SOL', label: 'Phantom/Adapter' });
+      }
+    }
+
     // Remove duplicates
     return list.filter((v, i, a) => a.findIndex(t => t.address === v.address) === i);
   }, [publicKey, privyWallets, solanaWallets, user]);
 
   const activeAddress = useMemo(() => {
+    // 1. If user explicitly selected one, keep it
     if (selectedAddress && allAddresses.some(a => a.address === selectedAddress)) {
       return selectedAddress;
     }
-    // Default to first Solana wallet, or first wallet overall
+    
+    // 2. If no selection, prefer Embedded Wallet for stability
+    const embedded = allAddresses.find(a => a.label === 'Privy Embedded');
+    if (embedded) return embedded.address;
+
+    // 3. Fallback to first SOL wallet
     return allAddresses.find(a => a.type === 'SOL')?.address ?? allAddresses[0]?.address ?? null;
   }, [selectedAddress, allAddresses]);
 
@@ -555,6 +563,7 @@ export default function DashboardPage() {
         <WithdrawModal
           sourceAddress={withdrawSource}
           suggestedDest={publicKey?.toBase58()}
+          balance={balance}
           onConfirm={handleWithdraw}
           onClose={() => {
             setModal(null);
