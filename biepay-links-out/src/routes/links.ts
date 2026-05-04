@@ -91,12 +91,30 @@ router.get("/:id/payments", async (req: Request, res: Response): Promise<void> =
 // Simple list (no pagination yet — add cursor-based pagination for prod)
 
 router.get("/", async (req: Request, res: Response): Promise<void> => {
-  const merchantId = req.query.merchantId as string | undefined;
-  const links = await getAllLinks(merchantId);
+  const merchantIdParam = req.query.merchantId as string | undefined;
+  
+  let links: any[] = [];
+  if (merchantIdParam) {
+    const ids = merchantIdParam.split(",");
+    links = await prisma.paymentLink.findMany({
+      where: {
+        OR: [
+          { merchantId: { in: ids } },
+          { recipientWallet: { in: ids } }
+        ]
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  } else {
+    links = await prisma.paymentLink.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
   res.json(
-    links.map((l) => ({
+    links.map((l: any) => ({
       ...l,
-      status: getEffectiveStatus(l),
+      status: getEffectiveStatus(l as any),
       amountLamports: l.amountLamports?.toString() ?? null,
     }))
   );

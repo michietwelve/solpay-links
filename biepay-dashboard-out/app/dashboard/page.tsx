@@ -84,8 +84,14 @@ export default function DashboardPage() {
   // Use the activeAddress for everything
   const address = activeAddress;
 
-  const { links = [], isLoading } = useLinks(address);
-  const { stats } = useStats(address);
+  const merchantIds = useMemo(() => {
+    const ids = [user?.id];
+    allAddresses.forEach(a => ids.push(a.address));
+    return ids.filter(Boolean).join(",");
+  }, [user?.id, allAddresses]);
+  
+  const { links = [], isLoading } = useLinks(merchantIds);
+  const { stats } = useStats(merchantIds);
 
   const [modal, setModal]       = useState<Modal>(null);
   const [shareLink, setShareLink] = useState<{ id: string; label: string } | null>(null);
@@ -141,9 +147,9 @@ export default function DashboardPage() {
   };
 
   const fetchAnalytics = async () => {
-    if (!user?.id) return;
+    if (!merchantIds) return;
     try {
-      const res = await fetch(`${API_BASE}/api/analytics/${user.id}`);
+      const res = await fetch(`${API_BASE}/api/analytics/${merchantIds}`);
       if (res.ok) {
         const data = await res.json();
         setAnalyticsData(data);
@@ -156,7 +162,7 @@ export default function DashboardPage() {
   useMemo(() => {
     fetchProfile();
     fetchAnalytics();
-  }, [user?.id]);
+  }, [user?.id, merchantIds]);
 
   const handleSaveProfile = async (data: any) => {
     if (!user?.id) return;

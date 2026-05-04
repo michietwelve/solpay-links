@@ -7,13 +7,17 @@ const router = Router();
 // GET /api/merchants/:merchantId/analytics
 router.get("/:merchantId", async (req: Request, res: Response) => {
   const { merchantId } = req.params;
+  const ids = (merchantId as string).split(",");
   
-  // Fetch all confirmed payments for links belonging to this merchant
+  // Fetch all confirmed payments for links belonging to this merchant (or their wallets)
   const payments = await prisma.paymentRecord.findMany({
     where: {
       status: "confirmed",
       link: {
-        merchantId: merchantId as string
+        OR: [
+          { merchantId: { in: ids } },
+          { recipientWallet: { in: ids } }
+        ]
       }
     },
     include: {

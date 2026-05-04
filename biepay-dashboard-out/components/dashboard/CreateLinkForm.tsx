@@ -94,7 +94,7 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
         ...(form.expiresIn !== "0" ? { expiresInMinutes: parseInt(form.expiresIn) } : {}),
         ...(form.maxPayments ? { maxPayments: parseInt(form.maxPayments) } : {}),
         ...(form.redirectUrl ? { redirectUrl: form.redirectUrl.trim() } : {}),
-        merchantId: recipientAddress,
+        merchantId: user?.id ?? recipientAddress,
       });
       onSuccess(result);
     } catch (err) {
