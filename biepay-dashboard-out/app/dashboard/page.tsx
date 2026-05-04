@@ -166,6 +166,7 @@ export default function DashboardPage() {
 
   const handleSaveProfile = async (data: any) => {
     if (!user?.id) return;
+    console.log("Saving profile for:", user.id, data);
     try {
       const res = await fetch(`${API_BASE}/api/merchants/${user.id}`, {
         method: "PATCH",
@@ -174,11 +175,16 @@ export default function DashboardPage() {
       });
       if (res.ok) {
         const updated = await res.json();
+        console.log("Profile saved successfully:", updated);
         setProfile(updated);
-        // If logo or business name changed, it will propagate next time links are fetched
+      } else {
+        const errData = await res.json();
+        console.error("Profile save failed:", res.status, errData);
+        throw new Error(errData.message || "Save failed");
       }
     } catch (e) {
-      console.error("Profile save failed:", e);
+      console.error("Profile save error:", e);
+      throw e;
     }
   };
 
@@ -786,25 +792,13 @@ export default function DashboardPage() {
               {isProfileLoading ? (
                 <div className="py-20 text-center text-zinc-400">Loading storefront settings...</div>
               ) : profile ? (
-                <StorefrontSettings profile={profile} onSave={handleSaveProfile} />
+                <StorefrontSettings 
+                  profile={profile} 
+                  onSave={handleSaveProfile} 
+                  onExport={handleExportWallet}
+                />
               ) : null}
 
-              <div className="pt-8 border-t border-zinc-100">
-                <div className="space-y-6">
-                  <div>
-                    <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest mb-3 block">Security</label>
-                    <button 
-                      onClick={handleExportWallet}
-                      className="w-full p-4 bg-white border border-zinc-200 rounded-2xl text-sm font-medium flex items-center justify-between hover:bg-zinc-50 transition-colors"
-                    >
-                      <span>Export Private Keys</span>
-                      <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -829,14 +823,27 @@ export default function DashboardPage() {
                   <p className="text-zinc-500 text-sm mt-1">Solana Merchant since April 2024</p>
                 </div>
 
-                <div className="space-y-4">
-                  <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest block">Public Display Name</label>
-                  <input className="w-full p-4 bg-zinc-50 border-none rounded-2xl text-sm" defaultValue={user?.email?.address?.split('@')[0]} />
+                <div className="space-y-4 pt-4">
+                  <button onClick={() => setModal("settings")} className="w-full p-4 bg-zinc-50 rounded-2xl text-sm font-medium flex items-center justify-between hover:bg-zinc-100 transition-all">
+                    <span>Manage Branding</span>
+                    <svg className="w-4 h-4 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                  </button>
+                  <button className="w-full p-4 bg-zinc-50 rounded-2xl text-sm font-medium flex items-center justify-between hover:bg-zinc-100 transition-all">
+                    <span>Support Center</span>
+                    <svg className="w-4 h-4 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                  </button>
+                  <button onClick={logout} className="w-full p-4 bg-red-50 text-red-600 rounded-2xl text-sm font-bold flex items-center justify-between hover:bg-red-100 transition-all">
+                    <span>Log Out</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                  </button>
                 </div>
 
-                <div className="space-y-4">
-                  <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest block">Biography</label>
-                  <textarea className="w-full p-4 bg-zinc-50 border-none rounded-2xl text-sm h-32 resize-none" placeholder="Write something about your business..." />
+                <div className="mt-auto flex gap-4 py-8 text-[10px] text-zinc-400 font-bold uppercase tracking-widest justify-center">
+                  <a href="/legal/terms" className="hover:text-zinc-900">Terms</a>
+                  <span>•</span>
+                  <a href="/legal/privacy" className="hover:text-zinc-900">Privacy</a>
+                  <span>•</span>
+                  <a href="#" className="hover:text-zinc-900">v1.2.0</a>
                 </div>
               </div>
               <div className="p-8 bg-zinc-50 border-t border-zinc-100">
