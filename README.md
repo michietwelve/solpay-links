@@ -9,28 +9,28 @@ BiePay Links allows anyone—from independent freelancers in Nigeria to global e
 
 ---
 
-## 🏆 Frontier Hackathon Tracks & Bounties
+## 🏆 Frontier Hackathon Tracks 
 
 We have specifically engineered BiePay Links to maximize value across the Solana ecosystem. Here is how we proudly support the hackathon bounty tracks:
 
-### 🇳🇬 Superteam Nigeria ($10k Prize Pool)
+### 🇳🇬 Superteam Nigeria 
 **The Problem:** Nigerian freelancers and SMEs are locked out of the global economy due to extreme FX volatility, high remittance fees, and payment gateways that refuse to operate in the region.
 **The BiePay Solution:** A Nigerian designer can create a BiePay Link, post it on Twitter/X, and get paid instantly in stablecoins by a client in the US. No banks, no 5-day holds, no 7% currency conversion fees. BiePay is the cross-border payment rails Nigeria deserves.
 
-### 💵 Tether USDT ($10k Prize Pool)
+### 💵 Tether USDT 
 Tether is the lifeblood of emerging markets. **BiePay Links explicitly supports USDT** as a first-class settlement currency. Merchants can choose to price and settle their links exclusively in Tether, protecting themselves from local currency inflation while tapping into the $100B+ USDT liquidity on Solana.
 
-### 🪐 Jupiter: "Not Your Regular Bounty" ($3k Prize Pool)
+### 🪐 Jupiter: 
 We integrated the **Jupiter Terminal** natively into the BiePay Merchant Dashboard.
 When a merchant receives payments in SOL or BONK, they can click our **"Swap Earnings"** button. This opens the Jupiter best-price routing modal, pre-filled to swap their earnings directly into USDC, entirely within the dashboard.
 
-### 📛 SNS Identity ($5k Prize Pool)
+### 📛 SNS Identity 
 We brought **Bonfida's SPL Name Service** directly to the merchant experience. When a merchant uses our "Withdraw Funds" modal to sweep their earnings, they don't need to copy-paste complex `7xKXtg...` addresses. They can simply type `michie.sol`, and BiePay instantly resolves the `.sol` domain on-chain to ensure funds go to the exact right place.
 
-### 📊 Dune Analytics ($6k+ Prize Pool)
+### 📊 Dune Analytics 
 Data is everything for businesses. We built a comprehensive analytics suite directly into the dashboard, featuring real-time volume, lifetime revenue, active links, and payment velocity charts—bringing Dune-level insights to the merchant's fingertips.
 
-### 🕵️ Cloak / Privacy Payments ($5k Prize Pool)
+### 🕵️ Cloak / Privacy Payments 
 To respect merchant privacy, we built an **"Incognito Mode"** into the dashboard. With one click, all lifetime volume, active balance, and payment counts are obscured (`****`). This ensures business owners can safely demonstrate their dashboards or work in public spaces without revealing sensitive financial metrics.
 
 ---

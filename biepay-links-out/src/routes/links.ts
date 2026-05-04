@@ -9,6 +9,7 @@ import {
 } from "../lib/store";
 import { CreateLinkSchema } from "../types";
 import { actionError } from "../middleware/actions";
+import { requireAuth, AuthenticatedRequest } from "../middleware/auth";
 import { prisma } from "../lib/db";
 
 const router = Router();
@@ -17,10 +18,17 @@ const API_BASE = process.env.API_BASE_URL ?? "http://localhost:3000";
 // ─── POST /api/links  ─────────────────────────────────────────────────────
 // Create a new payment link. Returns the link object + ready-to-share URLs.
 
-router.post("/", async (req: Request, res: Response): Promise<void> => {
+router.post("/", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const parsed = CreateLinkSchema.safeParse(req.body);
   if (!parsed.success) {
     actionError(res, 400, parsed.error.errors.map((e) => e.message).join("; "));
+    return;
+  }
+
+  // Enforce that the user owns the merchantId or recipientWallet they are creating a link for
+  if (!req.user?.allowedIds.includes(parsed.data.merchantId) && 
+      !req.user?.allowedIds.includes(parsed.data.recipientWallet)) {
+    actionError(res, 403, "You are not authorized to create a link for this wallet or merchant ID.");
     return;
   }
 
@@ -89,28 +97,25 @@ router.get("/:id/payments", async (req: Request, res: Response): Promise<void> =
 });
 
 // ─── GET /api/links  ─────────────────────────────────────────────────────
-// Simple list (no pagination yet — add cursor-based pagination for prod)
+// Authenticated list fetching. Only returns links belonging to the user's linked wallets.
 
-router.get("/", async (req: Request, res: Response): Promise<void> => {
-  const merchantIdParam = req.query.merchantId as string | undefined;
+router.get("/", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const allowedIds = req.user?.allowedIds || [];
   
-  let links: any[] = [];
-  if (merchantIdParam) {
-    const ids = merchantIdParam.split(",");
-    links = await prisma.paymentLink.findMany({
-      where: {
-        OR: [
-          { merchantId: { in: ids } },
-          { recipientWallet: { in: ids } }
-        ]
-      },
-      orderBy: { createdAt: "desc" },
-    });
-  } else {
-    links = await prisma.paymentLink.findMany({
-      orderBy: { createdAt: "desc" },
-    });
+  if (allowedIds.length === 0) {
+    res.json([]);
+    return;
   }
+
+  const links = await prisma.paymentLink.findMany({
+    where: {
+      OR: [
+        { merchantId: { in: allowedIds } },
+        { recipientWallet: { in: allowedIds } }
+      ]
+    },
+    orderBy: { createdAt: "desc" },
+  });
 
   res.json(
     links.map((l: any) => ({
@@ -123,12 +128,20 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
 
 // ─── DELETE /api/links/:id  ───────────────────────────────────────────────
 
-router.delete("/:id", async (req: Request, res: Response): Promise<void> => {
+router.delete("/:id", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const link = await getLinkById(req.params.id as string);
   if (!link) {
     actionError(res, 404, "Link not found.");
     return;
   }
+
+  // Enforce ownership
+  if (!req.user?.allowedIds.includes(link.merchantId) && 
+      !req.user?.allowedIds.includes(link.recipientWallet)) {
+    actionError(res, 403, "You are not authorized to delete this link.");
+    return;
+  }
+
   await deleteLink(req.params.id as string);
   res.status(204).end();
 });

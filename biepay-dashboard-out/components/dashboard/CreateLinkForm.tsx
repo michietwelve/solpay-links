@@ -34,7 +34,7 @@ const INITIAL: FormState = {
 };
 
 export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
-  const { user } = usePrivy();
+  const { user, getAccessToken } = usePrivy();
   const { wallets: privyWallets } = useWallets();
   const { publicKey: solanaPublicKey } = useWallet();
 
@@ -84,7 +84,8 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
     setApiError(null);
 
     try {
-      const result = await createLink({
+      const token = await getAccessToken();
+      const result = await createLink(token ?? "", {
         recipientWallet: recipientAddress,
         token: form.token,
         label: form.label.trim(),

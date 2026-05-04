@@ -81,11 +81,18 @@ export interface PaymentRecord {
 
 async function apiFetch<T>(
   path: string,
-  options?: RequestInit
+  options?: RequestInit & { token?: string }
 ): Promise<T> {
+  const headers: HeadersInit = { "Content-Type": "application/json" };
+  if (options?.token) {
+    headers["Authorization"] = `Bearer ${options.token}`;
+  }
+
+  const { token, ...fetchOptions } = options || {};
+
   const res = await fetch(`${BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...options,
+    headers: { ...headers, ...(fetchOptions.headers || {}) },
+    ...fetchOptions,
   });
 
   if (!res.ok) {
@@ -99,23 +106,24 @@ async function apiFetch<T>(
 // ─── Link API ─────────────────────────────────────────────────────────────────
 
 export const linksApi = {
-  list: (merchantId?: string): Promise<PaymentLink[]> =>
-    apiFetch(`/api/links${merchantId ? `?merchantId=${merchantId}` : ""}`),
+  list: (token: string, merchantId?: string): Promise<PaymentLink[]> =>
+    apiFetch(`/api/links${merchantId ? `?merchantId=${merchantId}` : ""}`, { token }),
 
-  get: (id: string): Promise<PaymentLink> =>
-    apiFetch(`/api/links/${id}`),
+  get: (token: string, id: string): Promise<PaymentLink> =>
+    apiFetch(`/api/links/${id}`, { token }),
 
-  create: (payload: CreateLinkPayload): Promise<CreateLinkResponse> =>
+  create: (token: string, payload: CreateLinkPayload): Promise<CreateLinkResponse> =>
     apiFetch("/api/links", {
       method: "POST",
       body: JSON.stringify(payload),
+      token,
     }),
 
-  payments: (id: string): Promise<{ link: PaymentLink; payments: PaymentRecord[] }> =>
-    apiFetch(`/api/links/${id}/payments`),
+  payments: (token: string, id: string): Promise<{ link: PaymentLink; payments: PaymentRecord[] }> =>
+    apiFetch(`/api/links/${id}/payments`, { token }),
 
-  delete: (id: string): Promise<void> =>
-    apiFetch(`/api/links/${id}`, { method: "DELETE" }),
+  delete: (token: string, id: string): Promise<void> =>
+    apiFetch(`/api/links/${id}`, { method: "DELETE", token }),
 };
 
 // ─── Analytics helpers (client-side, derived from link list) ─────────────────

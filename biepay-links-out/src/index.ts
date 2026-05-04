@@ -2,6 +2,8 @@ import "dotenv/config";
 import express from "express";
 import morgan from "morgan";
 import { Connection } from "@solana/web3.js";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 
 import { actionsHeaders } from "./middleware/actions";
 import actionsRouter from "./routes/actions";
@@ -19,6 +21,22 @@ const PORT = parseInt(process.env.PORT ?? "3001", 10);
 
 app.use(morgan("dev"));
 app.use(express.json());
+
+// Basic security headers, but allow cross-origin for Solana Actions
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
+// Global rate limiting (100 requests per 15 minutes per IP)
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { message: "Too many requests from this IP, please try again after 15 minutes" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use("/api/", globalLimiter);
+app.use("/actions/", globalLimiter);
 
 // Solana Actions headers must be on every response
 app.use(actionsHeaders);
