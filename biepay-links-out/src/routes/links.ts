@@ -9,6 +9,7 @@ import {
 } from "../lib/store";
 import { CreateLinkSchema } from "../types";
 import { actionError } from "../middleware/actions";
+import { prisma } from "../lib/db";
 
 const router = Router();
 const API_BASE = process.env.API_BASE_URL ?? "http://localhost:3000";
