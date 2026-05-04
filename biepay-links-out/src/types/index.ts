@@ -90,7 +90,7 @@ export type PostPaymentInput = z.infer<typeof PostPaymentSchema>;
 
 export const UpdateMerchantProfileSchema = z.object({
   businessName: z.string().max(50).optional().nullable(),
-  logoUrl: z.string().url().optional().nullable(),
+  logoUrl: z.string().optional().nullable(),
   accentColor: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/).optional().nullable(),
   webhookUrl: z.string().url().optional().nullable(),
 });
