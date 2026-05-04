@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Connection } from "@solana/web3.js";
+import { resolve } from "@bonfida/spl-name-service";
 
 interface WithdrawModalProps {
   sourceAddress: string;
@@ -21,30 +22,69 @@ export default function WithdrawModal({
   const [dest, setDest] = useState(suggestedDest ?? "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resolvedAddress, setResolvedAddress] = useState<string | null>(null);
+  const [isResolving, setIsResolving] = useState(false);
 
   useEffect(() => {
     if (suggestedDest) setDest(suggestedDest);
   }, [suggestedDest]);
 
+  // SNS Resolution Effect
+  useEffect(() => {
+    let active = true;
+    setResolvedAddress(null);
+    
+    if (dest.trim().toLowerCase().endsWith(".sol")) {
+      const resolveName = async () => {
+        setIsResolving(true);
+        setError(null);
+        try {
+          const rpc = process.env.NEXT_PUBLIC_RPC_ENDPOINT ?? "https://api.mainnet-beta.solana.com";
+          const connection = new Connection(rpc);
+          const pubkey = await resolve(connection, dest.trim().toLowerCase());
+          if (active) {
+            setResolvedAddress(pubkey.toBase58());
+          }
+        } catch (e) {
+          if (active) {
+            setError("Could not resolve .sol domain");
+          }
+        } finally {
+          if (active) setIsResolving(false);
+        }
+      };
+      
+      const timeout = setTimeout(resolveName, 500);
+      return () => {
+        active = false;
+        clearTimeout(timeout);
+      };
+    } else {
+      setIsResolving(false);
+    }
+  }, [dest]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
+    const finalDest = resolvedAddress ?? dest.trim();
+
     try {
-      new PublicKey(dest);
+      new PublicKey(finalDest);
     } catch {
-      setError("Please enter a valid Solana address");
+      setError("Please enter a valid Solana address or .sol domain");
       return;
     }
 
-    if (dest === sourceAddress) {
+    if (finalDest === sourceAddress) {
       setError("Source and destination addresses cannot be the same");
       return;
     }
 
     setLoading(true);
     try {
-      await onConfirm(dest);
+      await onConfirm(finalDest);
     } catch (err: any) {
       setError(err.message || "Transfer failed");
     } finally {
@@ -89,11 +129,16 @@ export default function WithdrawModal({
                   setDest(e.target.value);
                   setError(null);
                 }}
-                placeholder="Paste Solana address (Phantom / Solflare)"
+                placeholder="Paste Solana address or .sol domain"
                 className={`w-full bg-white border ${error ? "border-red-200 ring-1 ring-red-100" : "border-zinc-200 focus:border-zinc-900"} rounded-xl px-4 py-3 text-sm outline-none transition-all placeholder:text-zinc-400 font-mono`}
-                disabled={loading}
+                disabled={loading || isResolving}
               />
-              {suggestedDest && dest !== suggestedDest && (
+              {isResolving && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <div className="w-4 h-4 border-2 border-zinc-300 border-t-zinc-900 rounded-full animate-spin" />
+                </div>
+              )}
+              {suggestedDest && dest !== suggestedDest && !isResolving && !resolvedAddress && (
                 <button
                   type="button"
                   onClick={() => setDest(suggestedDest)}
@@ -104,6 +149,12 @@ export default function WithdrawModal({
               )}
             </div>
             {error && <p className="text-[11px] text-red-500 font-medium pl-1">{error}</p>}
+            {resolvedAddress && !error && (
+              <p className="text-[11px] text-emerald-600 font-medium pl-1 flex items-center gap-1">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                Resolved to: <span className="font-mono">{resolvedAddress.slice(0,8)}...{resolvedAddress.slice(-8)}</span>
+              </p>
+            )}
           </div>
 
           <div className="bg-zinc-50 rounded-xl p-4 space-y-2">

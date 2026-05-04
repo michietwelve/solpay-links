@@ -9,18 +9,43 @@ BiePay Links allows anyone—from independent freelancers in Nigeria to global e
 
 ---
 
-## 🌟 The Vision
-Traditional cross-border payments are slow, expensive, and trapped behind "walled gardens." BiePay Links breaks these walls by turning a simple URL into a complete checkout experience that lives inside your favorite social apps.
+## 🏆 Frontier Hackathon Tracks & Bounties
 
-### Key Features
-- **Instant Blinks**: Share a payment link on X, WhatsApp, or Discord. It renders as a native payment card in Phantom, Backpack, and other Action-compliant wallets.
-- **Merchant Dashboard**: A sleek, high-performance interface for creating links, tracking revenue, and managing customers.
-- **No-Crypto-Needed Onboarding**: Integrated with **Privy** for email/social login and native fiat-to-crypto funding (via **Transak**).
-- **Infrastructure Grade**: Real-time on-chain payment detection via our proprietary Memo-based listener.
+We have specifically engineered BiePay Links to maximize value across the Solana ecosystem. Here is how we proudly support the hackathon bounty tracks:
+
+### 🇳🇬 Superteam Nigeria ($10k Prize Pool)
+**The Problem:** Nigerian freelancers and SMEs are locked out of the global economy due to extreme FX volatility, high remittance fees, and payment gateways that refuse to operate in the region.
+**The BiePay Solution:** A Nigerian designer can create a BiePay Link, post it on Twitter/X, and get paid instantly in stablecoins by a client in the US. No banks, no 5-day holds, no 7% currency conversion fees. BiePay is the cross-border payment rails Nigeria deserves.
+
+### 💵 Tether USDT ($10k Prize Pool)
+Tether is the lifeblood of emerging markets. **BiePay Links explicitly supports USDT** as a first-class settlement currency. Merchants can choose to price and settle their links exclusively in Tether, protecting themselves from local currency inflation while tapping into the $100B+ USDT liquidity on Solana.
+
+### 🪐 Jupiter: "Not Your Regular Bounty" ($3k Prize Pool)
+We integrated the **Jupiter Terminal** natively into the BiePay Merchant Dashboard.
+When a merchant receives payments in SOL or BONK, they can click our **"Swap Earnings"** button. This opens the Jupiter best-price routing modal, pre-filled to swap their earnings directly into USDC, entirely within the dashboard.
+
+### 📛 SNS Identity ($5k Prize Pool)
+We brought **Bonfida's SPL Name Service** directly to the merchant experience. When a merchant uses our "Withdraw Funds" modal to sweep their earnings, they don't need to copy-paste complex `7xKXtg...` addresses. They can simply type `michie.sol`, and BiePay instantly resolves the `.sol` domain on-chain to ensure funds go to the exact right place.
+
+### 📊 Dune Analytics ($6k+ Prize Pool)
+Data is everything for businesses. We built a comprehensive analytics suite directly into the dashboard, featuring real-time volume, lifetime revenue, active links, and payment velocity charts—bringing Dune-level insights to the merchant's fingertips.
+
+### 🕵️ Cloak / Privacy Payments ($5k Prize Pool)
+To respect merchant privacy, we built an **"Incognito Mode"** into the dashboard. With one click, all lifetime volume, active balance, and payment counts are obscured (`****`). This ensures business owners can safely demonstrate their dashboards or work in public spaces without revealing sensitive financial metrics.
 
 ---
 
-## 🏆 Frontier Hackathon Submission (Devnet)
+## 🌟 The 2026 Killer Feature: Blinks
+
+Traditional cross-border payments are trapped behind "walled gardens" and redirect links. 
+
+**BiePay Links turns your checkout into a Blink (Solana Action).**
+Instead of a user clicking a link to go to a Vercel site, they see the "Pay" button **directly inside their Twitter/X feed or Discord**. 
+Every BiePay link automatically generates a `dial.to/?action=solana-action...` Blink URL. If a judge sees a BiePay link in a tweet, they can pay the invoice without ever leaving Twitter. We are turning the timeline into a checkout counter.
+
+---
+
+## 🚀 Quick Links & Demo
 
 - **Live Dashboard**: [https://biepay-links-dwkq-eight.vercel.app](https://biepay-links-dwkq-eight.vercel.app)
 - **Actions API**: [https://biepay-links-production.up.railway.app](https://biepay-links-production.up.railway.app)
@@ -45,8 +70,6 @@ A premium merchant portal built with React 18, Tailwind CSS, and SWR for real-ti
 
 ### 2. [Actions API](./biepay-links-out) (Express / Node.js)
 The core transaction engine. It generates spec-compliant Solana Actions and manages the persistent state of payment links. 
-- **Payment Listener**: A background worker that monitors the Solana network for payments.
-- **Persistence**: File-based JSON storage (optimized for speed/portability).
 
 ### 3. [Smart Contract](./biepay-contract) (Anchor)
 An optional on-chain program for governed payments, escrow, and platform fee distribution.
@@ -55,7 +78,7 @@ An optional on-chain program for governed payments, escrow, and platform fee dis
 
 ## 🛠️ Tech Stack
 - **Languages**: TypeScript, Rust
-- **Blockchain**: Solana Web3.js, SPL Token
+- **Blockchain**: Solana Web3.js, SPL Token, Bonfida SNS, Jupiter Swap API
 - **Auth**: Privy (Embedded Wallets)
 - **Fiat Onramp**: Privy Native / Transak
 - **Styling**: Tailwind CSS, Framer Motion, Canvas Confetti

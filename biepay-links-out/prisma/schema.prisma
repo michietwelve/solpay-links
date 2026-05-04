@@ -37,3 +37,13 @@ model PaymentRecord {
   confirmedAt     DateTime?
   link            PaymentLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
 }
+
+model MerchantProfile {
+  merchantId      String   @id
+  businessName    String?
+  logoUrl         String?
+  accentColor     String?  @default("#c5a36e")
+  webhookUrl      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

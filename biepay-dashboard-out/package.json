@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@bonfida/spl-name-service": "^3.0.21",
     "@coral-xyz/anchor": "^0.30.1",
     "@moonpay/moonpay-react": "^1.6.0",
     "@privy-io/react-auth": "^1.87.0",
