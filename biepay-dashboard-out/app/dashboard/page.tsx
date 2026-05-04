@@ -12,6 +12,7 @@ import WithdrawModal  from "../../components/dashboard/WithdrawModal";
 import SuccessModal   from "../../components/dashboard/SuccessModal";
 import StorefrontSettings from "../../components/dashboard/StorefrontSettings";
 import RevenueChart    from "../../components/dashboard/RevenueChart";
+import SweepModal      from "../../components/dashboard/SweepModal";
 import Logo           from "../../components/layout/Logo";
 
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -20,10 +21,10 @@ import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import { Connection, Transaction, SystemProgram, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync, createTransferCheckedInstruction, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
-type Modal = "create" | "share" | "withdraw" | "success" | "settings" | "profile" | null;
+type Modal = "create" | "share" | "withdraw" | "success" | "settings" | "profile" | "sweep" | null;
 
 export default function DashboardPage() {
-  const { ready, authenticated, user, login, logout, linkWallet } = usePrivy();
+  const { ready, authenticated, user, login, logout, linkWallet, exportWallet } = usePrivy();
   const { wallets: privyWallets } = useWallets();
   const { publicKey, disconnect: solanaDisconnect } = useWallet();
   const { wallets: solanaWallets, createWallet: createSolanaWallet } = useSolanaWallets();
@@ -267,10 +268,10 @@ export default function DashboardPage() {
       alert("Please connect your destination wallet (Phantom) first.");
       return;
     }
-    
-    if (!confirm("Sweep all SOL, USDC, and USDT from your Embedded Wallet to your connected wallet?")) return;
-    
-    setIsSweeping(true);
+    setModal("sweep");
+  }
+
+  async function confirmSweep() {
     try {
       const connection = new Connection(RPC, "confirmed");
       const payer = new PublicKey(address);
@@ -345,6 +346,15 @@ export default function DashboardPage() {
       alert("Sweep failed: " + (err.message || "Unknown error"));
     } finally {
       setIsSweeping(false);
+      setModal(null);
+    }
+  }
+
+  async function handleExportWallet() {
+    try {
+      await exportWallet();
+    } catch (err) {
+      console.error("Export failed:", err);
     }
   }
 
@@ -746,6 +756,17 @@ export default function DashboardPage() {
         />
       )}
 
+      {/* Sweep Modal */}
+      {modal === "sweep" && address && publicKey && (
+        <SweepModal
+          address={address}
+          destination={publicKey.toBase58()}
+          isSweeping={isSweeping}
+          onConfirm={confirmSweep}
+          onClose={() => setModal(null)}
+        />
+      )}
+
       {/* Settings Panel */}
       {modal === "settings" && (
         <div className="fixed inset-0 z-[60] flex justify-end animate-in fade-in duration-300 bg-black/40 backdrop-blur-sm" onClick={() => setModal(null)}>
@@ -766,7 +787,10 @@ export default function DashboardPage() {
                 <div className="space-y-6">
                   <div>
                     <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest mb-3 block">Security</label>
-                    <button className="w-full p-4 bg-white border border-zinc-200 rounded-2xl text-sm font-medium flex items-center justify-between hover:bg-zinc-50 transition-colors">
+                    <button 
+                      onClick={handleExportWallet}
+                      className="w-full p-4 bg-white border border-zinc-200 rounded-2xl text-sm font-medium flex items-center justify-between hover:bg-zinc-50 transition-colors"
+                    >
                       <span>Export Private Keys</span>
                       <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
