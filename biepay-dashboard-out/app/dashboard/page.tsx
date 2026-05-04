@@ -7,12 +7,13 @@ import { formatAmount, timeAgo, getShareUrls, getEffectiveStatus } from "../../l
 import type { PaymentLink, CreateLinkResponse } from "../../lib/api";
 import CreateLinkForm from "../../components/dashboard/CreateLinkForm";
 import ShareModal     from "../../components/dashboard/ShareModal";
+import { SweepModal } from "@/components/dashboard/SweepModal";
+import { WithdrawModal } from "@/components/dashboard/WithdrawModal";
+import { AIAssistant } from "../../components/dashboard/AIAssistant";
 import ProfileMenu    from "../../components/dashboard/ProfileMenu";
-import WithdrawModal  from "../../components/dashboard/WithdrawModal";
 import SuccessModal   from "../../components/dashboard/SuccessModal";
 import StorefrontSettings from "../../components/dashboard/StorefrontSettings";
 import RevenueChart    from "../../components/dashboard/RevenueChart";
-import SweepModal      from "../../components/dashboard/SweepModal";
 import Logo           from "../../components/layout/Logo";
 
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -853,6 +854,7 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+      <AIAssistant />
     </div>
   );
 }
