@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { getMerchantProfile, updateMerchantProfile } from "../lib/merchant";
 import { UpdateMerchantProfileSchema } from "../types";
+import { requireAuth, AuthenticatedRequest } from "../middleware/auth";
 
 const router = Router();
 
@@ -12,8 +13,13 @@ router.get("/:merchantId", async (req: Request, res: Response) => {
 });
 
 // PATCH /api/merchants/:merchantId
-router.patch("/:merchantId", async (req: Request, res: Response) => {
+router.patch("/:merchantId", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const { merchantId } = req.params;
+
+  if (!req.user?.allowedIds.includes(merchantId as string)) {
+    res.status(403).json({ message: "Not authorized to update this profile" });
+    return;
+  }
   
   const parsed = UpdateMerchantProfileSchema.safeParse(req.body);
   if (!parsed.success) {

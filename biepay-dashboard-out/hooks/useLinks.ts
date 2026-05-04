@@ -11,17 +11,16 @@ import {
   computeStats,
   DashboardStats,
 } from "../lib/api";
-
-const fetcher = {
-  links: () => linksApi.list(),
-  link: (id: string) => linksApi.get(id),
-  payments: (id: string) => linksApi.payments(id),
-};
+import { usePrivy } from "@privy-io/react-auth";
 
 export function useLinks(merchantId?: string) {
+  const { getAccessToken } = usePrivy();
   const { data, error, isLoading } = useSWR<PaymentLink[]>(
     merchantId ? [`/api/links`, merchantId] : null,
-    ([url, mId]: [string, string]) => linksApi.list(mId),
+    async ([url, mId]: [string, string]) => {
+      const token = await getAccessToken();
+      return linksApi.list(token ?? "", mId);
+    },
     { refreshInterval: 15_000 }
   );
 
@@ -33,18 +32,26 @@ export function useLinks(merchantId?: string) {
 }
 
 export function useLink(id: string | null) {
+  const { getAccessToken } = usePrivy();
   const { data, error, isLoading } = useSWR(
     id ? `/api/links/${id}` : null,
-    () => fetcher.link(id!),
+    async () => {
+      const token = await getAccessToken();
+      return linksApi.get(token ?? "", id!);
+    },
     { refreshInterval: 10_000 }
   );
   return { link: data, error, isLoading };
 }
 
 export function useLinkPayments(id: string | null) {
+  const { getAccessToken } = usePrivy();
   const { data, error, isLoading } = useSWR(
     id ? `/api/links/${id}/payments` : null,
-    () => fetcher.payments(id!),
+    async () => {
+      const token = await getAccessToken();
+      return linksApi.payments(token ?? "", id!);
+    },
     { refreshInterval: 10_000 }
   );
   return { data, error, isLoading };
@@ -58,15 +65,16 @@ export function useStats(merchantId?: string): { stats: DashboardStats; isLoadin
 // ─── Mutations ────────────────────────────────────────────────────────────────
 
 export async function createLink(
+  token: string,
   payload: CreateLinkPayload
 ): Promise<CreateLinkResponse> {
-  const result = await linksApi.create(payload);
+  const result = await linksApi.create(token, payload);
   // Invalidate any links list keys to ensure the dashboard updates immediately
   await globalMutate(key => Array.isArray(key) && key[0] === "/api/links");
   return result;
 }
 
-export async function deleteLink(id: string): Promise<void> {
-  await linksApi.delete(id);
+export async function deleteLink(token: string, id: string): Promise<void> {
+  await linksApi.delete(token, id);
   await globalMutate(key => Array.isArray(key) && key[0] === "/api/links");
 }

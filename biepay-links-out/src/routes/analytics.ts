@@ -1,13 +1,23 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../lib/db";
 import { TOKEN_DECIMALS, SupportedToken } from "../types";
+import { requireAuth, AuthenticatedRequest } from "../middleware/auth";
 
 const router = Router();
 
 // GET /api/merchants/:merchantId/analytics
-router.get("/:merchantId", async (req: Request, res: Response) => {
+router.get("/:merchantId", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const { merchantId } = req.params;
   const ids = (merchantId as string).split(",");
+  
+  // Validate that all requested IDs belong to the authenticated user
+  const allowedIds = req.user?.allowedIds || [];
+  const unauthorized = ids.some(id => !allowedIds.includes(id));
+  
+  if (unauthorized) {
+    res.status(403).json({ message: "Not authorized to view analytics for one or more requested IDs" });
+    return;
+  }
   
   // Fetch all confirmed payments for links belonging to this merchant (or their wallets)
   const payments = await prisma.paymentRecord.findMany({

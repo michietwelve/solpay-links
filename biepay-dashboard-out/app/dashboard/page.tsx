@@ -26,7 +26,7 @@ import { getAssociatedTokenAddressSync, createTransferCheckedInstruction, TOKEN_
 type Modal = "create" | "share" | "withdraw" | "success" | "settings" | "profile" | "sweep" | null;
 
 export default function DashboardPage() {
-  const { ready, authenticated, user, login, logout, linkWallet, exportWallet } = usePrivy();
+  const { ready, authenticated, user, login, logout, linkWallet, exportWallet, getAccessToken } = usePrivy();
   const { wallets: privyWallets } = useWallets();
   const { publicKey, disconnect: solanaDisconnect } = useWallet();
   const { wallets: solanaWallets, createWallet: createSolanaWallet } = useSolanaWallets();
@@ -152,7 +152,10 @@ export default function DashboardPage() {
   const fetchAnalytics = async () => {
     if (!merchantIds) return;
     try {
-      const res = await fetch(`${API_BASE}/api/analytics/${merchantIds}`);
+      const token = await getAccessToken();
+      const res = await fetch(`${API_BASE}/api/analytics/${merchantIds}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
       if (res.ok) {
         const data = await res.json();
         setAnalyticsData(data);
@@ -171,9 +174,13 @@ export default function DashboardPage() {
     if (!user?.id) return;
     console.log("Saving profile for:", user.id, data);
     try {
+      const token = await getAccessToken();
       const res = await fetch(`${API_BASE}/api/merchants/${user.id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify(data),
       });
       if (res.ok) {
@@ -206,7 +213,8 @@ export default function DashboardPage() {
     if (!confirm("Are you sure you want to delete this payment link?")) return;
     setIsDeleting(true);
     try {
-      await deleteLink(id);
+      const token = await getAccessToken();
+      await deleteLink(token ?? "", id);
       setDetailLink(null);
       setSuccessData({
         title: "Link Deleted",
