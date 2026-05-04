@@ -24,6 +24,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <title>BiePay Links</title>
         <meta name="description" content="Stripe-grade payment links for Solana" />
+        {/* Jupiter Terminal – data-preload fetches widget assets on page load for instant open */}
+        <script src="https://terminal.jup.ag/main-v3.js" data-preload defer />
       </head>
       <body>
         <PrivyProvider

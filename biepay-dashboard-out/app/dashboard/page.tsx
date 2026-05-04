@@ -7,9 +7,10 @@ import { formatAmount, timeAgo, getShareUrls, getEffectiveStatus } from "../../l
 import type { PaymentLink, CreateLinkResponse } from "../../lib/api";
 import CreateLinkForm from "../../components/dashboard/CreateLinkForm";
 import ShareModal     from "../../components/dashboard/ShareModal";
-import { SweepModal } from "@/components/dashboard/SweepModal";
-import { WithdrawModal } from "@/components/dashboard/WithdrawModal";
+import SweepModal    from "../../components/dashboard/SweepModal";
+import WithdrawModal from "../../components/dashboard/WithdrawModal";
 import { AIAssistant } from "../../components/dashboard/AIAssistant";
+import { JupiterTerminal, openJupiterSwap } from "../../components/dashboard/JupiterTerminal";
 import ProfileMenu    from "../../components/dashboard/ProfileMenu";
 import SuccessModal   from "../../components/dashboard/SuccessModal";
 import StorefrontSettings from "../../components/dashboard/StorefrontSettings";
@@ -505,6 +506,16 @@ export default function DashboardPage() {
                       )}
                       Sweep to Cold Storage
                     </button>
+                    <button
+                      onClick={openJupiterSwap}
+                      className="px-4 py-2 bg-gradient-to-r from-[#c5a36e]/20 to-[#c5a36e]/10 text-[#c5a36e] border border-[#c5a36e]/30 rounded-xl text-xs font-bold hover:from-[#c5a36e]/30 hover:to-[#c5a36e]/20 hover:shadow-[0_0_20px_rgba(197,163,110,0.25)] hover:border-[#c5a36e]/50 transition-all duration-200 flex items-center gap-2 group"
+                      title="Swap your earnings to any token via Jupiter best-price routing"
+                    >
+                      <svg className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L13 16M17 20L21 16" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Swap Earnings
+                    </button>
                   </div>
                 );
               }
@@ -855,6 +866,7 @@ export default function DashboardPage() {
         </div>
       )}
       <AIAssistant />
+      <JupiterTerminal />
     </div>
   );
 }
