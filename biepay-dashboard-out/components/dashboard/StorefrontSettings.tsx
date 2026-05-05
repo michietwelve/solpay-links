@@ -71,6 +71,25 @@ export default function StorefrontSettings({ profile, onSave, onExport }: Storef
       <div className="min-h-[350px]">
         {activeTab === "brand" ? (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {/* Live Blink Preview */}
+            <div className="p-4 bg-zinc-900 rounded-2xl border border-zinc-800 shadow-xl">
+              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3 block text-center">Live Blink Preview</label>
+              <div className="bg-white rounded-xl p-4 space-y-3">
+                <div className="flex gap-3">
+                  <div className="w-12 h-12 bg-zinc-100 rounded-lg overflow-hidden shrink-0 border border-zinc-100">
+                    {logoUrl ? <img src={logoUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-zinc-300 font-bold">B</div>}
+                  </div>
+                  <div className="space-y-1">
+                    <div className="h-3 w-32 bg-zinc-900 rounded" style={{ backgroundColor: accentColor || '#18181b' }}></div>
+                    <div className="h-2 w-24 bg-zinc-200 rounded"></div>
+                  </div>
+                </div>
+                <div className="h-8 w-full rounded-lg flex items-center justify-center text-[10px] font-bold text-white uppercase tracking-wider" style={{ backgroundColor: accentColor || '#18181b' }}>
+                  Pay with Solana
+                </div>
+              </div>
+            </div>
+
             <div>
               <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4 block">Visual Identity</label>
               <div className="flex items-center gap-6 mb-6 p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
