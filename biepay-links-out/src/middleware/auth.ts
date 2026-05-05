@@ -21,11 +21,15 @@ export const requireAuth = async (
   next: NextFunction
 ): Promise<void> => {
   if (!privy) {
-    console.warn("⚠️  Privy Auth is bypassed because PRIVY_APP_ID and PRIVY_APP_SECRET are not set. The API is INSECURE.");
-    // In dev, if bypassed, just set dummy IDs based on the query or body so it doesn't break entirely
+    // In dev, if bypassed, just set dummy IDs based on the query, body, or params so it doesn't break entirely
     req.user = { 
       id: "bypassed", 
-      allowedIds: (req.query.merchantId as string)?.split(",") || [req.body.merchantId, req.body.recipientWallet].filter(Boolean)
+      allowedIds: [
+        ...(req.query.merchantId as string || "").split(","),
+        req.body.merchantId,
+        req.body.recipientWallet,
+        req.params.merchantId
+      ].filter(Boolean)
     };
     return next();
   }

@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useRef } from "react";
 
 interface MerchantProfile {
@@ -36,7 +38,6 @@ export default function StorefrontSettings({ profile, onSave, onExport }: Storef
       // Basic URL validation for webhook
       let sanitizedWebhook = webhookUrl.trim();
       if (sanitizedWebhook && !sanitizedWebhook.startsWith("http")) {
-        // Simple heuristic: if they didn't put http, it's definitely not a valid URL for Zod
         throw new Error("Webhook URL must start with http:// or https://");
       }
 
@@ -67,162 +68,190 @@ export default function StorefrontSettings({ profile, onSave, onExport }: Storef
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex gap-1 p-1 bg-zinc-100 rounded-xl">
+    <div className="space-y-8">
+      {/* Premium Tab Navigation */}
+      <div className="flex p-1.5 bg-zinc-100 rounded-2xl shadow-inner">
         <button
           onClick={() => setActiveTab("brand")}
-          className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === "brand" ? "bg-white shadow-sm text-zinc-900" : "text-zinc-500 hover:text-zinc-700"}`}
+          className={`flex-1 py-3 text-xs font-black uppercase tracking-[0.15em] rounded-xl transition-all duration-300 ${activeTab === "brand" ? "bg-white shadow-xl text-zinc-900 scale-[1.02]" : "text-zinc-400 hover:text-zinc-600"}`}
         >
           Storefront
         </button>
         <button
           onClick={() => setActiveTab("security")}
-          className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === "security" ? "bg-white shadow-sm text-zinc-900" : "text-zinc-500 hover:text-zinc-700"}`}
+          className={`flex-1 py-3 text-xs font-black uppercase tracking-[0.15em] rounded-xl transition-all duration-300 ${activeTab === "security" ? "bg-white shadow-xl text-zinc-900 scale-[1.02]" : "text-zinc-400 hover:text-zinc-600"}`}
         >
-          Advanced & Security
+          Advanced
         </button>
       </div>
 
-      <div className="min-h-[350px]">
+      <div className="min-h-[400px]">
         {activeTab === "brand" ? (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            {/* Live Blink Preview */}
-            <div className="p-4 bg-zinc-900 rounded-2xl border border-zinc-800 shadow-xl">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3 block text-center">Live Blink Preview</label>
-              <div className="bg-white rounded-xl p-4 space-y-3">
-                <div className="flex gap-3">
-                  <div className="w-12 h-12 bg-zinc-100 rounded-lg overflow-hidden shrink-0 border border-zinc-100">
-                    {logoUrl ? <img src={logoUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-zinc-300 font-bold">B</div>}
+          <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Live Blink Preview - The "WOW" Piece */}
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-zinc-200 to-zinc-400 rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+              <div className="relative p-6 bg-zinc-950 rounded-2xl border border-white/5 shadow-2xl overflow-hidden">
+                <div className="absolute top-3 right-3 flex gap-1">
+                  <div className="w-1 h-1 rounded-full bg-white/20 animate-pulse"></div>
+                  <div className="w-1 h-1 rounded-full bg-white/20 animate-pulse delay-75"></div>
+                  <div className="w-1 h-1 rounded-full bg-white/20 animate-pulse delay-150"></div>
+                </div>
+                <div className="bg-white rounded-xl p-5 space-y-4 shadow-2xl border border-white/10">
+                  <div className="flex gap-4">
+                    <div className="w-14 h-14 bg-zinc-100 rounded-2xl overflow-hidden shrink-0 border border-zinc-100 shadow-sm flex items-center justify-center">
+                      {logoUrl ? <img src={logoUrl} className="w-full h-full object-cover" /> : <div className="text-zinc-300 font-black text-xl uppercase">{businessName?.[0] || "B"}</div>}
+                    </div>
+                    <div className="space-y-2 flex-1 pt-1">
+                      <div className="h-4 w-2/3 rounded-lg" style={{ backgroundColor: accentColor || '#18181b' }}></div>
+                      <div className="h-3 w-1/2 bg-zinc-100 rounded-lg"></div>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <div className="h-3 w-32 bg-zinc-900 rounded" style={{ backgroundColor: accentColor || '#18181b' }}></div>
-                    <div className="h-2 w-24 bg-zinc-200 rounded"></div>
+                  <div className="h-11 w-full rounded-xl flex items-center justify-center text-[10px] font-black text-white uppercase tracking-[0.2em] shadow-lg transform active:scale-95 transition-all cursor-default" style={{ backgroundColor: accentColor || '#18181b' }}>
+                    Pay with Solana
                   </div>
                 </div>
-                <div className="h-8 w-full rounded-lg flex items-center justify-center text-[10px] font-bold text-white uppercase tracking-wider" style={{ backgroundColor: accentColor || '#18181b' }}>
-                  Pay with Solana
+                <div className="mt-4 text-center">
+                  <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-[0.3em]">Live Blink Preview</span>
                 </div>
               </div>
             </div>
 
-            <div>
-              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4 block">Visual Identity</label>
-              <div className="flex items-center gap-6 mb-6 p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
-                <div 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-20 h-20 bg-white rounded-2xl border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center cursor-pointer hover:border-zinc-900 transition-all overflow-hidden shrink-0 group relative"
-                >
-                  {logoUrl ? (
-                    <>
-                      <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                        </svg>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-center">
-                      <svg className="w-6 h-6 text-zinc-300 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  )}
-                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
-                </div>
-                <div className="space-y-1">
-                  <h4 className="text-sm font-bold text-zinc-900">Brand Logo</h4>
-                  <p className="text-[11px] text-zinc-400 leading-relaxed">Shown on all payment links and checkout pages.</p>
-                </div>
-              </div>
-
+            <div className="space-y-8">
+              {/* Identity Section */}
               <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <span className="text-xs text-zinc-500 font-medium ml-1">Business Name</span>
-                  <input
-                    value={businessName}
-                    onChange={e => setBusinessName(e.target.value)}
-                    placeholder="e.g. BiePay Luxury"
-                    className="w-full p-4 bg-zinc-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-zinc-900"
-                  />
+                <div className="flex items-center gap-4 mb-2">
+                  <div className="h-px flex-1 bg-zinc-100"></div>
+                  <span className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Visual Identity</span>
+                  <div className="h-px flex-1 bg-zinc-100"></div>
                 </div>
-                <div className="space-y-1.5">
-                  <span className="text-xs text-zinc-500 font-medium ml-1">Accent Color</span>
-                  <div className="flex gap-3">
-                    <input
-                      type="color"
-                      value={accentColor}
-                      onChange={e => setAccentColor(e.target.value)}
-                      className="w-14 h-14 rounded-2xl border-none p-1 bg-zinc-50 cursor-pointer shadow-sm"
+
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 group hover:border-zinc-300 transition-colors">
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Brand Logo</label>
+                      <button onClick={() => fileInputRef.current?.click()} className="text-[9px] font-bold text-zinc-400 hover:text-zinc-900 underline uppercase">Upload</button>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-16 h-16 bg-white rounded-2xl border-2 border-dashed border-zinc-200 flex items-center justify-center overflow-hidden hover:border-zinc-400 transition-all cursor-pointer shadow-sm"
+                      >
+                        {logoUrl ? <img src={logoUrl} className="w-full h-full object-cover" /> : <svg className="w-6 h-6 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>}
+                      </div>
+                      <input 
+                        placeholder="Or paste Logo URL..."
+                        value={logoUrl}
+                        onChange={e => setLogoUrl(e.target.value)}
+                        className="flex-1 p-3 bg-white border border-zinc-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-zinc-900/5 outline-none transition-all"
+                      />
+                      <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 group hover:border-zinc-300 transition-colors">
+                    <label className="text-[10px] font-black text-zinc-900 uppercase tracking-widest mb-3 block">Business Name</label>
+                    <input 
+                      placeholder="e.g. BiePay Luxury"
+                      value={businessName}
+                      onChange={e => setBusinessName(e.target.value)}
+                      className="w-full p-4 bg-white border border-zinc-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-zinc-900/5 outline-none transition-all shadow-sm"
                     />
-                    <input
-                      value={accentColor}
-                      onChange={e => setAccentColor(e.target.value)}
-                      className="flex-1 p-4 bg-zinc-50 border-none rounded-2xl text-sm font-mono uppercase"
-                    />
+                  </div>
+
+                  <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 group hover:border-zinc-300 transition-colors">
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Accent Color</label>
+                      <span className="text-[10px] font-mono text-zinc-400 uppercase font-bold">{accentColor || "#18181B"}</span>
+                    </div>
+                    <div className="flex gap-4">
+                      <input 
+                        type="color" 
+                        value={accentColor || "#18181b"}
+                        onChange={e => setAccentColor(e.target.value)}
+                        className="w-14 h-14 rounded-2xl border-none p-1 bg-white shadow-sm cursor-pointer"
+                      />
+                      <input 
+                        value={accentColor}
+                        onChange={e => setAccentColor(e.target.value)}
+                        className="flex-1 p-3 bg-white border border-zinc-200 rounded-xl text-sm font-mono uppercase font-bold focus:ring-2 focus:ring-zinc-900/5 outline-none transition-all"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         ) : (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div>
-              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4 block">Developer Hooks</label>
-              <div className="space-y-1.5">
-                <span className="text-xs text-zinc-500 font-medium ml-1">Webhook URL</span>
-                <input
-                  value={webhookUrl}
-                  onChange={e => setWebhookUrl(e.target.value)}
-                  placeholder="https://api.yoursite.com/webhooks"
-                  className="w-full p-4 bg-zinc-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-zinc-900"
-                />
-                <p className="text-[10px] text-zinc-400 ml-1">We'll notify this URL on every transaction.</p>
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="p-8 bg-zinc-950 rounded-[2.5rem] border border-white/5 space-y-8 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent"></div>
+              
+              <div className="space-y-2">
+                <h3 className="text-white text-lg font-black tracking-tight">Enterprise Infrastructure</h3>
+                <p className="text-zinc-500 text-xs leading-relaxed max-w-sm">
+                  Configure high-throughput webhooks and export your private keys for full self-custody.
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between px-1">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Webhook API Endpoint</label>
+                    <span className="px-2 py-0.5 bg-zinc-800 text-zinc-500 text-[8px] font-black uppercase rounded">Optional</span>
+                  </div>
+                  <input 
+                    placeholder="https://api.yourstore.com/webhooks/biepay"
+                    value={webhookUrl}
+                    onChange={e => setWebhookUrl(e.target.value)}
+                    className="w-full p-5 bg-zinc-900/50 border border-zinc-800 text-white rounded-2xl text-sm font-mono focus:ring-2 focus:ring-white/10 outline-none transition-all"
+                  />
+                </div>
+
+                <div className="pt-6 border-t border-zinc-800/50">
+                  <button 
+                    onClick={onExport}
+                    className="w-full p-5 bg-zinc-800/50 hover:bg-white hover:text-black text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 group border border-white/5 shadow-xl"
+                  >
+                    <svg className="w-5 h-5 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                    Export Security Keys
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div>
-              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4 block">Self-Custody</label>
-              <button
-                onClick={onExport}
-                className="w-full p-4 bg-white border border-zinc-200 rounded-2xl text-sm font-bold flex items-center justify-between hover:bg-zinc-50 hover:border-zinc-300 transition-all group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center group-hover:bg-white">
-                    <svg className="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                    </svg>
-                  </div>
-                  <span>Export Private Keys</span>
-                </div>
-                <svg className="w-4 h-4 text-zinc-300 group-hover:text-zinc-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+            <div className="p-8 bg-red-50/50 rounded-[2.5rem] border border-red-100 shadow-sm group hover:bg-red-50 transition-colors">
+              <h4 className="text-red-900 text-sm font-black tracking-tight mb-2">Danger Zone</h4>
+              <p className="text-red-500 text-[10px] font-bold uppercase tracking-[0.15em] mb-6">Irreversible Account Deletion</p>
+              <button className="w-full p-5 bg-white border border-red-200 text-red-600 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-red-600 hover:text-white transition-all shadow-lg hover:shadow-red-200">
+                Purge Merchant Data
               </button>
-              <p className="text-[10px] text-zinc-400 mt-3 ml-1">Take full control of your merchant wallet funds.</p>
             </div>
           </div>
         )}
       </div>
 
-      <div className="pt-6">
+      {/* Action Footer */}
+      <div className="pt-4">
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className={`w-full py-4 font-bold rounded-2xl transition-all flex items-center justify-center gap-3 shadow-2xl shadow-zinc-200 ${
-            saveStatus === "success" ? "bg-emerald-500 text-white" : 
-            saveStatus === "error" ? "bg-red-500 text-white" : 
-            "bg-zinc-900 text-white hover:bg-zinc-800"
+          className={`w-full py-5 font-black text-xs uppercase tracking-[0.25em] rounded-2xl transition-all duration-500 flex items-center justify-center gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.15)] ${
+            saveStatus === "success" ? "bg-emerald-500 text-white scale-[1.02]" : 
+            saveStatus === "error" ? "bg-red-600 text-white animate-shake" : 
+            "bg-zinc-950 text-white hover:bg-zinc-800"
           }`}
         >
           {isSaving ? (
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
           ) : saveStatus === "success" ? (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
           ) : saveStatus === "error" ? (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
-          ) : null}
-          {isSaving ? "Saving..." : saveStatus === "success" ? "Changes Saved" : saveStatus === "error" ? "Save Failed" : "Confirm Settings"}
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+          ) : (
+            <svg className="w-5 h-5 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+          )}
+          {isSaving ? "Synchronizing..." : saveStatus === "success" ? "Identity Locked" : saveStatus === "error" ? "Update Blocked" : "Lock In Changes"}
         </button>
       </div>
     </div>
