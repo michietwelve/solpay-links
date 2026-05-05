@@ -26,16 +26,18 @@ declare global {
 let isJupiterInitialized = false;
 
 export function openJupiterSwap() {
+  console.log("Swap button clicked", { isJupiterInitialized, jupiterObj: window.Jupiter });
   if (typeof window !== "undefined" && window.Jupiter) {
     if (!isJupiterInitialized) {
+      console.log("Initializing Jupiter Terminal...");
       isJupiterInitialized = true;
       window.Jupiter.init({
         // Modal mode: Jupiter renders as a full overlay
         displayMode: "modal",
 
-        // We omit 'endpoint' here so Jupiter uses its internal robust RPC,
-        // preventing the "Your RPC is not responding" errors.
-
+        // Use a reliable mainnet RPC to avoid rate limits
+        endpoint: "https://neat-hidden-sanctuary.solana-mainnet.discover.quiknode.pro/2af5315d336f9ae920028cebb9f57156228eb7cb/",
+        
         strictTokenList: false,
 
         formProps: {
@@ -44,9 +46,20 @@ export function openJupiterSwap() {
         },
         containerStyles: { zIndex: 9999 },
       });
+      // Sometimes init() takes a second, but it usually handles opening itself if modal.
+      // If not, we can force resume after a small timeout.
+      setTimeout(() => {
+        console.log("Forcing resume...");
+        if (window.Jupiter && window.Jupiter.resume) {
+           window.Jupiter.resume();
+        }
+      }, 500);
     } else {
+      console.log("Resuming Jupiter Terminal...");
       window.Jupiter.resume();
     }
+  } else {
+    console.warn("Jupiter object not found on window!");
   }
 }
 
