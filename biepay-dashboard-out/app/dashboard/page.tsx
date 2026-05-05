@@ -835,14 +835,17 @@ export default function DashboardPage() {
               </div>
               
               {isProfileLoading ? (
-                <div className="py-20 text-center text-zinc-400">Loading storefront settings...</div>
-              ) : profile ? (
+                <div className="py-20 text-center text-zinc-400 flex flex-col items-center gap-4">
+                  <div className="w-8 h-8 border-4 border-zinc-200 border-t-zinc-900 rounded-full animate-spin"></div>
+                  <span>Loading storefront settings...</span>
+                </div>
+              ) : (
                 <StorefrontSettings 
-                  profile={profile} 
+                  profile={profile || { businessName: "", logoUrl: "", accentColor: "#c5a36e", webhookUrl: "" }} 
                   onSave={handleSaveProfile} 
                   onExport={handleExportWallet}
                 />
-              ) : null}
+              )}
 
             </div>
           </div>
