@@ -35,7 +35,7 @@ To respect merchant privacy, we built an **"Incognito Mode"** into the dashboard
 
 ---
 
-## 🌟 The 2026 Killer Feature: Blinks
+## 🌟 The Killer Feature: Blinks
 
 Traditional cross-border payments are trapped behind "walled gardens" and redirect links. 
 
@@ -49,7 +49,7 @@ Every BiePay link automatically generates a `dial.to/?action=solana-action...` B
 
 - **Live Dashboard**: [https://biepay-links-dwkq-eight.vercel.app](https://biepay-links-dwkq-eight.vercel.app)
 - **Actions API**: [https://biepay-links-production.up.railway.app](https://biepay-links-production.up.railway.app)
-- **Video Demo**: [Coming Soon]
+- **Video Demo**: [Insert YouTube/Loom Link Here - REPLACE BEFORE DEADLINE]
 - **Testing Cluster**: Solana **Devnet**
 
 ### How to Judge/Test:
@@ -73,6 +73,7 @@ The core transaction engine. It generates spec-compliant Solana Actions and mana
 
 ### 3. [Smart Contract](./biepay-contract) (Anchor)
 An optional on-chain program for governed payments, escrow, and platform fee distribution.
+*Note: Smart contracts are pre-deployed to Devnet; no local Anchor setup is required for testing.*
 
 ---
 
@@ -93,30 +94,61 @@ An optional on-chain program for governed payments, escrow, and platform fee dis
 - A Solana Wallet (Phantom or Backpack recommended)
 
 ### Installation
-1. Clone the repo:
-   ```bash
-   git clone https://github.com/michietwelve/biepay-links.git
-   cd biepay-links
-   ```
 
-2. Install dependencies for both projects:
-   ```bash
-   # Frontend
-   cd biepay-dashboard-out && npm install
-   # Backend
-   cd ../biepay-links-out && npm install
-   ```
+**Terminal 1: Backend API**
+```bash
+cd biepay-links-out
+npm install
+npm run dev
+```
 
-3. Set up environment variables:
-   Create `.env.local` in `biepay-dashboard-out` and `.env` in `biepay-links-out` based on the `.env.example` files provided in each folder.
+**Terminal 2: Frontend Dashboard**
+```bash
+cd biepay-dashboard-out
+npm install
+npm run dev
+```
 
-4. Run the stack:
-   ```bash
-   # Start the API (Port 3001)
-   cd biepay-links-out && npm run dev
-   # Start the Dashboard (Port 3000)
-   cd biepay-dashboard-out && npm run dev
-   ```
+### Environment Variables
+
+For the application to run successfully, you must configure the following critical environment variables. 
+
+**Frontend (`biepay-dashboard-out/.env.local`):**
+```env
+NEXT_PUBLIC_PRIVY_APP_ID=your_privy_app_id
+NEXT_PUBLIC_RPC_ENDPOINT=https://api.devnet.solana.com
+NEXT_PUBLIC_API_URL=http://localhost:3001
+NEXT_PUBLIC_ACTION_BASE_URL=https://your-ngrok-url.ngrok-free.app # Required for local Blinks
+```
+
+**Backend (`biepay-links-out/.env`):**
+```env
+PORT=3001
+DATABASE_URL="file:./dev.db"
+RPC_ENDPOINT=https://api.devnet.solana.com
+PRIVY_APP_ID=your_privy_app_id
+PRIVY_APP_SECRET=your_privy_app_secret
+```
+
+### Local Networking (The "CORS" Trap)
+If you are testing the **Solana Blinks** functionality locally on your machine, you must use a secure tunnel (like `ngrok` or `localtunnel`). 
+Solana's blockchain and wallets (like Phantom) cannot resolve `http://localhost:3001`. 
+1. Run `ngrok http 3001`
+2. Set your `NEXT_PUBLIC_ACTION_BASE_URL` in the frontend to the secure HTTPS ngrok URL.
+*(If you are just testing the dashboard UI, standard localhost is fine).*
+
+---
+
+## ❓ Troubleshooting / FAQ
+
+**Q: The Jupiter Swap tokens are missing or showing `?`**
+A: Jupiter only supports Mainnet-Beta. Ensure your network connection is stable; the dashboard forces the terminal to use a Mainnet RPC to resolve tokens even when the app is on Devnet.
+
+**Q: "Your RPC is not responding to any requests"**
+A: Public RPCs are heavily rate-limited. We recommend waiting a few seconds or utilizing a dedicated RPC key in production.
+
+**Q: I created a link but cannot delete it?**
+A: Due to the enterprise BOLA security we implemented, you must ensure your `PRIVY_APP_ID` and `PRIVY_APP_SECRET` are correctly set in the backend `.env`. If they are missing, the backend defaults to a secure fallback that may reject deletions.
 
 ---
 
