@@ -36,13 +36,22 @@ export function openJupiterSwap() {
         displayMode: "modal",
 
         // Use a reliable mainnet RPC to avoid rate limits
-        endpoint: "https://neat-hidden-sanctuary.solana-mainnet.discover.quiknode.pro/2af5315d336f9ae920028cebb9f57156228eb7cb/",
+        endpoint: "https://api.mainnet-beta.solana.com",
         
         strictTokenList: false,
 
         formProps: {
           initialInputMint: "So11111111111111111111111111111111111111112", // SOL
           initialOutputMint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC
+        },
+
+        // PREMIUM DESIGN OVERHAUL
+        theme: "dark",
+        customStyles: {
+          widgetStyle: {
+            borderRadius: "24px",
+            backgroundColor: "#09090b", // zinc-950
+          }
         },
         containerStyles: { zIndex: 9999 },
       });

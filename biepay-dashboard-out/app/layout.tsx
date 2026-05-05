@@ -24,6 +24,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <title>BiePay Links</title>
         <meta name="description" content="Stripe-grade payment links for Solana" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
         {/* Jupiter Terminal – data-preload fetches widget assets on page load for instant open */}
         <script src="https://terminal.jup.ag/main-v3.js" data-preload defer />
       </head>
