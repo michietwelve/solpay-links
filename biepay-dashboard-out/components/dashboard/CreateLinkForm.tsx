@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import { createLink } from "../../hooks/useLinks";
 import type { CreateLinkResponse, SupportedToken } from "../../lib/api";
 
@@ -36,20 +37,20 @@ const INITIAL: FormState = {
 export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
   const { user, getAccessToken } = usePrivy();
   const { publicKey: solanaPublicKey } = useWallet();
+  const { wallets: privySolanaWallets } = useSolanaWallets();
 
   // Priority: Solana Wallet Adapter > Privy Embedded Solana wallet > Linked Solana wallets
   const recipientAddress = (() => {
-    // 1. Check for external wallet via adapter
+    // 1. If an external wallet is explicitly connected via Adapter, use it
     if (solanaPublicKey) return solanaPublicKey.toBase58();
     
-    // 2. Check for Privy embedded or linked Solana wallets
-    const solAccount = user?.linkedAccounts.find(a => 
-      a.type === 'wallet' && 
-      ((a as any).chainType?.toLowerCase() === 'solana' || (a as any).connectorType === 'embedded')
-    ) as any;
-    
-    if (solAccount?.address) return solAccount.address;
-    return null;
+    // 2. Use the Privy Embedded Wallet (or first linked Solana wallet)
+    const privySol = privySolanaWallets.find(w => w.walletClientType === 'privy') || privySolanaWallets[0];
+    if (privySol) return privySol.address;
+
+    // 3. Last ditch: check linked accounts directly
+    const linked = user?.linkedAccounts.find(a => a.type === 'wallet' && (a as any).chainType === 'solana') as any;
+    return linked?.address || null;
   })();
 
   const [form, setForm] = useState<FormState>(INITIAL);
