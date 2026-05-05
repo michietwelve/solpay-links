@@ -39,16 +39,19 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
   const { publicKey: solanaPublicKey } = useWallet();
   const { wallets: privySolanaWallets } = useSolanaWallets();
 
-  // Priority: Solana Wallet Adapter > Privy Embedded Solana wallet > Linked Solana wallets
+  // Priority: Privy Embedded Solana wallet > Solana Wallet Adapter > Linked Solana wallets
   const recipientAddress = (() => {
-    // 1. If an external wallet is explicitly connected via Adapter, use it
+    // 1. Prefer the Privy Embedded Wallet for the seamless "One-Click" merchant experience
+    const embedded = privySolanaWallets.find(w => w.walletClientType === 'privy');
+    if (embedded) return embedded.address;
+
+    // 2. If no embedded, use an external wallet connected via Adapter
     if (solanaPublicKey) return solanaPublicKey.toBase58();
     
-    // 2. Use the Privy Embedded Wallet (or first linked Solana wallet)
-    const privySol = privySolanaWallets.find(w => w.walletClientType === 'privy') || privySolanaWallets[0];
-    if (privySol) return privySol.address;
+    // 3. Fallback to first linked Solana wallet
+    if (privySolanaWallets.length > 0) return privySolanaWallets[0].address;
 
-    // 3. Last ditch: check linked accounts directly
+    // 4. Last ditch: check linked accounts directly
     const linked = user?.linkedAccounts.find(a => a.type === 'wallet' && (a as any).chainType === 'solana') as any;
     return linked?.address || null;
   })();
@@ -121,6 +124,18 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200 flex items-center justify-between">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Merchant Receiving Address</span>
+          <span className="text-xs font-mono text-zinc-900">{recipientAddress ? `${recipientAddress.slice(0, 12)}...${recipientAddress.slice(-12)}` : "No wallet detected"}</span>
+        </div>
+        {recipientAddress && (
+          <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-bold">
+            {privySolanaWallets.find(w => w.address === recipientAddress)?.walletClientType === 'privy' ? 'Embedded' : 'External'}
+          </span>
+        )}
+      </div>
+
       {apiError && (
         <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
           {apiError}
