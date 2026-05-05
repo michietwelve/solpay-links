@@ -137,7 +137,10 @@ export default function DashboardPage() {
     if (!user?.id) return;
     setIsProfileLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/merchants/${user.id}`);
+      const token = await getAccessToken();
+      const res = await fetch(`${API_BASE}/api/merchants/${user.id}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
       if (res.ok) {
         const data = await res.json();
         setProfile(data);
@@ -443,6 +446,22 @@ export default function DashboardPage() {
             onSettingsClick={() => setModal("settings")}
             onProfileClick={() => setModal("profile")}
           />
+          <div className="w-px h-6 bg-zinc-200 mx-1"></div>
+          <button
+            onClick={() => setIsIncognito(!isIncognito)}
+            className={`flex items-center justify-center w-9 h-9 rounded-lg border transition-all ${
+              isIncognito 
+                ? 'bg-zinc-900 text-white border-zinc-900 shadow-md' 
+                : 'bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50'
+            }`}
+            title={isIncognito ? "Disable Incognito Mode" : "Enable Incognito Mode"}
+          >
+            {isIncognito ? (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+            )}
+          </button>
           <button
             onClick={() => setModal("create")}
             disabled={!address || address.startsWith("0x")}
@@ -565,17 +584,6 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between mb-4 mt-8">
           <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
             Overview
-            <button
-              onClick={() => setIsIncognito(!isIncognito)}
-              className="text-zinc-400 hover:text-zinc-600 transition-colors p-1 rounded-md hover:bg-zinc-100"
-              title={isIncognito ? "Reveal stats" : "Hide stats (Incognito Mode)"}
-            >
-              {isIncognito ? (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-              )}
-            </button>
           </h2>
         </div>
         <div className="grid grid-cols-4 gap-4 mb-8">
@@ -663,9 +671,9 @@ export default function DashboardPage() {
                       <p className="text-xs font-mono text-zinc-400 mt-0.5">{l.id}</p>
                     </td>
                     <td className="px-5 py-3.5 text-sm text-zinc-600">{l.token}</td>
-                    <td className="px-5 py-3.5 text-sm font-mono">{formatAmount(l.amountLamports, l.token)}</td>
+                    <td className="px-5 py-3.5 text-sm font-mono">{isIncognito ? "••••" : formatAmount(l.amountLamports, l.token)}</td>
                     <td className="px-5 py-3.5 text-sm font-mono text-zinc-600">
-                      {l.paymentCount}{l.maxPayments !== null ? `/${l.maxPayments}` : ""}
+                      {isIncognito ? "—" : `${l.paymentCount}${l.maxPayments !== null ? `/${l.maxPayments}` : ""}`}
                     </td>
                     <td className="px-5 py-3.5">
                       <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusPill(getEffectiveStatus(l))}`}>
@@ -735,8 +743,8 @@ export default function DashboardPage() {
               <div className="space-y-0">
                 {[
                   ["Token", detailLink.token],
-                  ["Amount", formatAmount(detailLink.amountLamports, detailLink.token)],
-                  ["Payments", `${detailLink.paymentCount}${detailLink.maxPayments !== null ? ` / ${detailLink.maxPayments}` : ""}`],
+                  ["Amount", isIncognito ? "••••" : formatAmount(detailLink.amountLamports, detailLink.token)],
+                  ["Payments", isIncognito ? "—" : `${detailLink.paymentCount}${detailLink.maxPayments !== null ? ` / ${detailLink.maxPayments}` : ""}`],
                   ["Memo", detailLink.memo ?? "—"],
                   ["Expires", detailLink.expiresAt ? new Date(detailLink.expiresAt).toLocaleDateString() : "Never"],
                   ["Created", new Date(detailLink.createdAt).toLocaleDateString()],
@@ -845,48 +853,92 @@ export default function DashboardPage() {
       {modal === "profile" && (
         <div className="fixed inset-0 z-[60] flex justify-end animate-in fade-in duration-300 bg-black/40 backdrop-blur-sm" onClick={() => setModal(null)}>
           <div className="w-full max-w-md bg-white h-full shadow-2xl animate-in slide-in-from-right duration-500" onClick={e => e.stopPropagation()}>
-            <div className="p-0 overflow-y-auto h-full flex flex-col">
-              <div className="h-48 bg-zinc-900 relative">
-                <button onClick={() => setModal(null)} className="absolute right-6 top-6 text-white/50 hover:text-white text-3xl">×</button>
-                <div className="absolute -bottom-10 left-8 w-24 h-24 bg-white rounded-3xl shadow-xl flex items-center justify-center border-4 border-white">
-                  <div className="w-16 h-16 bg-zinc-900 text-white rounded-2xl flex items-center justify-center text-2xl font-bold uppercase">
-                    {user?.email?.address?.[0] ?? "B"}
+              <div className="p-0 overflow-y-auto h-full flex flex-col">
+                <div className="h-48 bg-zinc-900 relative">
+                  <button onClick={() => setModal(null)} className="absolute right-6 top-6 text-white/50 hover:text-white text-3xl">×</button>
+                  <div className="absolute -bottom-10 left-8 w-24 h-24 bg-white rounded-3xl shadow-xl flex items-center justify-center border-4 border-white overflow-hidden">
+                    {profile?.logoUrl ? (
+                      <img src={profile.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-16 h-16 bg-zinc-900 text-white rounded-2xl flex items-center justify-center text-2xl font-bold uppercase">
+                        {user?.email?.address?.[0] ?? "B"}
+                      </div>
+                    )}
+                  </div>
+                  <div className="absolute bottom-4 right-6 flex gap-2">
+                    <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded-md border border-emerald-500/30 uppercase tracking-tighter">Verified Merchant</span>
+                    <span className="px-2 py-1 bg-amber-500/20 text-amber-400 text-[10px] font-bold rounded-md border border-amber-500/30 uppercase tracking-tighter">Devnet</span>
                   </div>
                 </div>
-              </div>
-              <div className="p-8 pt-16 space-y-8 flex-1">
-                <div>
-                  <h2 className="text-2xl font-bold text-zinc-900">{user?.email?.address?.split('@')[0] ?? "Merchant"}</h2>
-                  <p className="text-zinc-500 text-sm mt-1">Solana Merchant since April 2024</p>
-                </div>
+                <div className="p-8 pt-16 space-y-8 flex-1">
+                  <div>
+                    <h2 className="text-2xl font-bold text-zinc-900 leading-tight">
+                      {profile?.businessName ?? user?.email?.address?.split('@')[0] ?? "Merchant"}
+                    </h2>
+                    <p className="text-zinc-500 text-sm mt-1">{user?.email?.address}</p>
+                  </div>
 
-                <div className="space-y-4 pt-4">
-                  <button onClick={() => setModal("settings")} className="w-full p-4 bg-zinc-50 rounded-2xl text-sm font-medium flex items-center justify-between hover:bg-zinc-100 transition-all">
-                    <span>Manage Branding</span>
-                    <svg className="w-4 h-4 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                  </button>
-                  <button className="w-full p-4 bg-zinc-50 rounded-2xl text-sm font-medium flex items-center justify-between hover:bg-zinc-100 transition-all">
-                    <span>Support Center</span>
-                    <svg className="w-4 h-4 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                  </button>
-                  <button onClick={logout} className="w-full p-4 bg-red-50 text-red-600 rounded-2xl text-sm font-bold flex items-center justify-between hover:bg-red-100 transition-all">
-                    <span>Log Out</span>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                  </button>
-                </div>
+                  <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Primary Wallet</span>
+                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Active</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <code className="text-xs font-mono text-zinc-600 bg-white px-2 py-1 rounded border border-zinc-100">
+                        {address?.slice(0, 8)}...{address?.slice(-8)}
+                      </code>
+                      <button 
+                        onClick={() => { navigator.clipboard.writeText(address ?? ''); }}
+                        className="text-[10px] font-bold text-zinc-400 hover:text-zinc-900 uppercase underline"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
 
-                <div className="mt-auto flex gap-4 py-8 text-[10px] text-zinc-400 font-bold uppercase tracking-widest justify-center">
-                  <a href="/legal/terms" className="hover:text-zinc-900">Terms</a>
-                  <span>•</span>
-                  <a href="/legal/privacy" className="hover:text-zinc-900">Privacy</a>
-                  <span>•</span>
-                  <a href="#" className="hover:text-zinc-900">v1.2.0</a>
+                  <div className="space-y-3 pt-2">
+                    <button onClick={() => setModal("settings")} className="w-full p-4 bg-white border border-zinc-200 rounded-2xl text-sm font-bold flex items-center justify-between hover:bg-zinc-50 transition-all group">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center group-hover:bg-white transition-colors">
+                          <svg className="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                        </div>
+                        <span>Manage Branding</span>
+                      </div>
+                      <svg className="w-4 h-4 text-zinc-300 group-hover:text-zinc-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                    
+                    <button onClick={() => window.open('https://dial.to', '_blank')} className="w-full p-4 bg-white border border-zinc-200 rounded-2xl text-sm font-bold flex items-center justify-between hover:bg-zinc-50 transition-all group">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center group-hover:bg-white transition-colors">
+                          <svg className="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                        </div>
+                        <span>Test Blink Validator</span>
+                      </div>
+                      <svg className="w-4 h-4 text-zinc-300 group-hover:text-zinc-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    </button>
+
+                    <button onClick={logout} className="w-full p-4 bg-white border border-red-100 text-red-600 rounded-2xl text-sm font-bold flex items-center justify-between hover:bg-red-50 transition-all group">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center group-hover:bg-white transition-colors">
+                          <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                        </div>
+                        <span>Log Out</span>
+                      </div>
+                    </button>
+                  </div>
+
+                  <div className="mt-auto flex gap-4 py-8 text-[10px] text-zinc-400 font-bold uppercase tracking-widest justify-center">
+                    <a href="/legal/terms" className="hover:text-zinc-900">Terms</a>
+                    <span>•</span>
+                    <a href="/legal/privacy" className="hover:text-zinc-900">Privacy</a>
+                    <span>•</span>
+                    <a href="#" className="hover:text-zinc-900">v1.2.0</a>
+                  </div>
+                </div>
+                <div className="p-8 bg-white border-t border-zinc-100 flex gap-3">
+                  <button onClick={() => setModal("settings")} className="flex-1 py-4 bg-zinc-900 text-white font-bold rounded-2xl shadow-xl shadow-zinc-200 hover:bg-zinc-800 transition-all">Storefront Settings</button>
                 </div>
               </div>
-              <div className="p-8 bg-zinc-50 border-t border-zinc-100">
-                <button className="w-full py-4 bg-emerald-500 text-white font-bold rounded-2xl shadow-lg shadow-emerald-200">Update Profile</button>
-              </div>
-            </div>
           </div>
         </div>
       )}
