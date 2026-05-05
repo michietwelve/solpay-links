@@ -825,30 +825,6 @@ export default function DashboardPage() {
                   Permanently remove this link and all its payment history from your dashboard.
                 </p>
               </div>
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-sm font-black text-zinc-900">
-                            {Number(p.amountLamports) / (p.token === "SOL" ? 1e9 : 1e6)}
-                          </span>
-                          <span className="text-[10px] font-bold text-zinc-400">{p.token}</span>
-                        </div>
-                        <div className="flex items-center justify-between pt-1">
-                          <span className="text-[10px] text-zinc-400 font-medium">{timeAgo(p.createdAt)}</span>
-                          {p.signature && (
-                            <a 
-                              href={`https://explorer.solana.com/tx/${p.signature}?cluster=devnet`} 
-                              target="_blank" 
-                              className="text-[10px] font-bold text-zinc-900 hover:underline uppercase flex items-center gap-1"
-                            >
-                              Explorer
-                              <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
           </div>
         </>
