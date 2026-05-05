@@ -164,6 +164,24 @@ export default function StorefrontSettings({ profile, onSave, onExport }: Storef
                     />
                   </div>
 
+                  <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 group hover:border-zinc-300 transition-colors relative overflow-hidden">
+                    <div className="absolute top-2 right-2 px-2 py-0.5 bg-zinc-200 text-zinc-500 text-[7px] font-black uppercase rounded tracking-widest">SNS Identity</div>
+                    <label className="text-[10px] font-black text-zinc-900 uppercase tracking-widest mb-3 block">Link .sol Domain</label>
+                    <div className="flex gap-2">
+                      <input 
+                        placeholder="e.g. merchant.sol"
+                        disabled={true}
+                        className="flex-1 p-4 bg-white border border-zinc-200 rounded-xl text-sm font-bold opacity-50 cursor-not-allowed"
+                      />
+                      <button 
+                        onClick={() => alert("SNS linking is coming soon! Claim your .sol handle on Mainnet launch.")}
+                        className="px-4 py-2 bg-zinc-900 text-white text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-zinc-800 transition-all"
+                      >
+                        Connect
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 group hover:border-zinc-300 transition-colors">
                     <div className="flex items-center justify-between mb-3">
                       <label className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Accent Color</label>

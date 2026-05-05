@@ -168,6 +168,22 @@ export default function WithdrawModal({
             </div>
           </div>
 
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                setTimeout(() => window.Jupiter.resume(), 100);
+              }}
+              className="w-full p-4 bg-gradient-to-r from-zinc-800 to-zinc-900 text-[#c5a36e] border border-zinc-700 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:shadow-[0_10px_25px_rgba(197,163,110,0.15)] transition-all flex items-center justify-center gap-3 group"
+            >
+              <svg className="w-4 h-4 group-hover:rotate-12 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L13 16M17 20L21 16" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Swap via Jupiter Instead
+            </button>
+          </div>
+
           <div className="flex gap-3 pt-2">
             <button
               type="button"
