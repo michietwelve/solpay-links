@@ -23,55 +23,34 @@ declare global {
   }
 }
 
-// Exported so the dashboard button can call it safely
+let isJupiterInitialized = false;
+
 export function openJupiterSwap() {
   if (typeof window !== "undefined" && window.Jupiter) {
-    window.Jupiter.resume();
+    if (!isJupiterInitialized) {
+      isJupiterInitialized = true;
+      window.Jupiter.init({
+        // Modal mode: Jupiter renders as a full overlay
+        displayMode: "modal",
+
+        // We omit 'endpoint' here so Jupiter uses its internal robust RPC,
+        // preventing the "Your RPC is not responding" errors.
+
+        strictTokenList: false,
+
+        formProps: {
+          initialInputMint: "So11111111111111111111111111111111111111112", // SOL
+          initialOutputMint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC
+        },
+        containerStyles: { zIndex: 9999 },
+      });
+    } else {
+      window.Jupiter.resume();
+    }
   }
 }
 
 export function JupiterTerminal() {
-  const initialised = useRef(false);
-
-  const initJupiter = useCallback(() => {
-    if (initialised.current || !window.Jupiter) return;
-    initialised.current = true;
-
-    window.Jupiter.init({
-      // Modal mode: Jupiter renders as a full overlay triggered by resume()
-      displayMode: "modal",
-
-      // Jupiter ONLY supports mainnet-beta for token resolution and routing.
-      // We must hardcode a mainnet RPC here, even if the rest of the app is on devnet.
-      endpoint: "https://api.mainnet-beta.solana.com",
-
-      strictTokenList: false,
-
-      // Pre-fill: merchant is swapping earnings → output to USDC by default
-      formProps: {
-        initialInputMint: "So11111111111111111111111111111111111111112", // SOL
-        initialOutputMint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC
-      },
-
-      // Jupiter Terminal appearance
-      containerStyles: { zIndex: 9999 },
-    });
-  }, []);
-
-  useEffect(() => {
-    // If the SDK loaded synchronously (cached), init immediately
-    if (window.Jupiter) {
-      initJupiter();
-      return;
-    }
-
-    // Otherwise wait for the SDK's own ready event
-    document.addEventListener("jupiter-terminal-ready", initJupiter);
-    return () => {
-      document.removeEventListener("jupiter-terminal-ready", initJupiter);
-    };
-  }, [initJupiter]);
-
-  // No visible DOM — Jupiter mounts its own portal
+  // No visible DOM — Jupiter mounts its own portal when initialized
   return null;
 }
