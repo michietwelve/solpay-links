@@ -39,15 +39,16 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
 
   // Priority: Solana Wallet Adapter > Privy Embedded Solana wallet > Linked Solana wallets
   const recipientAddress = (() => {
+    // 1. Check for external wallet via adapter
     if (solanaPublicKey) return solanaPublicKey.toBase58();
     
-    // Find the embedded wallet or any linked solana wallet from Privy
-    const sol = user?.linkedAccounts.find(a => 
+    // 2. Check for Privy embedded or linked Solana wallets
+    const solAccount = user?.linkedAccounts.find(a => 
       a.type === 'wallet' && 
-      (a as any).chainType === 'solana'
+      ((a as any).chainType?.toLowerCase() === 'solana' || (a as any).connectorType === 'embedded')
     ) as any;
     
-    if (sol) return sol.address;
+    if (solAccount?.address) return solAccount.address;
     return null;
   })();
 
@@ -81,7 +82,7 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
     e.preventDefault();
     if (!validate()) return;
     if (!recipientAddress) {
-      setApiError("Please connect your Solana wallet (Phantom/Backpack) first.");
+      setApiError("Identity Error: We couldn't find a Solana wallet associated with your account. Please link a wallet or sign in again.");
       return;
     }
 
