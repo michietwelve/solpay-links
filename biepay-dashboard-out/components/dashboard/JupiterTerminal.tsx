@@ -41,10 +41,9 @@ export function JupiterTerminal() {
       // Modal mode: Jupiter renders as a full overlay triggered by resume()
       displayMode: "modal",
 
-      // Use the project RPC; fall back to devnet for safety
-      endpoint:
-        process.env.NEXT_PUBLIC_RPC_ENDPOINT ??
-        "https://api.devnet.solana.com",
+      // Jupiter ONLY supports mainnet-beta for token resolution and routing.
+      // We must hardcode a mainnet RPC here, even if the rest of the app is on devnet.
+      endpoint: "https://api.mainnet-beta.solana.com",
 
       strictTokenList: false,
 
