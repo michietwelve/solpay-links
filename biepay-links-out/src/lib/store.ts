@@ -72,9 +72,18 @@ export async function getLinkById(id: string): Promise<PaymentLink | undefined> 
   return link ? mapLink(link) : undefined;
 }
 
-export async function getAllLinks(merchantId?: string): Promise<PaymentLink[]> {
+export async function getAllLinks(merchantId?: string | string[]): Promise<PaymentLink[]> {
+  let where = {};
+  if (merchantId) {
+    if (Array.isArray(merchantId)) {
+      where = { merchantId: { in: merchantId } };
+    } else {
+      where = { merchantId };
+    }
+  }
+
   const links = await prisma.paymentLink.findMany({
-    where: merchantId ? { merchantId } : {},
+    where,
     orderBy: { createdAt: "desc" },
   });
 
