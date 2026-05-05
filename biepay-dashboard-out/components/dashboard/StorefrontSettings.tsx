@@ -27,15 +27,30 @@ export default function StorefrontSettings({ profile, onSave, onExport }: Storef
     setIsSaving(true);
     setSaveStatus("idle");
     try {
+      // Sanitize accent color
+      let sanitizedColor = accentColor.trim();
+      if (sanitizedColor && !sanitizedColor.startsWith("#")) {
+        sanitizedColor = `#${sanitizedColor}`;
+      }
+      
+      // Basic URL validation for webhook
+      let sanitizedWebhook = webhookUrl.trim();
+      if (sanitizedWebhook && !sanitizedWebhook.startsWith("http")) {
+        // Simple heuristic: if they didn't put http, it's definitely not a valid URL for Zod
+        throw new Error("Webhook URL must start with http:// or https://");
+      }
+
       await onSave({
         businessName: businessName || null,
         logoUrl: logoUrl || null,
-        accentColor: accentColor || "#c5a36e",
-        webhookUrl: webhookUrl || null,
+        accentColor: sanitizedColor || "#c5a36e",
+        webhookUrl: sanitizedWebhook || null,
       });
       setSaveStatus("success");
       setTimeout(() => setSaveStatus("idle"), 3000);
-    } catch (e) {
+    } catch (e: any) {
+      console.error("Save failed:", e);
+      alert(e.message || "Could not save settings. Please check your inputs.");
       setSaveStatus("error");
       setTimeout(() => setSaveStatus("idle"), 3000);
     } finally {
