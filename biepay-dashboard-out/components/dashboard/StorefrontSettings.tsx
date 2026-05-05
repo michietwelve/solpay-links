@@ -23,12 +23,14 @@ export default function StorefrontSettings({ profile, onSave, onExport }: Storef
   const [webhookUrl, setWebhookUrl] = useState(profile.webhookUrl ?? "");
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = async () => {
     setIsSaving(true);
     setSaveStatus("idle");
     try {
+      setErrorMessage(null);
       // Sanitize accent color
       let sanitizedColor = accentColor.trim();
       if (sanitizedColor && !sanitizedColor.startsWith("#")) {
@@ -51,9 +53,12 @@ export default function StorefrontSettings({ profile, onSave, onExport }: Storef
       setTimeout(() => setSaveStatus("idle"), 3000);
     } catch (e: any) {
       console.error("Save failed:", e);
-      alert(e.message || "Could not save settings. Please check your inputs.");
+      setErrorMessage(e.message || "Failed to synchronize changes. Please verify your connection.");
       setSaveStatus("error");
-      setTimeout(() => setSaveStatus("idle"), 3000);
+      setTimeout(() => {
+        setSaveStatus("idle");
+        setErrorMessage(null);
+      }, 5000);
     } finally {
       setIsSaving(false);
     }
@@ -232,7 +237,19 @@ export default function StorefrontSettings({ profile, onSave, onExport }: Storef
       </div>
 
       {/* Action Footer */}
-      <div className="pt-4">
+      <div className="pt-4 space-y-4">
+        {errorMessage && (
+          <div className="p-4 bg-red-50 border border-red-100 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-300 flex items-start gap-3">
+            <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="space-y-1">
+              <p className="text-xs font-black text-red-900 uppercase tracking-tight">Sync Failure</p>
+              <p className="text-[11px] text-red-600 leading-tight font-medium">{errorMessage}</p>
+            </div>
+          </div>
+        )}
+
         <button
           onClick={handleSave}
           disabled={isSaving}
