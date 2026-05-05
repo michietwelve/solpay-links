@@ -16,6 +16,7 @@ import SuccessModal   from "../../components/dashboard/SuccessModal";
 import StorefrontSettings from "../../components/dashboard/StorefrontSettings";
 import RevenueChart    from "../../components/dashboard/RevenueChart";
 import Logo           from "../../components/layout/Logo";
+import ConfirmModal    from "../../components/dashboard/ConfirmModal";
 
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
@@ -107,6 +108,7 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<{ businessName: string | null; logoUrl: string | null; accentColor: string | null; webhookUrl: string | null } | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [analyticsData, setAnalyticsData] = useState<any[]>([]);
+  const [confirmConfig, setConfirmConfig] = useState<{ title: string; message: string; onConfirm: () => void; variant?: "danger" | "gold" } | null>(null);
 
   const filtered = links.filter(l =>
     (l.label.toLowerCase().includes(search.toLowerCase()) || l.id.includes(search)) &&
@@ -213,26 +215,33 @@ export default function DashboardPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Are you sure you want to delete this payment link?")) return;
-    setIsDeleting(true);
-    try {
-      const token = await getAccessToken();
-      await deleteLink(token ?? "", id);
-      setDetailLink(null);
-      setSuccessData({
-        title: "Link Deleted",
-        message: "The payment link has been permanently removed."
-      });
-      setModal("success");
-    } catch (err) {
-      setSuccessData({
-        title: "Delete Failed",
-        message: "We couldn't delete this link. Please try again later."
-      });
-      setModal("success");
-    } finally {
-      setIsDeleting(false);
-    }
+    setConfirmConfig({
+      title: "Delete Payment Link",
+      message: "Are you sure you want to permanently remove this link? All transaction history for this link will be purged from your dashboard.",
+      variant: "danger",
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        setIsDeleting(true);
+        try {
+          const token = await getAccessToken();
+          await deleteLink(token ?? "", id);
+          setDetailLink(null);
+          setSuccessData({
+            title: "Link Deleted",
+            message: "The payment link has been permanently removed."
+          });
+          setModal("success");
+        } catch (err) {
+          setSuccessData({
+            title: "Delete Failed",
+            message: "We couldn't delete this link. Please try again later."
+          });
+          setModal("success");
+        } finally {
+          setIsDeleting(false);
+        }
+      }
+    });
   }
 
   async function handleWithdraw(dest: string) {
@@ -291,7 +300,11 @@ export default function DashboardPage() {
 
   async function handleSweep() {
     if (!address || !publicKey) {
-      alert("Please connect your destination wallet (Phantom) first.");
+      setSuccessData({
+        title: "Connection Required",
+        message: "Please connect your destination wallet (Phantom) first to perform a sweep."
+      });
+      setModal("success");
       return;
     }
     setModal("sweep");
@@ -344,7 +357,11 @@ export default function DashboardPage() {
       }
 
       if (tx.instructions.length === 0) {
-        alert("No funds found to sweep.");
+        setSuccessData({
+          title: "Nothing to Sweep",
+          message: "No compatible funds (SOL, USDC, or USDT) were found in your embedded wallet."
+        });
+        setModal("success");
         setIsSweeping(false);
         return;
       }
@@ -369,7 +386,11 @@ export default function DashboardPage() {
       setTimeout(refreshBalance, 2000);
     } catch (err: any) {
       console.error("Sweep failed:", err);
-      alert("Sweep failed: " + (err.message || "Unknown error"));
+      setSuccessData({
+        title: "Sweep Failed",
+        message: err.message || "An unexpected error occurred during the transfer."
+      });
+      setModal("success");
     } finally {
       setIsSweeping(false);
       setModal(null);
@@ -564,7 +585,11 @@ export default function DashboardPage() {
                         if (String(e).includes("already has an embedded wallet")) {
                           window.location.reload();
                         } else {
-                          alert("Wallet creation failed. Check browser console for details.");
+                          setSuccessData({
+                            title: "Generation Failed",
+                            message: "We encountered a network error while creating your secure wallet."
+                          });
+                          setModal("success");
                         }
                       });
                   }}
@@ -721,6 +746,14 @@ export default function DashboardPage() {
       {/* Share modal */}
       {modal === "share" && shareLink && (
         <ShareModal linkId={shareLink.id} label={shareLink.label} onClose={() => setModal(null)} />
+      )}
+
+      {/* Confirm modal */}
+      {confirmConfig && (
+        <ConfirmModal
+          {...confirmConfig}
+          onCancel={() => setConfirmConfig(null)}
+        />
       )}
 
       {/* Detail slide-over */}

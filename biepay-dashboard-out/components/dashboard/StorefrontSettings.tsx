@@ -281,8 +281,12 @@ export default function StorefrontSettings({ profile, onSave, onExport }: Storef
                 </div>
 
                 <button 
-                  className="w-full py-4 bg-[#c5a36e] text-black font-black text-xs uppercase tracking-[0.2em] rounded-xl hover:bg-[#d4b98c] transition-all shadow-[0_10px_30px_rgba(197,163,110,0.2)] hover:shadow-[0_15px_40px_rgba(197,163,110,0.3)] hover:-translate-y-0.5 active:translate-y-0"
-                  onClick={() => alert("Enterprise onboarding coming soon! Check your email for early access.")}
+                  className="w-full py-4 bg-[#c5a36e] text-black font-black text-xs uppercase tracking-[0.2em] rounded-xl hover:bg-[#d4b98c] transition-all shadow-[0_10px_30px_rgba(197,163,110,0.25)] hover:shadow-[0_15px_40px_rgba(197,163,110,0.35)] hover:-translate-y-0.5 active:translate-y-0"
+                  onClick={() => {
+                    // Logic to show enterprise modal or redirect
+                    const btn = document.querySelector('button[onClick*="settings"]');
+                    if (btn) (btn as any).click(); // Close settings
+                  }}
                 >
                   Upgrade to Pro
                 </button>
