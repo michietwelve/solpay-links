@@ -225,6 +225,52 @@ export default function StorefrontSettings({ profile, onSave, onExport }: Storef
               </div>
             </div>
 
+            {/* Pro Upgrade Section */}
+            <div className="relative group p-8 rounded-[2.5rem] bg-gradient-to-br from-zinc-900 via-[#1a1a1a] to-black border border-white/10 shadow-2xl overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <svg className="w-24 h-24 text-[#c5a36e]" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+              </div>
+              
+              <div className="relative space-y-6">
+                <div className="flex items-center gap-3">
+                  <span className="px-3 py-1 bg-[#c5a36e]/10 text-[#c5a36e] text-[10px] font-black uppercase tracking-widest rounded-full border border-[#c5a36e]/20">
+                    BiePay Pro
+                  </span>
+                  <div className="h-px flex-1 bg-white/5"></div>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-white text-xl font-black tracking-tight">Scale Your Commerce</h3>
+                  <p className="text-zinc-400 text-xs leading-relaxed max-w-sm">
+                    Unlock enterprise-grade features designed for high-volume merchants and global brands.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  {[
+                    { label: "Custom Domains", icon: "🌐" },
+                    { label: "Zero Fees", icon: "💎" },
+                    { label: "Deep AI Analytics", icon: "🧠" },
+                    { label: "Priority API", icon: "⚡" }
+                  ].map((feature, i) => (
+                    <div key={i} className="p-3 bg-white/5 rounded-xl border border-white/5 flex items-center gap-3">
+                      <span className="text-sm">{feature.icon}</span>
+                      <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-tight">{feature.label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <button 
+                  className="w-full py-4 bg-[#c5a36e] text-black font-black text-xs uppercase tracking-[0.2em] rounded-xl hover:bg-[#d4b98c] transition-all shadow-[0_10px_30px_rgba(197,163,110,0.2)] hover:shadow-[0_15px_40px_rgba(197,163,110,0.3)] hover:-translate-y-0.5 active:translate-y-0"
+                  onClick={() => alert("Enterprise onboarding coming soon! Check your email for early access.")}
+                >
+                  Upgrade to Pro
+                </button>
+              </div>
+            </div>
+
             <div className="p-8 bg-red-50/50 rounded-[2.5rem] border border-red-100 shadow-sm group hover:bg-red-50 transition-colors">
               <h4 className="text-red-900 text-sm font-black tracking-tight mb-2">Danger Zone</h4>
               <p className="text-red-500 text-[10px] font-bold uppercase tracking-[0.15em] mb-6">Irreversible Account Deletion</p>
