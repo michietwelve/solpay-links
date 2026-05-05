@@ -1,3 +1,29 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply text-zinc-900 bg-white;
+  }
+}
+
+/* Wallet Adapter Custom Premium Styling */
+.wallet-adapter-button {
+  @apply !bg-zinc-900 !rounded-2xl !font-black !text-[10px] !uppercase !tracking-[0.2em] !h-12 !px-6 !shadow-xl !transition-all !duration-300 hover:!bg-zinc-800 hover:!scale-[1.02] active:!scale-95 !border-none;
+}
+
+.wallet-adapter-modal-wrapper {
+  @apply !rounded-[2.5rem] !bg-white !p-4 !border-none;
+}
+
+.wallet-adapter-modal-button-close {
+  @apply !bg-zinc-100 !rounded-full !p-2 hover:!bg-zinc-200 !transition-colors;
+}
