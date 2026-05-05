@@ -16,6 +16,7 @@ import SuccessModal   from "../../components/dashboard/SuccessModal";
 import StorefrontSettings from "../../components/dashboard/StorefrontSettings";
 import RevenueChart    from "../../components/dashboard/RevenueChart";
 import Logo           from "../../components/layout/Logo";
+import ConfirmModal    from "../../components/dashboard/ConfirmModal";
 
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
@@ -104,9 +105,19 @@ export default function DashboardPage() {
   const [withdrawSource, setWithdrawSource] = useState<string | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
   const [successData, setSuccessData] = useState<{ title: string; message: string; txSig?: string } | null>(null);
+  
+  // Play sound on success modal
+  useMemo(() => {
+    if (successData) {
+      const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3");
+      audio.volume = 0.3;
+      audio.play().catch(() => {});
+    }
+  }, [successData]);
   const [profile, setProfile] = useState<{ businessName: string | null; logoUrl: string | null; accentColor: string | null; webhookUrl: string | null } | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [analyticsData, setAnalyticsData] = useState<any[]>([]);
+  const [confirmConfig, setConfirmConfig] = useState<{ title: string; message: string; onConfirm: () => void; variant?: "danger" | "gold" } | null>(null);
 
   const filtered = links.filter(l =>
     (l.label.toLowerCase().includes(search.toLowerCase()) || l.id.includes(search)) &&
@@ -213,26 +224,33 @@ export default function DashboardPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Are you sure you want to delete this payment link?")) return;
-    setIsDeleting(true);
-    try {
-      const token = await getAccessToken();
-      await deleteLink(token ?? "", id);
-      setDetailLink(null);
-      setSuccessData({
-        title: "Link Deleted",
-        message: "The payment link has been permanently removed."
-      });
-      setModal("success");
-    } catch (err) {
-      setSuccessData({
-        title: "Delete Failed",
-        message: "We couldn't delete this link. Please try again later."
-      });
-      setModal("success");
-    } finally {
-      setIsDeleting(false);
-    }
+    setConfirmConfig({
+      title: "Delete Payment Link",
+      message: "Are you sure you want to permanently remove this link? All transaction history for this link will be purged from your dashboard.",
+      variant: "danger",
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        setIsDeleting(true);
+        try {
+          const token = await getAccessToken();
+          await deleteLink(token ?? "", id);
+          setDetailLink(null);
+          setSuccessData({
+            title: "Link Deleted",
+            message: "The payment link has been permanently removed."
+          });
+          setModal("success");
+        } catch (err) {
+          setSuccessData({
+            title: "Delete Failed",
+            message: "We couldn't delete this link. Please try again later."
+          });
+          setModal("success");
+        } finally {
+          setIsDeleting(false);
+        }
+      }
+    });
   }
 
   async function handleWithdraw(dest: string) {
@@ -291,7 +309,11 @@ export default function DashboardPage() {
 
   async function handleSweep() {
     if (!address || !publicKey) {
-      alert("Please connect your destination wallet (Phantom) first.");
+      setSuccessData({
+        title: "Connection Required",
+        message: "Please connect your destination wallet (Phantom) first to perform a sweep."
+      });
+      setModal("success");
       return;
     }
     setModal("sweep");
@@ -344,7 +366,11 @@ export default function DashboardPage() {
       }
 
       if (tx.instructions.length === 0) {
-        alert("No funds found to sweep.");
+        setSuccessData({
+          title: "Nothing to Sweep",
+          message: "No compatible funds (SOL, USDC, or USDT) were found in your embedded wallet."
+        });
+        setModal("success");
         setIsSweeping(false);
         return;
       }
@@ -369,7 +395,11 @@ export default function DashboardPage() {
       setTimeout(refreshBalance, 2000);
     } catch (err: any) {
       console.error("Sweep failed:", err);
-      alert("Sweep failed: " + (err.message || "Unknown error"));
+      setSuccessData({
+        title: "Sweep Failed",
+        message: err.message || "An unexpected error occurred during the transfer."
+      });
+      setModal("success");
     } finally {
       setIsSweeping(false);
       setModal(null);
@@ -564,7 +594,11 @@ export default function DashboardPage() {
                         if (String(e).includes("already has an embedded wallet")) {
                           window.location.reload();
                         } else {
-                          alert("Wallet creation failed. Check browser console for details.");
+                          setSuccessData({
+                            title: "Generation Failed",
+                            message: "We encountered a network error while creating your secure wallet."
+                          });
+                          setModal("success");
                         }
                       });
                   }}
@@ -723,6 +757,14 @@ export default function DashboardPage() {
         <ShareModal linkId={shareLink.id} label={shareLink.label} onClose={() => setModal(null)} />
       )}
 
+      {/* Confirm modal */}
+      {confirmConfig && (
+        <ConfirmModal
+          {...confirmConfig}
+          onCancel={() => setConfirmConfig(null)}
+        />
+      )}
+
       {/* Detail slide-over */}
       {detailLink && (
         <>
@@ -782,57 +824,6 @@ export default function DashboardPage() {
                 <p className="text-[10px] text-zinc-400 text-center mt-3 leading-relaxed">
                   Permanently remove this link and all its payment history from your dashboard.
                 </p>
-              </div>
-
-              {/* Payment History Section */}
-              <div className="pt-8 border-t border-zinc-100 space-y-4 pb-20">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Transaction History</h3>
-                  <span className="text-[10px] font-bold text-zinc-400 bg-zinc-50 px-2 py-0.5 rounded">{payments.length} Payments</span>
-                </div>
-
-                {isPaymentsLoading ? (
-                  <div className="py-8 flex flex-col items-center gap-3">
-                    <div className="w-5 h-5 border-2 border-zinc-200 border-t-zinc-900 rounded-full animate-spin"></div>
-                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">Retrieving Ledger...</span>
-                  </div>
-                ) : payments.length === 0 ? (
-                  <div className="py-10 text-center border-2 border-dashed border-zinc-100 rounded-2xl">
-                    <p className="text-xs text-zinc-400 font-medium">No transactions recorded yet.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {payments.map(p => (
-                      <div key={p.id} className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 space-y-2 group hover:border-zinc-300 transition-colors">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-mono text-zinc-400">
-                            {p.payerWallet.slice(0, 4)}...{p.payerWallet.slice(-4)}
-                          </span>
-                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded uppercase">Confirmed</span>
-                        </div>
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-sm font-black text-zinc-900">
-                            {Number(p.amountLamports) / (p.token === "SOL" ? 1e9 : 1e6)}
-                          </span>
-                          <span className="text-[10px] font-bold text-zinc-400">{p.token}</span>
-                        </div>
-                        <div className="flex items-center justify-between pt-1">
-                          <span className="text-[10px] text-zinc-400 font-medium">{timeAgo(p.createdAt)}</span>
-                          {p.signature && (
-                            <a 
-                              href={`https://explorer.solana.com/tx/${p.signature}?cluster=devnet`} 
-                              target="_blank" 
-                              className="text-[10px] font-bold text-zinc-900 hover:underline uppercase flex items-center gap-1"
-                            >
-                              Explorer
-                              <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
           </div>
