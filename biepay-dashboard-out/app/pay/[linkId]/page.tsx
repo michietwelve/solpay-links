@@ -131,15 +131,21 @@ export default function PayPage() {
     return () => clearTimeout(timer);
   }, [stage]);
 
-  // Trigger confetti on success
+  // Trigger confetti and sound on success
   useEffect(() => {
     if (stage === "success") {
+      // Confetti
       confetti({
         particleCount: 150,
         spread: 70,
         origin: { y: 0.6 },
-        colors: ['#10b981', '#34d399', '#059669', '#a7f3d0']
+        colors: ['#c5a36e', '#d4b98c', '#18181b', '#ffffff']
       });
+
+      // Premium Chime
+      const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3");
+      audio.volume = 0.4;
+      audio.play().catch(e => console.log("Audio play blocked by browser policy"));
     }
   }, [stage]);
 

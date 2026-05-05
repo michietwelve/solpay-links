@@ -105,6 +105,15 @@ export default function DashboardPage() {
   const [withdrawSource, setWithdrawSource] = useState<string | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
   const [successData, setSuccessData] = useState<{ title: string; message: string; txSig?: string } | null>(null);
+  
+  // Play sound on success modal
+  useMemo(() => {
+    if (successData) {
+      const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3");
+      audio.volume = 0.3;
+      audio.play().catch(() => {});
+    }
+  }, [successData]);
   const [profile, setProfile] = useState<{ businessName: string | null; logoUrl: string | null; accentColor: string | null; webhookUrl: string | null } | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [analyticsData, setAnalyticsData] = useState<any[]>([]);
