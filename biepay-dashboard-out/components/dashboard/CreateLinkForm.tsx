@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { usePrivy } from "@privy-io/react-auth";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { createLink } from "../../hooks/useLinks";
 import type { CreateLinkResponse, SupportedToken } from "../../lib/api";
@@ -35,13 +35,18 @@ const INITIAL: FormState = {
 
 export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
   const { user, getAccessToken } = usePrivy();
-  const { wallets: privyWallets } = useWallets();
   const { publicKey: solanaPublicKey } = useWallet();
 
-  // Priority: Solana Wallet Adapter > Privy Solana wallet > never EVM
+  // Priority: Solana Wallet Adapter > Privy Embedded Solana wallet > Linked Solana wallets
   const recipientAddress = (() => {
     if (solanaPublicKey) return solanaPublicKey.toBase58();
-    const sol = privyWallets.find(w => (w as any).chainType === 'solana');
+    
+    // Find the embedded wallet or any linked solana wallet from Privy
+    const sol = user?.linkedAccounts.find(a => 
+      a.type === 'wallet' && 
+      (a as any).chainType === 'solana'
+    ) as any;
+    
     if (sol) return sol.address;
     return null;
   })();
