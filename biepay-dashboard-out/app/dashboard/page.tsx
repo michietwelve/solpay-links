@@ -783,6 +783,57 @@ export default function DashboardPage() {
                   Permanently remove this link and all its payment history from your dashboard.
                 </p>
               </div>
+
+              {/* Payment History Section */}
+              <div className="pt-8 border-t border-zinc-100 space-y-4 pb-20">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Transaction History</h3>
+                  <span className="text-[10px] font-bold text-zinc-400 bg-zinc-50 px-2 py-0.5 rounded">{payments.length} Payments</span>
+                </div>
+
+                {isPaymentsLoading ? (
+                  <div className="py-8 flex flex-col items-center gap-3">
+                    <div className="w-5 h-5 border-2 border-zinc-200 border-t-zinc-900 rounded-full animate-spin"></div>
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">Retrieving Ledger...</span>
+                  </div>
+                ) : payments.length === 0 ? (
+                  <div className="py-10 text-center border-2 border-dashed border-zinc-100 rounded-2xl">
+                    <p className="text-xs text-zinc-400 font-medium">No transactions recorded yet.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {payments.map(p => (
+                      <div key={p.id} className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 space-y-2 group hover:border-zinc-300 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-mono text-zinc-400">
+                            {p.payerWallet.slice(0, 4)}...{p.payerWallet.slice(-4)}
+                          </span>
+                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded uppercase">Confirmed</span>
+                        </div>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-sm font-black text-zinc-900">
+                            {Number(p.amountLamports) / (p.token === "SOL" ? 1e9 : 1e6)}
+                          </span>
+                          <span className="text-[10px] font-bold text-zinc-400">{p.token}</span>
+                        </div>
+                        <div className="flex items-center justify-between pt-1">
+                          <span className="text-[10px] text-zinc-400 font-medium">{timeAgo(p.createdAt)}</span>
+                          {p.signature && (
+                            <a 
+                              href={`https://explorer.solana.com/tx/${p.signature}?cluster=devnet`} 
+                              target="_blank" 
+                              className="text-[10px] font-bold text-zinc-900 hover:underline uppercase flex items-center gap-1"
+                            >
+                              Explorer
+                              <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </>

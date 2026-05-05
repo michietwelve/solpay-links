@@ -427,30 +427,76 @@ export default function PayPage() {
   }
 
   if (stage === "success" && link) {
+    const formattedAmount = link.isOpenAmount ? amount : link.amountHuman;
+    const now = new Date().toLocaleString();
+
     return (
       <Card>
-        <div className="px-8 py-14 text-center space-y-4 animate-in fade-in zoom-in duration-500">
-          <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto shadow-[0_0_40px_rgba(16,185,129,0.2)]">
-            <svg className="w-10 h-10 text-emerald-500 animate-[bounce_1s_ease-in-out_infinite]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold tracking-tight text-zinc-900">Payment sent!</h2>
-          <p className="text-sm text-zinc-500">
-            Your payment to <span className="font-semibold text-zinc-800">{link.label}</span> has been confirmed on-chain.
-          </p>
-          {txSig && (
-            <div className="pt-4">
-              <a
-                href={`https://explorer.solana.com/tx/${txSig}?cluster=devnet`}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-xs font-mono text-zinc-600 font-medium rounded-full transition-colors"
-              >
-                View on Explorer ↗
-              </a>
+        <div className="animate-in fade-in zoom-in duration-700">
+          {/* Header Branding */}
+          <div className="p-8 text-center border-b border-zinc-100 bg-zinc-50/50">
+            <div className="w-16 h-16 bg-white rounded-2xl shadow-xl flex items-center justify-center mx-auto mb-4 border border-zinc-100 relative">
+              <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center border-2 border-white">
+                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" /></svg>
+              </div>
+              {link.merchant.logoUrl ? (
+                <img src={link.merchant.logoUrl} className="w-full h-full object-cover rounded-2xl" />
+              ) : (
+                <Logo className="w-10 h-10" />
+              )}
             </div>
-          )}
+            <h2 className="text-xl font-black text-zinc-900 tracking-tight">Payment Successful</h2>
+            <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest mt-1">Transaction Confirmed</p>
+          </div>
+
+          {/* Receipt Body */}
+          <div className="p-8 space-y-6">
+            <div className="flex flex-col items-center gap-1 mb-4">
+              <span className="text-4xl font-black text-zinc-950 tracking-tighter">{formattedAmount}</span>
+              <span className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em]">{link.token}</span>
+            </div>
+
+            <div className="space-y-4 pt-4 border-t border-zinc-100">
+              {[
+                ["Merchant", link.merchant.businessName || link.label],
+                ["Date", now],
+                ["Payer Wallet", `${walletAddr?.slice(0, 6)}...${walletAddr?.slice(-6)}`],
+                ["Network", "Solana Devnet"]
+              ].map(([k,v]) => (
+                <div key={k} className="flex justify-between items-center">
+                  <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{k}</span>
+                  <span className="text-xs font-bold text-zinc-900 truncate max-w-[180px]">{v}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-8 space-y-3">
+              {txSig && (
+                <a
+                  href={`https://explorer.solana.com/tx/${txSig}?cluster=devnet`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full py-4 bg-zinc-950 text-white text-[10px] font-black uppercase tracking-[0.25em] rounded-xl hover:bg-zinc-800 transition-all flex items-center justify-center gap-2 shadow-xl"
+                >
+                  View On Explorer
+                  <svg className="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                </a>
+              )}
+              
+              <button 
+                onClick={() => window.print()}
+                className="w-full py-4 bg-white border border-zinc-200 text-zinc-500 text-[10px] font-black uppercase tracking-[0.25em] rounded-xl hover:bg-zinc-50 transition-all"
+              >
+                Download Receipt
+              </button>
+            </div>
+          </div>
+
+          <div className="px-8 pb-8 text-center">
+            <p className="text-[10px] text-zinc-300 font-bold uppercase tracking-tighter">
+              Secured by BiePay Institutional Infrastructure
+            </p>
+          </div>
         </div>
       </Card>
     );
