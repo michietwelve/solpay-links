@@ -264,7 +264,8 @@ export default function DashboardPage() {
         } catch (err) {
           setSuccessData({
             title: "Delete Failed",
-            message: "We couldn't delete this link. Please try again later."
+            message: "We couldn't delete this link. Please try again later.",
+            isError: true
           });
           setModal("success");
         } finally {
@@ -418,7 +419,8 @@ export default function DashboardPage() {
       console.error("Sweep failed:", err);
       setSuccessData({
         title: "Sweep Failed",
-        message: err.message || "An unexpected error occurred during the transfer."
+        message: err.message || "An unexpected error occurred during the transfer.",
+        isError: true
       });
       setModal("success");
     } finally {
@@ -931,6 +933,7 @@ export default function DashboardPage() {
           title={successData.title}
           message={successData.message}
           txSig={successData.txSig}
+          isError={successData.isError}
           onClose={() => {
             setModal(null);
             setSuccessData(null);

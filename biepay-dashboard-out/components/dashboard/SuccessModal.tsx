@@ -7,11 +7,13 @@ interface SuccessModalProps {
   title: string;
   message: string;
   txSig?: string;
+  isError?: boolean;
   onClose: () => void;
 }
 
-export default function SuccessModal({ title, message, txSig, onClose }: SuccessModalProps) {
+export default function SuccessModal({ title, message, txSig, isError, onClose }: SuccessModalProps) {
   useEffect(() => {
+    if (isError) return;
     const duration = 3 * 1000;
     const animationEnd = Date.now() + duration;
     const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
@@ -39,11 +41,17 @@ export default function SuccessModal({ title, message, txSig, onClose }: Success
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500">
         <div className="p-8 flex flex-col items-center text-center">
-          <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-6">
-            <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-200">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-              </svg>
+          <div className={`w-20 h-20 ${isError ? "bg-red-50" : "bg-emerald-50"} rounded-full flex items-center justify-center mb-6`}>
+            <div className={`w-12 h-12 ${isError ? "bg-red-500 shadow-red-200" : "bg-emerald-500 shadow-emerald-200"} rounded-full flex items-center justify-center shadow-lg`}>
+              {isError ? (
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
             </div>
           </div>
 
