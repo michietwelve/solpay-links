@@ -10,6 +10,8 @@ export const prisma =
         url: process.env.DATABASE_URL?.replace("railwaypostgresql://", "postgresql://"),
       },
     },
+    // Optional: Log queries in non-production to help debug
+    log: process.env.NODE_ENV === "production" ? ["error"] : ["query", "info", "warn", "error"],
   });
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
