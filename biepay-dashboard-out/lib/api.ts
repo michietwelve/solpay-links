@@ -4,7 +4,7 @@
  * All dashboard components import from here — never raw fetch.
  */
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://solpay-links-production.up.railway.app";
+const BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://biepay-links-production.up.railway.app";
 
 // Public-facing base used for Blink / Action QR codes.
 // Must be reachable from the internet (e.g. a localtunnel / Railway URL).
