@@ -153,7 +153,10 @@ export default function PayPage() {
     if (!linkId) return;
     fetch(`${API_BASE}/pay/${linkId}`)
       .then(async r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        if (!r.ok) {
+          if (r.status >= 500) throw new Error("Payment gateway is temporarily offline. Please try again.");
+          throw new Error("Payment link not found.");
+        }
         return r.json();
       })
       .then((data: LinkData) => {
