@@ -32,7 +32,7 @@ const mockQvacCompletion = async (prompt: string): Promise<string> => {
     return "Your branding is now fully persistent! Your custom accent color (#c5a36e) is being applied to all 5 active payment links. Would you like me to suggest a matching high-contrast logo layout?";
   }
 
-  return "I'm your BiePay AI assistant, running locally via QVAC. I can help you analyze your revenue, check for transaction risks, or optimize your payment links without your data ever leaving this device.";
+  return "I'm your BiePay business assistant, running locally via QVAC. I can help you analyze your revenue, check for transaction risks, or optimize your payment links without your data ever leaving this device.";
 };
 
 export function AIAssistant() {
@@ -40,7 +40,7 @@ export function AIAssistant() {
   const [messages, setMessages] = useState<Message[]>([
     { 
       role: 'assistant', 
-      content: "Hi! I'm your BiePay AI assistant, powered by Tether's QVAC. I can help you analyze your merchant data privately on this device. What can I do for you today?" 
+      content: "Hi! I'm your BiePay business assistant, powered by Tether's QVAC. I can help you analyze your merchant data privately on this device. What can I do for you today?" 
     }
   ]);
   const [input, setInput] = useState('');
@@ -86,7 +86,7 @@ export function AIAssistant() {
             <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
           </div>
           <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 font-medium whitespace-nowrap">
-            Ask AI Assistant
+            Ask Business Assistant
           </span>
         </button>
       )}
@@ -101,7 +101,7 @@ export function AIAssistant() {
                 <Bot size={20} className="text-[#c5a36e]" />
               </div>
               <div>
-                <h3 className="font-semibold text-sm">BiePay AI Assistant</h3>
+                <h3 className="font-semibold text-sm">BiePay Business Assistant</h3>
                 <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
                   <p className="text-[10px] text-gray-400">Powered by Tether QVAC (Local Inference)</p>

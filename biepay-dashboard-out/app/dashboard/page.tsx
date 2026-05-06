@@ -124,6 +124,27 @@ export default function DashboardPage() {
     (!statusFilter || l.status === statusFilter)
   );
 
+  const downloadCSV = () => {
+    if (links.length === 0) return;
+    const headers = ["ID", "Label", "Token", "Amount", "Payments", "Status", "Created"];
+    const rows = links.map(l => [
+      l.id,
+      l.label,
+      l.token,
+      formatAmount(l.amountLamports, l.token),
+      l.paymentCount,
+      getEffectiveStatus(l),
+      new Date(l.createdAt).toLocaleDateString()
+    ]);
+    const csvContent = [headers, ...rows].map(r => r.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `biepay_links_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  };
+
   const RPC = process.env.NEXT_PUBLIC_RPC_ENDPOINT ?? "https://api.devnet.solana.com";
 
   // Real-time balance fetching
@@ -428,20 +449,45 @@ export default function DashboardPage() {
 
   if (!authenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-50">
-        <div className="text-center space-y-6">
-          <Logo className="w-16 h-16 mx-auto shadow-xl" />
-          <div className="space-y-2">
-            <h1 className="text-2xl font-bold tracking-tight text-zinc-900">BiePay Links</h1>
-            <p className="text-sm text-zinc-500">Log in to manage your merchant links</p>
+      <div className="min-h-screen bg-white">
+        <header className="px-6 h-20 flex items-center justify-between border-b border-zinc-100">
+          <div className="flex items-center gap-3">
+            <Logo className="w-8 h-8" variant="gold" />
+            <span className="font-bold text-lg">BiePay</span>
           </div>
-          <button
-            onClick={login}
-            className="px-10 py-3 bg-zinc-900 text-white rounded-2xl font-semibold hover:bg-zinc-800 transition-all shadow-lg shadow-zinc-200"
-          >
-            Connect
-          </button>
-        </div>
+          <button onClick={login} className="text-sm font-bold text-zinc-900 hover:text-zinc-600 transition-colors">Sign In</button>
+        </header>
+        <main className="max-w-4xl mx-auto px-6 py-24 text-center space-y-12">
+          <div className="space-y-6">
+            <h1 className="text-6xl font-black tracking-tight text-zinc-900 leading-[1.1]">
+              Social Commerce <br />
+              <span className="text-zinc-400">Powered by Solana.</span>
+            </h1>
+            <p className="text-xl text-zinc-500 max-w-2xl mx-auto leading-relaxed">
+              Accept payments globally with zero friction. Create payment links that live directly inside social feeds as Solana Blinks.
+            </p>
+          </div>
+          <div className="flex items-center justify-center gap-4">
+            <button
+              onClick={login}
+              className="px-8 py-4 bg-zinc-900 text-white rounded-2xl font-bold text-lg hover:bg-zinc-800 transition-all shadow-2xl shadow-zinc-200 hover:-translate-y-1 active:translate-y-0"
+            >
+              Get Started for Free
+            </button>
+          </div>
+          <div className="pt-20 grid grid-cols-3 gap-8 border-t border-zinc-100">
+            {[
+              { t: "Global Settlement", d: "Accept SOL, USDC, and USDT instantly." },
+              { t: "Zero Redirects", d: "Checkout directly inside social feeds." },
+              { t: "Self-Custodial", d: "Your funds, your keys, your business." }
+            ].map(f => (
+              <div key={f.t} className="space-y-2 text-left">
+                <h3 className="font-bold text-zinc-900">{f.t}</h3>
+                <p className="text-sm text-zinc-500">{f.d}</p>
+              </div>
+            ))}
+          </div>
+        </main>
       </div>
     );
   }
@@ -646,6 +692,12 @@ export default function DashboardPage() {
           <div className="px-5 py-4 border-b border-zinc-100 flex items-center justify-between">
             <h2 className="text-sm font-medium">Payment links</h2>
             <div className="flex gap-2 items-center">
+              <button
+                onClick={downloadCSV}
+                className="text-xs px-3 py-1.5 bg-white border border-zinc-200 rounded-lg text-zinc-600 hover:text-zinc-900 hover:border-zinc-400 transition-all font-bold uppercase tracking-wider"
+              >
+                Export CSV
+              </button>
               <div className="flex items-center gap-2 bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-1.5">
                 <svg className="w-3.5 h-3.5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 16 16">
                   <circle cx="7" cy="7" r="5" strokeWidth="1.5"/><line x1="11" y1="11" x2="14" y2="14" strokeWidth="1.5"/>
@@ -653,7 +705,7 @@ export default function DashboardPage() {
                 <input
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  placeholder="Search links…"
+                  placeholder="Search links"
                   className="text-xs bg-transparent outline-none w-36 text-zinc-700 placeholder:text-zinc-400"
                 />
               </div>
@@ -671,13 +723,32 @@ export default function DashboardPage() {
           </div>
 
           {isLoading ? (
-            <div className="py-16 text-center text-sm text-zinc-400">Loading links…</div>
+            <div className="py-16 text-center text-sm text-zinc-400">Loading links</div>
           ) : filtered.length === 0 ? (
-            <div className="py-16 text-center">
-              <p className="text-sm text-zinc-400 mb-3">No payment links yet</p>
+            <div className="py-20 text-center space-y-8">
+              <div className="max-w-sm mx-auto space-y-4">
+                <h3 className="text-zinc-900 font-bold">Welcome to BiePay</h3>
+                <p className="text-sm text-zinc-500">Complete these steps to start accepting payments on Solana.</p>
+                
+                <div className="text-left space-y-3 pt-4">
+                  {[
+                    { l: "Connect or generate a merchant wallet", c: !!address },
+                    { l: "Create your first payment link", c: false },
+                    { l: "Share your link on social media", c: false }
+                  ].map((s, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 bg-zinc-50 rounded-xl border border-zinc-100">
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center border ${s.c ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white border-zinc-200 text-transparent"}`}>
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" /></svg>
+                      </div>
+                      <span className={`text-xs font-bold uppercase tracking-tight ${s.c ? "text-zinc-400 line-through" : "text-zinc-900"}`}>{s.l}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
               <button
                 onClick={() => setModal("create")}
-                className="text-sm text-zinc-900 underline underline-offset-2"
+                className="px-8 py-3 bg-zinc-900 text-white rounded-xl font-bold text-sm hover:bg-zinc-800 transition-all shadow-xl"
               >
                 Create your first link
               </button>
@@ -732,6 +803,18 @@ export default function DashboardPage() {
           )}
         </div>
 
+      {/* Institutional Footer */}
+      <footer className="mt-12 py-12 border-t border-zinc-100 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="flex items-center gap-3 opacity-40 grayscale">
+          <Logo className="w-5 h-5" variant="gold" />
+          <span className="text-xs font-bold tracking-tight">BiePay Institutional</span>
+        </div>
+        <div className="flex items-center gap-8">
+          <button onClick={() => alert("Terms of Service: This platform is provided for the Solana Frontier Hackathon as a demonstration of institutional commerce infrastructure.")} className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest hover:text-zinc-900 transition-colors">Terms</button>
+          <button onClick={() => alert("Privacy Policy: Merchant data is processed locally where possible. We do not sell transaction data to third parties.")} className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest hover:text-zinc-900 transition-colors">Privacy</button>
+          <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest">© 2026 BiePay</span>
+        </div>
+      </footer>
       </main>
 
       {/* Create modal */}

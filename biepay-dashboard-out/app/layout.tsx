@@ -22,8 +22,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
-        <title>BiePay Links</title>
-        <meta name="description" content="Stripe-grade payment links for Solana" />
+        <title>BiePay | Institutional Commerce on Solana</title>
+        <meta name="description" content="Next-generation payment infrastructure for social commerce. Accept SOL, USDC, and USDT instantly through self-custodial payment links and social Blinks." />
         <link rel="icon" href="/logo.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

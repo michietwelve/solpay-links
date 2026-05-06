@@ -268,13 +268,13 @@ export default function StorefrontSettings({ profile, onSave, onExport }: Storef
 
                 <div className="grid grid-cols-2 gap-3 pt-2">
                   {[
-                    { label: "Custom Domains", icon: "🌐" },
-                    { label: "Zero Fees", icon: "💎" },
-                    { label: "Deep AI Analytics", icon: "🧠" },
-                    { label: "Priority API", icon: "⚡" }
+                    { label: "Custom Domains" },
+                    { label: "Zero Fees" },
+                    { label: "Predictive Analytics" },
+                    { label: "Priority API" }
                   ].map((feature, i) => (
                     <div key={i} className="p-3 bg-white/5 rounded-xl border border-white/5 flex items-center gap-3">
-                      <span className="text-sm">{feature.icon}</span>
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#c5a36e]/40" />
                       <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-tight">{feature.label}</span>
                     </div>
                   ))}
