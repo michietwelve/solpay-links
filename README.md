@@ -1,156 +1,131 @@
-# BiePay Links: The Social Commerce Layer for Solana 🚀
+# BiePay Links: Institutional Commerce Layer for Solana
 
-**Built for the Solana Frontier Hackathon (Colosseum)**
+**Official Submission for the Solana Frontier Hackathon**
 
-BiePay Links allows anyone—from independent freelancers in Nigeria to global e-commerce brands—to sell anything, anywhere, instantly using **Solana Blinks and Actions**.
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Powered by Solana](https://img.shields.io/badge/Powered%20by-Solana-blueviolet)](https://solana.com)
+BiePay Links provides high-throughput payment infrastructure for independent freelancers and global brands using Solana Actions and Blinks.
 
 ---
 
-## 🏆 Frontier Hackathon Tracks 
+## Technical Integration Tracks
 
-We have specifically engineered BiePay Links to maximize value across the Solana ecosystem. Here is how we proudly support the hackathon bounty tracks:
+BiePay Links is engineered to support specific ecosystem tracks within the Solana Frontier competition:
 
-### 🇳🇬 Superteam Nigeria 
-**The Problem:** Nigerian freelancers and SMEs are locked out of the global economy due to extreme FX volatility, high remittance fees, and payment gateways that refuse to operate in the region.
-**The BiePay Solution:** A Nigerian designer can create a BiePay Link, post it on Twitter/X, and get paid instantly in stablecoins by a client in the US. No banks, no 5-day holds, no 7% currency conversion fees. BiePay is the cross-border payment rails Nigeria deserves.
+### Superteam Nigeria
+BiePay addresses payment barriers for West African freelancers by providing instant settlement in stablecoins. This bypasses the friction of traditional FX conversion and international wire delays, enabling direct participation in the global digital economy.
 
-### 💵 Tether USDT 
-Tether is the lifeblood of emerging markets. **BiePay Links explicitly supports USDT** as a first-class settlement currency. Merchants can choose to price and settle their links exclusively in Tether, protecting themselves from local currency inflation while tapping into the $100B+ USDT liquidity on Solana.
+### Tether USDT
+USDT is a critical settlement layer for emerging markets. BiePay treats USDT as a first-class citizen, allowing merchants to price, accept, and settle payments in Tether to maintain capital stability against local currency volatility.
 
-### 🪐 Jupiter: 
-We integrated the **Jupiter Terminal** natively into the BiePay Merchant Dashboard.
-When a merchant receives payments in SOL or BONK, they can click our **"Swap Earnings"** button. This opens the Jupiter best-price routing modal, pre-filled to swap their earnings directly into USDC, entirely within the dashboard.
+### Jupiter Integration
+We have integrated the Jupiter Terminal natively. Merchants can swap earnings into alternative assets directly from their dashboard using Jupiter's best-price routing, streamlining liquidity management without leaving the application.
 
-### 📛 SNS Identity 
-We brought **Bonfida's SPL Name Service** directly to the merchant experience. When a merchant uses our "Withdraw Funds" modal to sweep their earnings, they don't need to copy-paste complex `7xKXtg...` addresses. They can simply type `michie.sol`, and BiePay instantly resolves the `.sol` domain on-chain to ensure funds go to the exact right place.
+### SNS Identity
+The platform utilizes Bonfida SPL Name Service for identity resolution. When performing withdrawals, merchants can use .sol domains instead of raw public keys, reducing manual entry errors and improving the security of fund transfers.
 
-### 📊 Dune Analytics 
-Data is everything for businesses. We built a comprehensive analytics suite directly into the dashboard, featuring real-time volume, lifetime revenue, active links, and payment velocity charts—bringing Dune-level insights to the merchant's fingertips.
+### Analytics Suite
+The dashboard includes a full-stack analytics engine providing real-time data on volume, revenue, and payment velocity, giving merchants professional-grade insights into their business performance.
 
-### 🕵️ Cloak / Privacy Payments 
-To respect merchant privacy, we built an **"Incognito Mode"** into the dashboard. With one click, all lifetime volume, active balance, and payment counts are obscured (`****`). This ensures business owners can safely demonstrate their dashboards or work in public spaces without revealing sensitive financial metrics.
+### Privacy Infrastructure
+BiePay includes an Incognito Mode for professional privacy. This allows merchants to manage their platform in shared environments by obscuring sensitive financial metrics and balances with a single toggle.
 
----
+### AI Assistant
+The dashboard features an integrated assistant for business intelligence. Utilizing privacy-preserving data processing, the assistant provides immediate answers regarding top-performing links and revenue trends using local inference.
 
-## 🌟 The Killer Feature: Blinks
+### Enterprise Webhooks
+BiePay supports automated business workflows via standard webhooks. Merchants can configure external endpoints to receive JSON-formatted POST notifications upon successful on-chain payment confirmation.
 
-Traditional cross-border payments are trapped behind "walled gardens" and redirect links. 
-
-**BiePay Links turns your checkout into a Blink (Solana Action).**
-Instead of a user clicking a link to go to a Vercel site, they see the "Pay" button **directly inside their Twitter/X feed or Discord**. 
-Every BiePay link automatically generates a `dial.to/?action=solana-action...` Blink URL. If a judge sees a BiePay link in a tweet, they can pay the invoice without ever leaving Twitter. We are turning the timeline into a checkout counter.
+### Auditory Feedback
+The application uses high-fidelity auditory cues to confirm successful state changes. This provides a professional user experience consistent with high-end fintech hardware.
 
 ---
 
-## 🚀 Quick Links & Demo
+## Core Functionality: Solana Blinks
 
-- **Live Dashboard**: [https://biepay-links-dwkq-eight.vercel.app](https://biepay-links-dwkq-eight.vercel.app)
-- **Actions API**: [https://biepay-links-production.up.railway.app](https://biepay-links-production.up.railway.app)
-- **Video Demo**: [Insert YouTube/Loom Link Here - REPLACE BEFORE DEADLINE]
-- **Testing Cluster**: Solana **Devnet**
-
-### How to Judge/Test:
-1. **Create a Link**: Log in to the [Dashboard](https://biepay-links-dwkq-eight.vercel.app) using your email or Google account.
-2. **Fund Your Embedded Wallet**: Open your new payment link. If your wallet is empty, click the **"Devnet Faucet"** button in the "Fund your wallet" panel to instantly get 5 SOL.
-3. **Use the Hackathon Override**: If your link requires USDC but you only have faucet SOL, scroll to the bottom of the page and click the green **"🧪 Hackathon Demo: Switch to SOL to test easily"** button.
-4. **Pay & Watch the Magic**: Click **Pay**, watch the loading micro-animations, and enjoy the confetti on the success screen!
-5. **Instant Confirmation**: Check your dashboard to see the revenue update in real-time.
+BiePay Links leverages Solana Actions to eliminate friction in social commerce. Every payment link is automatically converted into a Blink, allowing the checkout process to occur directly within supported clients like Twitter/X or Discord. This removes the need for external redirects and significantly improves conversion rates for merchants sharing links on social media.
 
 ---
 
-## 🏗️ Architecture
+## Deployment and Documentation
 
-The project is structured as a high-performance monorepo:
+- **Production Dashboard**: [https://biepay-links-dwkq-eight.vercel.app](https://biepay-links-dwkq-eight.vercel.app)
+- **API Documentation**: [https://biepay-links-production.up.railway.app](https://biepay-links-production.up.railway.app)
+- **Technical Demo**: [Insert Link Here]
+- **Network**: Solana Devnet
 
-### 1. [Merchant Dashboard](./biepay-dashboard-out) (Next.js)
-A premium merchant portal built with React 18, Tailwind CSS, and SWR for real-time data fetching. Uses Privy for seamless embedded wallet generation.
-
-### 2. [Actions API](./biepay-links-out) (Express / Node.js)
-The core transaction engine. It generates spec-compliant Solana Actions and manages the persistent state of payment links. 
-
-### 3. [Smart Contract](./biepay-contract) (Anchor)
-An optional on-chain program for governed payments, escrow, and platform fee distribution.
-*Note: Smart contracts are pre-deployed to Devnet; no local Anchor setup is required for testing.*
+### Testing Instructions
+1. Authenticate via the Merchant Dashboard using email or a social provider.
+2. Generate a new payment link.
+3. To test the payment flow, use the integrated faucet in the checkout page to fund your embedded wallet.
+4. Complete a transaction and verify the real-time update in your merchant analytics.
 
 ---
 
-## 🛠️ Tech Stack
-- **Languages**: TypeScript, Rust
+## Architecture
+
+The project is structured as a TypeScript-focused monorepo:
+
+1. **Dashboard**: Built with Next.js and Tailwind CSS. Utilizes Privy for secure embedded wallet management and authentication.
+2. **Backend API**: Node.js and Express server handling link state, transaction generation, and webhook delivery.
+3. **Database**: Prisma ORM with PostgreSQL for persistent merchant and transaction records.
+
+---
+
+## Tech Stack
+- **Frameworks**: Next.js, Express
 - **Blockchain**: Solana Web3.js, SPL Token, Bonfida SNS, Jupiter Swap API
-- **Auth**: Privy (Embedded Wallets)
-- **Fiat Onramp**: Privy Native / Transak
-- **Styling**: Tailwind CSS, Framer Motion, Canvas Confetti
-- **API**: Express, Zod (Validation)
+- **Authentication**: Privy
+- **Persistence**: Prisma
+- **State Management**: SWR, Zustand
 
 ---
 
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js v18+
-- A Solana Wallet (Phantom or Backpack recommended)
+## Development Setup
 
 ### Installation
 
-**Terminal 1: Backend API**
+**Backend API**
 ```bash
 cd biepay-links-out
 npm install
 npm run dev
 ```
 
-**Terminal 2: Frontend Dashboard**
+**Frontend Dashboard**
 ```bash
 cd biepay-dashboard-out
 npm install
 npm run dev
 ```
 
-### Environment Variables
+### Environment Configuration
 
-For the application to run successfully, you must configure the following critical environment variables. 
-
-**Frontend (`biepay-dashboard-out/.env.local`):**
+**Frontend (.env.local):**
 ```env
-NEXT_PUBLIC_PRIVY_APP_ID=your_privy_app_id
+NEXT_PUBLIC_PRIVY_APP_ID=your_id
 NEXT_PUBLIC_RPC_ENDPOINT=https://api.devnet.solana.com
 NEXT_PUBLIC_API_URL=http://localhost:3001
-NEXT_PUBLIC_ACTION_BASE_URL=https://your-ngrok-url.ngrok-free.app # Required for local Blinks
+NEXT_PUBLIC_ACTION_BASE_URL=https://your-tunnel.ngrok-free.app
 ```
 
-**Backend (`biepay-links-out/.env`):**
+**Backend (.env):**
 ```env
 PORT=3001
 DATABASE_URL="file:./dev.db"
 RPC_ENDPOINT=https://api.devnet.solana.com
-PRIVY_APP_ID=your_privy_app_id
-PRIVY_APP_SECRET=your_privy_app_secret
+PRIVY_APP_ID=your_id
+PRIVY_APP_SECRET=your_secret
 ```
 
-### Local Networking (The "CORS" Trap)
-If you are testing the **Solana Blinks** functionality locally on your machine, you must use a secure tunnel (like `ngrok` or `localtunnel`). 
-Solana's blockchain and wallets (like Phantom) cannot resolve `http://localhost:3001`. 
-1. Run `ngrok http 3001`
-2. Set your `NEXT_PUBLIC_ACTION_BASE_URL` in the frontend to the secure HTTPS ngrok URL.
-*(If you are just testing the dashboard UI, standard localhost is fine).*
+---
+
+## Troubleshooting
+
+**Q: Jupiter Swap fails to load token metadata.**
+A: Token resolution requires Mainnet-Beta RPC access. The application is configured to route these specific requests through a Mainnet node regardless of the primary network setting.
+
+**Q: RPC rate limiting errors.**
+A: Public RPC nodes are subject to subject to strict throughput limits. For production workloads, we recommend the use of a dedicated RPC provider.
 
 ---
 
-## ❓ Troubleshooting / FAQ
-
-**Q: The Jupiter Swap tokens are missing or showing `?`**
-A: Jupiter only supports Mainnet-Beta. Ensure your network connection is stable; the dashboard forces the terminal to use a Mainnet RPC to resolve tokens even when the app is on Devnet.
-
-**Q: "Your RPC is not responding to any requests"**
-A: Public RPCs are heavily rate-limited. We recommend waiting a few seconds or utilizing a dedicated RPC key in production.
-
-**Q: I created a link but cannot delete it?**
-A: Due to the enterprise BOLA security we implemented, you must ensure your `PRIVY_APP_ID` and `PRIVY_APP_SECRET` are correctly set in the backend `.env`. If they are missing, the backend defaults to a secure fallback that may reject deletions.
-
----
-
-## ⚖️ License
-MIT © 2026 BiePay Links Team.
+MIT License © 2026 BiePay Links.

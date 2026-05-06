@@ -658,7 +658,9 @@ export default function PayPage() {
                 {/* Devnet Airdrop — always available for testing */}
                 <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 space-y-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-lg">🚰</span>
+                    <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center shrink-0">
+                      <svg className="w-4 h-4 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 7h10v10H7z" strokeWidth="2"/></svg>
+                    </div>
                     <div>
                       <p className="text-sm font-semibold">Devnet Faucet</p>
                       <p className="text-xs text-zinc-500">Get free SOL for testing — instant, no card needed</p>
@@ -670,9 +672,10 @@ export default function PayPage() {
                     className="w-full py-2.5 bg-zinc-900 text-white text-sm font-medium rounded-xl hover:bg-zinc-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
                   >
                     {airdropStatus === "loading" && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-                    {airdropStatus === "done" ? "✅ SOL airdropped! Returning to pay…" : 
-                     airdropStatus === "loading" ? "Requesting airdrop…" : 
-                     airdropStatus === "error" ? "⟳ Faucet busy — click to retry" : 
+                    {airdropStatus === "loading" && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                    {airdropStatus === "done" ? "SOL airdropped. Returning to pay..." : 
+                     airdropStatus === "loading" ? "Requesting airdrop..." : 
+                     airdropStatus === "error" ? "Network busy. Click to retry" : 
                      "Request SOL from faucet"}
                   </button>
                   <a
@@ -681,7 +684,7 @@ export default function PayPage() {
                     rel="noreferrer"
                     className="flex items-center justify-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-700 underline underline-offset-2"
                   >
-                    ↗ Or use the official web faucet (paste your wallet address)
+                    View official web faucet
                   </a>
                   {walletAddr && (
                     <button
@@ -689,7 +692,7 @@ export default function PayPage() {
                       className="w-full py-1.5 bg-zinc-100 text-zinc-600 text-xs font-mono rounded-lg hover:bg-zinc-200 transition-colors truncate px-2"
                       title="Click to copy wallet address"
                     >
-                      📋 {walletAddr}
+                      Copy: {walletAddr}
                     </button>
                   )}
                 </div>
@@ -697,7 +700,9 @@ export default function PayPage() {
                 {/* Buy with card via Transak (no API key needed) */}
                 <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 space-y-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-lg">💳</span>
+                    <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center shrink-0">
+                      <svg className="w-4 h-4 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v10a2 2 0 002 2z" strokeWidth="2"/></svg>
+                    </div>
                     <div>
                       <p className="text-sm font-semibold">Buy with card</p>
                       <p className="text-xs text-zinc-500">Purchase SOL instantly with a credit or debit card</p>
@@ -716,7 +721,7 @@ export default function PayPage() {
                     rel="noreferrer"
                     className="flex items-center justify-center gap-1.5 text-xs text-[#c5a36e] font-bold hover:underline"
                   >
-                    ↗ Need Devnet USDC? Get it from the Circle Faucet
+                    Circle Faucet for Devnet USDC
                   </a>
                   <a
                     href={`https://global-stg.transak.com/?network=solana&cryptoCurrencyCode=SOL${walletAddr ? `&walletAddress=${walletAddr}` : ""}&disableWalletAddressForm=true`}
@@ -724,7 +729,7 @@ export default function PayPage() {
                     rel="noreferrer"
                     className="flex items-center justify-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-600 underline underline-offset-2"
                   >
-                    ↗ External card onramp (Transak)
+                    External card onramp (Transak)
                   </a>
                 </div>
               </div>
@@ -755,7 +760,7 @@ export default function PayPage() {
               }}
               className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100 hover:bg-emerald-100 transition-colors"
             >
-              🧪 Hackathon Demo: Switch to SOL to test easily
+              Hackathon Demo: Switch to SOL for simplified testing
             </button>
           )}
           {/* Branding footer */}
