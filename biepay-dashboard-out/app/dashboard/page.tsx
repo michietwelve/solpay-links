@@ -104,7 +104,7 @@ export default function DashboardPage() {
   const [detailLink, setDetailLink] = useState<PaymentLink | null>(null);
   const [withdrawSource, setWithdrawSource] = useState<string | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
-  const [successData, setSuccessData] = useState<{ title: string; message: string; txSig?: string } | null>(null);
+  const [successData, setSuccessData] = useState<{ title: string; message: string; txSig?: string; isError?: boolean } | null>(null);
   
   // Play sound on success modal
   useMemo(() => {
