@@ -221,7 +221,28 @@ export default function StorefrontSettings({ profile, onSave, onExport }: Storef
                 <div className="space-y-3">
                   <div className="flex items-center justify-between px-1">
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Webhook API Endpoint</label>
-                    <span className="px-2 py-0.5 bg-zinc-800 text-zinc-500 text-[8px] font-black uppercase rounded">Optional</span>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={async () => {
+                          if (!webhookUrl) return alert("Enter a URL first.");
+                          try {
+                            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/merchants/test-webhook`, {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ url: webhookUrl })
+                            });
+                            if (res.ok) alert("Test webhook sent successfully!");
+                            else alert("Webhook endpoint returned an error.");
+                          } catch (e) {
+                            alert("Failed to reach webhook endpoint.");
+                          }
+                        }}
+                        className="px-2 py-0.5 bg-zinc-800 text-zinc-400 hover:text-white text-[8px] font-black uppercase rounded transition-colors"
+                      >
+                        Test
+                      </button>
+                      <span className="px-2 py-0.5 bg-zinc-800 text-zinc-500 text-[8px] font-black uppercase rounded">Optional</span>
+                    </div>
                   </div>
                   <input 
                     placeholder="https://api.yourstore.com/webhooks/biepay"

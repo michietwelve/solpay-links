@@ -31,4 +31,34 @@ router.patch("/:merchantId", requireAuth, async (req: AuthenticatedRequest, res:
   res.json(profile);
 });
 
+// POST /api/merchants/test-webhook
+router.post("/test-webhook", async (req: Request, res: Response) => {
+  const { url } = req.body;
+  if (!url) return res.status(400).json({ message: "URL required" });
+  
+  try {
+    const payload = {
+      event: "payment.confirmed",
+      signature: "TEST_SIGNATURE_5e3250f",
+      linkId: "test-link",
+      payer: "PayerWallet11111111111111111111111111111",
+      amount: "100000000",
+      token: "SOL",
+      timestamp: new Date().toISOString(),
+      isTest: true
+    };
+    
+    const webhookRes = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    
+    if (webhookRes.ok) res.json({ success: true });
+    else res.status(400).json({ message: "Webhook returned error" });
+  } catch (err) {
+    res.status(500).json({ message: "Delivery failed" });
+  }
+});
+
 export default router;

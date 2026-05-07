@@ -194,4 +194,18 @@ router.get("/all/payments", requireAuth, async (req: AuthenticatedRequest, res: 
   );
 });
 
+// POST /api/links/:linkId/fulfillment/access
+router.post("/:linkId/fulfillment/access", async (req: Request, res: Response) => {
+  const { linkId } = req.params;
+  try {
+    // We could create a specific "AuditLog" table for this, 
+    // but for now we'll just log it to the console or a simple counter if we had one.
+    // In a full implementation, we'd add an `AssetAccess` table.
+    console.log(`[fulfillment] Asset access for link ${linkId} at ${new Date().toISOString()}`);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to log fulfillment access" });
+  }
+});
+
 export default router;

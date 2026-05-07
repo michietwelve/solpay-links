@@ -75,6 +75,19 @@ export function useAllPayments() {
   return { payments: data ?? [], error, isLoading };
 }
 
+export function useAnalytics(merchantId: string | undefined) {
+  const { user } = usePrivy();
+  const { data, error, isLoading } = useSWR(
+    user && merchantId ? ["/api/analytics", merchantId] : null,
+    async ([_, id]) => {
+      const token = await user?.getAccessToken();
+      return linksApi.analytics(token ?? "", id);
+    },
+    { refreshInterval: 60_000 }
+  );
+  return { analytics: data ?? [], error, isLoading };
+}
+
 // ─── Mutations ────────────────────────────────────────────────────────────────
 
 export async function createLink(
