@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
-import { useLinks, useStats, useAllPayments, createLink, deleteLink } from "../../hooks/useLinks";
+import { useLinks, useStats, useAllPayments, useAnalytics, createLink, deleteLink } from "../../hooks/useLinks";
 import { formatAmount, timeAgo, getShareUrls, getEffectiveStatus } from "../../lib/api";
 import type { PaymentLink, CreateLinkResponse } from "../../lib/api";
 import CreateLinkForm from "../../components/dashboard/CreateLinkForm";
@@ -107,7 +107,24 @@ export default function DashboardPage() {
   const [successData, setSuccessData] = useState<{ title: string; message: string; txSig?: string; isError?: boolean } | null>(null);
   const [activeTab, setActiveTab] = useState<"links" | "transactions">("links");
   const { payments = [], isLoading: isPaymentsLoading } = useAllPayments();
+  const { analytics = [], isLoading: isAnalyticsLoading } = useAnalytics(merchantIds);
   
+  // Recharts components (import dynamically to avoid SSR issues if necessary, but here we just use them)
+  const { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } = require('recharts');
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-zinc-950 border border-white/10 p-3 rounded-xl shadow-2xl backdrop-blur-xl">
+          <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">{new Date(label).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+          <p className="text-sm font-black text-white">
+            ${payload[0].value.toFixed(2)} <span className="text-[10px] text-zinc-500 ml-1">VOLUME</span>
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
   // Play sound on success modal
   useMemo(() => {
     if (successData) {
@@ -695,6 +712,20 @@ export default function DashboardPage() {
             <p className="text-[10px] text-amber-500 font-black uppercase tracking-tighter">Institutional v1.8</p>
           </div>
         </div>
+        
+        {/* Revenue Analytics Chart */}
+        <div className="p-8 bg-white rounded-[2.5rem] border border-zinc-200 shadow-sm space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-black text-zinc-900 tracking-tight">Revenue Analytics</h2>
+              <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-1">7-Day Gross Performance</p>
+            </div>
+            <div className="px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest rounded-full border border-emerald-100">
+              Live Feed
+            </div>
+          </div>
+          <RevenueChart data={analytics} />
+        </div>
 
         {/* Links table */}
         {/* Main content tabs */}
@@ -1010,14 +1041,19 @@ export default function DashboardPage() {
 
       {/* Settings Panel */}
       {modal === "settings" && (
-        <div className="fixed inset-0 z-[60] flex justify-end animate-in fade-in duration-300 bg-black/40 backdrop-blur-sm" onClick={() => setModal(null)}>
-          <div className="w-full max-w-md bg-white h-full shadow-2xl animate-in slide-in-from-right duration-500 overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="p-8 space-y-8">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold">Settings</h2>
-                <button onClick={() => setModal(null)} className="text-3xl text-zinc-400 hover:text-zinc-900">×</button>
-              </div>
-              
+        <div className="fixed inset-0 z-[60] flex justify-end bg-black/40 backdrop-blur-sm" onClick={() => setModal(null)}>
+          <div 
+            className="w-full max-w-md bg-white h-screen shadow-2xl animate-in slide-in-from-right duration-500 flex flex-col" 
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-8 pb-4 flex items-center justify-between border-b border-zinc-100 bg-white sticky top-0 z-10">
+              <h2 className="text-2xl font-black tracking-tight text-zinc-900 uppercase tracking-widest">Settings</h2>
+              <button onClick={() => setModal(null)} className="p-2 hover:bg-zinc-100 rounded-xl transition-colors text-zinc-400 hover:text-zinc-900">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-8 pt-6">
               {isProfileLoading ? (
                 <div className="py-20 text-center text-zinc-400 flex flex-col items-center gap-4">
                   <div className="w-8 h-8 border-4 border-zinc-200 border-t-zinc-900 rounded-full animate-spin"></div>
@@ -1038,94 +1074,97 @@ export default function DashboardPage() {
 
       {/* Profile Panel */}
       {modal === "profile" && (
-        <div className="fixed inset-0 z-[60] flex justify-end animate-in fade-in duration-300 bg-black/40 backdrop-blur-sm" onClick={() => setModal(null)}>
-          <div className="w-full max-w-md bg-white h-full shadow-2xl animate-in slide-in-from-right duration-500" onClick={e => e.stopPropagation()}>
-              <div className="p-0 overflow-y-auto h-full flex flex-col">
-                <div className="h-48 bg-zinc-900 relative">
-                  <button onClick={() => setModal(null)} className="absolute right-6 top-6 text-white/50 hover:text-white text-3xl">×</button>
-                  <div className="absolute -bottom-10 left-8 w-24 h-24 bg-white rounded-3xl shadow-xl flex items-center justify-center border-4 border-white overflow-hidden">
-                    {profile?.logoUrl ? (
-                      <img src={profile.logoUrl} alt="Logo" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-16 h-16 bg-zinc-900 text-white rounded-2xl flex items-center justify-center text-2xl font-bold uppercase">
-                        {user?.email?.address?.[0] ?? "B"}
-                      </div>
-                    )}
-                  </div>
-                  <div className="absolute bottom-4 right-6 flex gap-2">
-                    <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded-md border border-emerald-500/30 uppercase tracking-tighter">Verified Merchant</span>
-                    <span className="px-2 py-1 bg-amber-500/20 text-amber-400 text-[10px] font-bold rounded-md border border-amber-500/30 uppercase tracking-tighter">Devnet</span>
-                  </div>
-                </div>
-                <div className="p-8 pt-16 space-y-8 flex-1">
-                  <div>
-                    <h2 className="text-2xl font-bold text-zinc-900 leading-tight">
-                      {profile?.businessName ?? user?.email?.address?.split('@')[0] ?? "Merchant"}
-                    </h2>
-                    <p className="text-zinc-500 text-sm mt-1">{user?.email?.address}</p>
-                  </div>
-
-                  <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Primary Wallet</span>
-                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Active</span>
+        <div className="fixed inset-0 z-[60] flex justify-end bg-black/40 backdrop-blur-sm" onClick={() => setModal(null)}>
+          <div 
+            className="w-full max-w-md bg-white h-screen shadow-2xl animate-in slide-in-from-right duration-500 flex flex-col" 
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex-1 overflow-y-auto">
+              <div className="h-48 bg-zinc-900 relative">
+                <button onClick={() => setModal(null)} className="absolute right-6 top-6 text-white/50 hover:text-white text-3xl">×</button>
+                <div className="absolute -bottom-10 left-8 w-24 h-24 bg-white rounded-3xl shadow-xl flex items-center justify-center border-4 border-white overflow-hidden">
+                  {profile?.logoUrl ? (
+                    <img src={profile.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-16 h-16 bg-zinc-900 text-white rounded-2xl flex items-center justify-center text-2xl font-bold uppercase">
+                      {user?.email?.address?.[0] ?? "B"}
                     </div>
-                    <div className="flex items-center justify-between">
-                      <code className="text-xs font-mono text-zinc-600 bg-white px-2 py-1 rounded border border-zinc-100">
-                        {address?.slice(0, 8)}...{address?.slice(-8)}
-                      </code>
-                      <button 
-                        onClick={() => { navigator.clipboard.writeText(address ?? ''); }}
-                        className="text-[10px] font-bold text-zinc-400 hover:text-zinc-900 uppercase underline"
-                      >
-                        Copy
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 pt-2">
-                    <button onClick={() => setModal("settings")} className="w-full p-4 bg-white border border-zinc-200 rounded-2xl text-sm font-bold flex items-center justify-between hover:bg-zinc-50 transition-all group">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center group-hover:bg-white transition-colors">
-                          <svg className="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                        </div>
-                        <span>Manage Branding</span>
-                      </div>
-                      <svg className="w-4 h-4 text-zinc-300 group-hover:text-zinc-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                    </button>
-                    
-                    <button onClick={() => window.open('https://dial.to', '_blank')} className="w-full p-4 bg-white border border-zinc-200 rounded-2xl text-sm font-bold flex items-center justify-between hover:bg-zinc-50 transition-all group">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center group-hover:bg-white transition-colors">
-                          <svg className="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                        </div>
-                        <span>Test Blink Validator</span>
-                      </div>
-                      <svg className="w-4 h-4 text-zinc-300 group-hover:text-zinc-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                    </button>
-
-                    <button onClick={logout} className="w-full p-4 bg-white border border-red-100 text-red-600 rounded-2xl text-sm font-bold flex items-center justify-between hover:bg-red-50 transition-all group">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center group-hover:bg-white transition-colors">
-                          <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                        </div>
-                        <span>Log Out</span>
-                      </div>
-                    </button>
-                  </div>
-
-                  <div className="mt-auto flex gap-4 py-8 text-[10px] text-zinc-400 font-bold uppercase tracking-widest justify-center">
-                    <a href="/legal/terms" className="hover:text-zinc-900">Terms</a>
-                    <span>•</span>
-                    <a href="/legal/privacy" className="hover:text-zinc-900">Privacy</a>
-                    <span>•</span>
-                    <a href="#" className="hover:text-zinc-900">v1.2.0</a>
-                  </div>
+                  )}
                 </div>
-                <div className="p-8 bg-white border-t border-zinc-100 flex gap-3">
-                  <button onClick={() => setModal("settings")} className="flex-1 py-4 bg-zinc-900 text-white font-bold rounded-2xl shadow-xl shadow-zinc-200 hover:bg-zinc-800 transition-all">Storefront Settings</button>
+                <div className="absolute bottom-4 right-6 flex gap-2">
+                  <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded-md border border-emerald-500/30 uppercase tracking-tighter">Verified Merchant</span>
+                  <span className="px-2 py-1 bg-amber-500/20 text-amber-400 text-[10px] font-bold rounded-md border border-amber-500/30 uppercase tracking-tighter">Devnet</span>
                 </div>
               </div>
+              <div className="p-8 pt-16 space-y-8">
+                <div>
+                  <h2 className="text-2xl font-bold text-zinc-900 leading-tight">
+                    {profile?.businessName ?? user?.email?.address?.split('@')[0] ?? "Merchant"}
+                  </h2>
+                  <p className="text-zinc-500 text-sm mt-1">{user?.email?.address}</p>
+                </div>
+
+                <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Primary Wallet</span>
+                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Active</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <code className="text-xs font-mono text-zinc-600 bg-white px-2 py-1 rounded border border-zinc-100">
+                      {address?.slice(0, 8)}...{address?.slice(-8)}
+                    </code>
+                    <button 
+                      onClick={() => { navigator.clipboard.writeText(address ?? ''); }}
+                      className="text-[10px] font-bold text-zinc-400 hover:text-zinc-900 uppercase underline"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <button onClick={() => setModal("settings")} className="w-full p-4 bg-white border border-zinc-200 rounded-2xl text-sm font-bold flex items-center justify-between hover:bg-zinc-50 transition-all group">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center group-hover:bg-white transition-colors">
+                        <svg className="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                      </div>
+                      <span>Manage Branding</span>
+                    </div>
+                    <svg className="w-4 h-4 text-zinc-300 group-hover:text-zinc-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                  </button>
+                  
+                  <button onClick={() => window.open('https://dial.to', '_blank')} className="w-full p-4 bg-white border border-zinc-200 rounded-2xl text-sm font-bold flex items-center justify-between hover:bg-zinc-50 transition-all group">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center group-hover:bg-white transition-colors">
+                        <svg className="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                      </div>
+                      <span>Test Blink Validator</span>
+                    </div>
+                    <svg className="w-4 h-4 text-zinc-300 group-hover:text-zinc-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                  </button>
+
+                  <button onClick={logout} className="w-full p-4 bg-white border border-red-100 text-red-600 rounded-2xl text-sm font-bold flex items-center justify-between hover:bg-red-50 transition-all group">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center group-hover:bg-white transition-colors">
+                        <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                      </div>
+                      <span>Log Out</span>
+                    </div>
+                  </button>
+                </div>
+
+                <div className="flex gap-4 py-8 text-[10px] text-zinc-400 font-bold uppercase tracking-widest justify-center">
+                  <a href="/legal/terms" className="hover:text-zinc-900">Terms</a>
+                  <span>•</span>
+                  <a href="/legal/privacy" className="hover:text-zinc-900">Privacy</a>
+                  <span>•</span>
+                  <a href="#" className="hover:text-zinc-900">v1.2.0</a>
+                </div>
+              </div>
+            </div>
+            <div className="p-8 bg-white border-t border-zinc-100 flex gap-3 sticky bottom-0 z-10">
+              <button onClick={() => setModal("settings")} className="flex-1 py-4 bg-zinc-900 text-white font-bold rounded-2xl shadow-xl shadow-zinc-200 hover:bg-zinc-800 transition-all">Storefront Settings</button>
+            </div>
           </div>
         </div>
       )}

@@ -129,6 +129,9 @@ export const linksApi = {
     
   allPayments: (token: string): Promise<PaymentRecordWithLabel[]> =>
     apiFetch("/api/links/all/payments", { token }),
+
+  analytics: (token: string, merchantId: string): Promise<{ date: string; volume: number }[]> =>
+    apiFetch(`/api/analytics/${merchantId}`, { token }),
 };
 
 export interface PaymentRecordWithLabel extends PaymentRecord {

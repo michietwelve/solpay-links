@@ -484,12 +484,15 @@ export default function PayPage() {
               ))}
             </div>
 
-            <div className="pt-8 space-y-3">
+            <div className="pt-8 space-y-3 print:hidden">
               {link.digitalAssetUrl && (
                 <a
                   href={link.digitalAssetUrl}
                   target="_blank"
                   rel="noreferrer"
+                  onClick={() => {
+                    fetch(`${API_BASE}/links/${link.id}/fulfillment/access`, { method: "POST" }).catch(() => {});
+                  }}
                   className="w-full py-4 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-[0.25em] rounded-xl hover:bg-emerald-500 transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-200"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
@@ -513,12 +516,26 @@ export default function PayPage() {
                 onClick={() => window.print()}
                 className="w-full py-4 bg-white border border-zinc-200 text-zinc-500 text-[10px] font-black uppercase tracking-[0.25em] rounded-xl hover:bg-zinc-50 transition-all"
               >
-                Download Receipt
+                Download PDF Receipt
               </button>
             </div>
 
+            {/* Print-only Invoice Footer */}
+            <div className="hidden print:block pt-12 border-t border-zinc-100 mt-12">
+              <div className="flex justify-between items-end">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">BiePay Protocol</p>
+                  <p className="text-[8px] text-zinc-400 font-medium">Solana Devnet Mainnet-Ready • TX: {txSig?.slice(0, 16)}...</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Official Receipt</p>
+                  <p className="text-[8px] text-zinc-400 font-medium">Generated at {new Date().toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+
             {link.redirectUrl && (
-              <div className="pt-4 text-center">
+              <div className="pt-4 text-center print:hidden">
                 <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest animate-pulse">
                   Redirecting to merchant site in 5s...
                 </p>
