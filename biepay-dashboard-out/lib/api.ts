@@ -33,6 +33,7 @@ export interface PaymentLink {
   maxPayments: number | null;
   paymentCount: number;
   redirectUrl: string | null;
+  digitalAssetUrl: string | null;
   status: LinkStatus;
   createdAt: string;
   merchantId: string;
@@ -48,6 +49,7 @@ export interface CreateLinkPayload {
   expiresInMinutes?: number;
   maxPayments?: number;
   redirectUrl?: string;
+  digitalAssetUrl?: string;
   merchantId: string;
 }
 

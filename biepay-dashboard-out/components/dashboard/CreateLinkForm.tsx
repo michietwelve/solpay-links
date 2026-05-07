@@ -21,6 +21,7 @@ interface FormState {
   expiresIn: string;
   maxPayments: string;
   redirectUrl: string;
+  digitalAssetUrl: string;
 }
 
 const INITIAL: FormState = {
@@ -32,6 +33,7 @@ const INITIAL: FormState = {
   expiresIn: "0",
   maxPayments: "",
   redirectUrl: "",
+  digitalAssetUrl: "",
 };
 
 export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
@@ -78,6 +80,8 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
       errs.memo = "Max 32 characters";
     if (form.redirectUrl && !form.redirectUrl.startsWith("https://"))
       errs.redirectUrl = "Must be a valid https:// URL";
+    if (form.digitalAssetUrl && !form.digitalAssetUrl.startsWith("https://"))
+      errs.digitalAssetUrl = "Must be a valid https:// URL";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -105,6 +109,7 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
         ...(form.expiresIn !== "0" ? { expiresInMinutes: parseInt(form.expiresIn) } : {}),
         ...(form.maxPayments ? { maxPayments: parseInt(form.maxPayments) } : {}),
         ...(form.redirectUrl ? { redirectUrl: form.redirectUrl.trim() } : {}),
+        ...(form.digitalAssetUrl ? { digitalAssetUrl: form.digitalAssetUrl.trim() } : {}),
         merchantId: user?.id ?? recipientAddress,
       });
       onSuccess(result);
@@ -254,6 +259,21 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
         />
         {errors.redirectUrl && (
           <p className="text-xs text-red-500 mt-1">{errors.redirectUrl}</p>
+        )}
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-zinc-500 mb-1.5">
+          Digital asset / Book download URL
+        </label>
+        <input
+          className={inputCls("digitalAssetUrl")}
+          value={form.digitalAssetUrl}
+          onChange={set("digitalAssetUrl")}
+          placeholder="https://yoursite.com/my-book.pdf"
+        />
+        {errors.digitalAssetUrl && (
+          <p className="text-xs text-red-500 mt-1">{errors.digitalAssetUrl}</p>
         )}
       </div>
 
