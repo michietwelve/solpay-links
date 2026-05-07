@@ -7,6 +7,7 @@ interface MerchantProfile {
   logoUrl: string | null;
   accentColor: string | null;
   webhookUrl: string | null;
+  webhookSecret: string | null;
 }
 
 interface StorefrontSettingsProps {
