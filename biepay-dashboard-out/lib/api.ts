@@ -126,7 +126,14 @@ export const linksApi = {
 
   delete: (token: string, id: string): Promise<void> =>
     apiFetch(`/api/links/${id}`, { method: "DELETE", token }),
+    
+  allPayments: (token: string): Promise<PaymentRecordWithLabel[]> =>
+    apiFetch("/api/links/all/payments", { token }),
 };
+
+export interface PaymentRecordWithLabel extends PaymentRecord {
+  linkLabel: string;
+}
 
 // ─── Analytics helpers (client-side, derived from link list) ─────────────────
 

@@ -188,3 +188,11 @@ export async function getPaymentsForLink(linkId: string): Promise<PaymentRecord[
   });
   return payments.map(mapPayment);
 }
+
+export async function getAllPaymentsForMerchant(linkIds: string[]): Promise<PaymentRecord[]> {
+  const payments = await prisma.paymentRecord.findMany({
+    where: { linkId: { in: linkIds } },
+    orderBy: { createdAt: "desc" },
+  });
+  return payments.map(mapPayment);
+}

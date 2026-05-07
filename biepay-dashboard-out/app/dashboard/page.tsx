@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
-import { useLinks, useStats, createLink, deleteLink } from "../../hooks/useLinks";
+import { useLinks, useStats, useAllPayments, createLink, deleteLink } from "../../hooks/useLinks";
 import { formatAmount, timeAgo, getShareUrls, getEffectiveStatus } from "../../lib/api";
 import type { PaymentLink, CreateLinkResponse } from "../../lib/api";
 import CreateLinkForm from "../../components/dashboard/CreateLinkForm";
@@ -105,6 +105,8 @@ export default function DashboardPage() {
   const [withdrawSource, setWithdrawSource] = useState<string | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
   const [successData, setSuccessData] = useState<{ title: string; message: string; txSig?: string; isError?: boolean } | null>(null);
+  const [activeTab, setActiveTab] = useState<"links" | "transactions">("links");
+  const { payments = [], isLoading: isPaymentsLoading } = useAllPayments();
   
   // Play sound on success modal
   useMemo(() => {
@@ -663,145 +665,199 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between mb-4 mt-8">
-          <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
-            Overview
-          </h2>
-        </div>
-        <div className="grid grid-cols-4 gap-4 mb-8">
-          {[
-            { 
-              label: "Available balance", 
-              value: balance !== null ? `${balance.toFixed(4)} SOL` : "—", 
-              delta: "Withdraw anytime", 
-              up: true,
-              highlight: true 
-            },
-            { label: "Lifetime volume", value: `$${stats.totalVolume.toFixed(2)}`, delta: "gross revenue", up: true },
-            { label: "Payments received", value: String(stats.totalPayments), delta: "all time", up: true },
-            { label: "Active links", value: String(stats.activeLinks), delta: "across all tokens", up: true },
-          ].map(s => (
-            <div key={s.label} className={`border rounded-xl p-5 ${(s as any).highlight ? "bg-zinc-900 text-white border-zinc-900" : "bg-white border-zinc-200"}`}>
-              <p className={`text-xs font-medium mb-2 ${(s as any).highlight ? "text-zinc-400" : "text-zinc-400"}`}>{s.label}</p>
-              <p className="text-2xl font-bold tracking-tight">{isIncognito ? "••••" : s.value}</p>
-              <p className={`text-xs mt-1.5 ${s.up ? ((s as any).highlight ? "text-[#c5a36e]" : "text-emerald-600") : "text-zinc-400"}`}>{isIncognito ? "—" : s.delta}</p>
+        {/* Stats Bar */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="p-6 bg-white rounded-3xl border border-zinc-200 shadow-sm space-y-1">
+            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Available Balance</p>
+            <div className="flex items-baseline gap-2">
+              <h3 className="text-2xl font-black tracking-tighter">
+                {balance !== null ? balance.toFixed(4) : "0.0000"} <span className="text-sm font-bold text-zinc-400">SOL</span>
+              </h3>
             </div>
-          ))}
+            <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tighter">Main Settlement Wallet</p>
+          </div>
+          <div className="p-6 bg-white rounded-3xl border border-zinc-200 shadow-sm space-y-1">
+            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Lifetime Value</p>
+            <h3 className="text-2xl font-black tracking-tighter">${stats.totalVolume.toLocaleString()}</h3>
+            <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-tighter">Gross Revenue</p>
+          </div>
+          <div className="p-6 bg-white rounded-3xl border border-zinc-200 shadow-sm space-y-1">
+            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Payments Received</p>
+            <h3 className="text-2xl font-black tracking-tighter">{stats.totalPayments}</h3>
+            <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tighter">Total Completed</p>
+          </div>
+          <div className="p-6 bg-zinc-950 rounded-3xl border border-zinc-800 shadow-xl space-y-1 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Logo className="w-16 h-16" variant="gold" />
+            </div>
+            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Platform Fees</p>
+            <h3 className="text-2xl font-black tracking-tighter text-white">${stats.platformFees.toFixed(2)}</h3>
+            <p className="text-[10px] text-amber-500 font-black uppercase tracking-tighter">Institutional v1.8</p>
+          </div>
         </div>
 
         {/* Links table */}
-        <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-zinc-100 flex items-center justify-between">
-            <h2 className="text-sm font-medium">Payment links</h2>
-            <div className="flex gap-2 items-center">
-              <button
-                onClick={downloadCSV}
-                className="text-xs px-3 py-1.5 bg-white border border-zinc-200 rounded-lg text-zinc-600 hover:text-zinc-900 hover:border-zinc-400 transition-all font-bold uppercase tracking-wider"
+        {/* Main content tabs */}
+        <div className="space-y-6 mt-8">
+          <div className="flex items-center justify-between">
+            <div className="flex gap-1 bg-zinc-100 p-1 rounded-2xl border border-zinc-200/50">
+              <button 
+                onClick={() => setActiveTab("links")}
+                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === "links" ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}
               >
-                Export CSV
+                Payment Links
               </button>
-              <div className="flex items-center gap-2 bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-1.5">
-                <svg className="w-3.5 h-3.5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 16 16">
-                  <circle cx="7" cy="7" r="5" strokeWidth="1.5"/><line x1="11" y1="11" x2="14" y2="14" strokeWidth="1.5"/>
-                </svg>
-                <input
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  placeholder="Search links"
-                  className="text-xs bg-transparent outline-none w-36 text-zinc-700 placeholder:text-zinc-400"
-                />
-              </div>
-              <select
-                value={statusFilter}
-                onChange={e => setStatusFilter(e.target.value)}
-                className="text-xs border border-zinc-200 rounded-lg px-2.5 py-1.5 bg-white outline-none text-zinc-600"
+              <button 
+                onClick={() => setActiveTab("transactions")}
+                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === "transactions" ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}
               >
-                <option value="">All status</option>
-                <option value="active">Active</option>
-                <option value="completed">Completed</option>
-                <option value="expired">Expired</option>
-              </select>
+                Transactions
+              </button>
             </div>
+
+            {activeTab === "links" && (
+              <div className="flex gap-3">
+                <div className="relative">
+                  <input 
+                    type="text" 
+                    placeholder="Search links..." 
+                    className="pl-10 pr-4 py-2.5 bg-white border border-zinc-200 rounded-2xl text-xs font-bold w-64 outline-none focus:border-zinc-900 transition-all shadow-sm"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                  />
+                  <svg className="w-4 h-4 text-zinc-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                </div>
+                <button onClick={downloadCSV} className="p-2.5 bg-white border border-zinc-200 rounded-2xl hover:bg-zinc-50 transition-all shadow-sm" title="Export CSV">
+                  <svg className="w-5 h-5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                </button>
+              </div>
+            )}
           </div>
 
-          {isLoading ? (
-            <div className="py-16 text-center text-sm text-zinc-400">Loading links</div>
-          ) : filtered.length === 0 ? (
-            <div className="py-20 text-center space-y-8">
-              <div className="max-w-sm mx-auto space-y-4">
-                <h3 className="text-zinc-900 font-bold">Welcome to BiePay</h3>
-                <p className="text-sm text-zinc-500">Complete these steps to start accepting payments on Solana.</p>
-                
-                <div className="text-left space-y-3 pt-4">
-                  {[
-                    { l: "Connect or generate a merchant wallet", c: !!address },
-                    { l: "Create your first payment link", c: false },
-                    { l: "Share your link on social media", c: false }
-                  ].map((s, i) => (
-                    <div key={i} className="flex items-center gap-3 p-3 bg-zinc-50 rounded-xl border border-zinc-100">
-                      <div className={`w-5 h-5 rounded-full flex items-center justify-center border ${s.c ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white border-zinc-200 text-transparent"}`}>
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" /></svg>
-                      </div>
-                      <span className={`text-xs font-bold uppercase tracking-tight ${s.c ? "text-zinc-400 line-through" : "text-zinc-900"}`}>{s.l}</span>
-                    </div>
+          {activeTab === "links" ? (
+            <div className="bg-white border border-zinc-200 rounded-3xl overflow-hidden shadow-sm">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-zinc-50 border-b border-zinc-100">
+                    {["Link", "Token", "Amount", "Payments", "Status", "Created", ""].map(h => (
+                      <th key={h} className="text-left text-[10px] font-black text-zinc-400 px-6 py-4 uppercase tracking-widest">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-50">
+                  {filtered.map(l => (
+                    <tr
+                      key={l.id}
+                      onClick={() => setDetailLink(l)}
+                      className="group border-b border-zinc-50 last:border-none hover:bg-zinc-50/50 cursor-pointer transition-colors"
+                    >
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-black text-zinc-950 tracking-tight group-hover:text-amber-600 transition-colors">{l.label}</p>
+                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-0.5">{l.id}</p>
+                      </td>
+                      <td className="px-6 py-4 text-xs font-bold text-zinc-600">{l.token}</td>
+                      <td className="px-6 py-4 text-xs font-black text-zinc-900">{isIncognito ? "••••" : formatAmount(l.amountLamports, l.token)}</td>
+                      <td className="px-6 py-4 text-xs font-bold text-zinc-600">
+                        {isIncognito ? "—" : `${l.paymentCount}${l.maxPayments !== null ? ` / ${l.maxPayments}` : ""}`}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`text-[10px] px-2.5 py-1 rounded-full font-black uppercase tracking-tighter border ${statusPill(getEffectiveStatus(l))}`}>
+                          {getEffectiveStatus(l)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-[10px] text-zinc-400 font-bold uppercase tracking-widest">{timeAgo(l.createdAt)}</td>
+                      <td className="px-6 py-4 text-right" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => { setShareLink({ id: l.id, label: l.label }); setModal("share"); }}
+                            className="p-2 text-zinc-400 hover:text-zinc-950 hover:bg-zinc-100 rounded-xl transition-all"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
                   ))}
-                </div>
-              </div>
-              
-              <button
-                onClick={() => setModal("create")}
-                className="px-8 py-3 bg-zinc-900 text-white rounded-xl font-bold text-sm hover:bg-zinc-800 transition-all shadow-xl"
-              >
-                Create your first link
-              </button>
+                </tbody>
+              </table>
             </div>
           ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="bg-zinc-50 border-b border-zinc-100">
-                  {["Link", "Token", "Amount", "Payments", "Status", "Created", ""].map(h => (
-                    <th key={h} className="text-left text-xs font-medium text-zinc-400 px-5 py-3 uppercase tracking-wide">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(l => (
-                  <tr
-                    key={l.id}
-                    onClick={() => setDetailLink(l)}
-                    className="border-b border-zinc-100 last:border-none hover:bg-zinc-50 cursor-pointer transition-colors"
-                  >
-                    <td className="px-5 py-3.5">
-                      <p className="text-sm font-medium">{l.label}</p>
-                      <p className="text-xs font-mono text-zinc-400 mt-0.5">{l.id}</p>
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-zinc-600">{l.token}</td>
-                    <td className="px-5 py-3.5 text-sm font-mono">{isIncognito ? "••••" : formatAmount(l.amountLamports, l.token)}</td>
-                    <td className="px-5 py-3.5 text-sm font-mono text-zinc-600">
-                      {isIncognito ? "—" : `${l.paymentCount}${l.maxPayments !== null ? `/${l.maxPayments}` : ""}`}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusPill(getEffectiveStatus(l))}`}>
-                        {getEffectiveStatus(l)}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-xs text-zinc-400">{timeAgo(l.createdAt)}</td>
-                    <td className="px-5 py-3.5" onClick={e => e.stopPropagation()}>
-                      {l.status === "active" && (
-                        <button
-                          onClick={() => openShare(l)}
-                          className="text-xs px-3 py-1.5 border border-zinc-200 rounded-lg hover:bg-zinc-50 transition-colors"
-                        >
-                          Share
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            /* Transaction History Table */
+            <div className="bg-white rounded-3xl border border-zinc-200 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-zinc-100 bg-zinc-50/50">
+                      <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Date</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Product</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Payer Wallet</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Amount</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Proof</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-50">
+                    {isPaymentsLoading ? (
+                      Array(5).fill(0).map((_, i) => (
+                        <tr key={i} className="animate-pulse">
+                          <td colSpan={5} className="px-6 py-4 h-16 bg-zinc-50/30" />
+                        </tr>
+                      ))
+                    ) : payments.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-24 text-center">
+                          <p className="text-sm font-bold text-zinc-300 uppercase tracking-widest">No transactions recorded yet</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      payments.map((p: any) => (
+                        <tr key={p.id} className="hover:bg-zinc-50/80 transition-colors group">
+                          <td className="px-6 py-4">
+                            <p className="text-xs font-bold text-zinc-900">{new Date(p.createdAt).toLocaleDateString()}</p>
+                            <p className="text-[10px] text-zinc-400 font-medium">{new Date(p.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-xs font-black text-zinc-900 tracking-tight">{p.linkLabel}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <code className="text-xs font-mono text-zinc-500 bg-zinc-100 px-1.5 py-0.5 rounded group-hover:bg-white transition-colors">
+                                {p.payerWallet.slice(0, 4)}...{p.payerWallet.slice(-4)}
+                              </code>
+                              <button 
+                                onClick={() => navigator.clipboard.writeText(p.payerWallet)}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-black text-zinc-400 hover:text-zinc-900 uppercase"
+                              >
+                                Copy
+                              </button>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-xs font-black text-zinc-950">{formatAmount(p.amountLamports, p.token)}</span>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            {p.signature ? (
+                              <a 
+                                href={`https://explorer.solana.com/tx/${p.signature}?cluster=devnet`} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full hover:bg-emerald-100 transition-all uppercase tracking-widest"
+                              >
+                                Explorer
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                              </a>
+                            ) : (
+                              <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest">Pending</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
         </div>
 

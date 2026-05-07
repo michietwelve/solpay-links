@@ -146,4 +146,52 @@ router.delete("/:id", requireAuth, async (req: AuthenticatedRequest, res: Respon
   res.status(204).end();
 });
 
+// ─── GET /api/links/all/payments  ──────────────────────────────────────────
+// Global transaction history for a merchant
+router.get("/all/payments", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const allowedIds = req.user?.allowedIds || [];
+  
+  if (allowedIds.length === 0) {
+    res.json([]);
+    return;
+  }
+
+  // 1. Find all links belonging to this merchant
+  const links = await prisma.paymentLink.findMany({
+    where: {
+      OR: [
+        { merchantId: { in: allowedIds } },
+        { recipientWallet: { in: allowedIds } }
+      ]
+    },
+    select: { id: true, label: true }
+  });
+
+  const linkIds = links.map(l => l.id);
+  if (linkIds.length === 0) {
+    res.json([]);
+    return;
+  }
+
+  // 2. Find all payments for these links
+  const payments = await prisma.paymentRecord.findMany({
+    where: { 
+      linkId: { in: linkIds },
+      status: "confirmed" 
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  // 3. Enrich with link labels
+  const labelMap = Object.fromEntries(links.map(l => [l.id, l.label]));
+
+  res.json(
+    payments.map((p) => ({
+      ...p,
+      amountLamports: p.amountLamports.toString(),
+      linkLabel: labelMap[p.linkId] || "Unknown Link"
+    }))
+  );
+});
+
 export default router;
