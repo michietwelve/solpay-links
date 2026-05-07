@@ -45,6 +45,7 @@ interface LinkData {
   memo: string | null;
   redirectUrl: string | null;
   expiresAt: string | null;
+  digitalAssetUrl: string | null;
   paymentCount: number;
   maxPayments: number | null;
   status: string;
@@ -368,7 +369,11 @@ export default function PayPage() {
       setStage("success");
 
       if (link.redirectUrl) {
-        setTimeout(() => router.push(link.redirectUrl!), 3000);
+        setTimeout(() => {
+          if (typeof window !== "undefined") {
+            window.location.href = link.redirectUrl!;
+          }
+        }, 5000);
       }
     } catch (err) {
       console.error("[handlePay]", err);
@@ -480,6 +485,18 @@ export default function PayPage() {
             </div>
 
             <div className="pt-8 space-y-3">
+              {link.digitalAssetUrl && (
+                <a
+                  href={link.digitalAssetUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full py-4 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-[0.25em] rounded-xl hover:bg-emerald-500 transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-200"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                  Access Digital Asset
+                </a>
+              )}
+
               {txSig && (
                 <a
                   href={`https://explorer.solana.com/tx/${txSig}?cluster=devnet`}
@@ -499,6 +516,14 @@ export default function PayPage() {
                 Download Receipt
               </button>
             </div>
+
+            {link.redirectUrl && (
+              <div className="pt-4 text-center">
+                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest animate-pulse">
+                  Redirecting to merchant site in 5s...
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="px-8 pb-8 text-center">

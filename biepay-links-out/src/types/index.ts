@@ -33,6 +33,7 @@ export interface PaymentLink {
   maxPayments: number | null;    // null = unlimited
   paymentCount: number;
   redirectUrl: string | null;    // where to send payer after success
+  digitalAssetUrl: string | null; // URL to the book, NFT content, etc.
   status: LinkStatus;
   createdAt: Date;
   merchantId: string;            // links a link to a merchant account
@@ -76,6 +77,7 @@ export const CreateLinkSchema = z.object({
   expiresInMinutes: z.number().positive().max(525600).optional(),
   maxPayments: z.number().int().positive().optional(),
   redirectUrl: z.string().url().optional(),
+  digitalAssetUrl: z.string().url().optional(),
   merchantId: z.string().min(1),
 });
 

@@ -57,6 +57,7 @@ export async function createLink(input: CreateLinkInput): Promise<PaymentLink> {
       maxPayments: input.maxPayments ?? null,
       paymentCount: 0,
       redirectUrl: input.redirectUrl ?? null,
+      digitalAssetUrl: input.digitalAssetUrl ?? null,
       status: "active",
       merchantId: input.merchantId,
     },

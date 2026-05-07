@@ -19,6 +19,7 @@ model PaymentLink {
   maxPayments     Int?
   paymentCount    Int      @default(0)
   redirectUrl     String?
+  digitalAssetUrl String?
   status          String   @default("active")
   createdAt       DateTime @default(now())
   merchantId      String?

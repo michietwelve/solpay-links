@@ -44,6 +44,7 @@ router.get("/:linkId", async (req: Request, res: Response): Promise<void> => {
     isOpenAmount: link.amountLamports === null,
     memo: link.memo,
     redirectUrl: link.redirectUrl,
+    digitalAssetUrl: link.digitalAssetUrl,
     expiresAt: link.expiresAt,
     paymentCount: link.paymentCount,
     maxPayments: link.maxPayments,
