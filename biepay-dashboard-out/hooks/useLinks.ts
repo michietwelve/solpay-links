@@ -14,10 +14,10 @@ import {
 import { usePrivy } from "@privy-io/react-auth";
 
 export function useLinks(merchantId?: string) {
-  const { getAccessToken } = usePrivy();
+  const { getAccessToken, authenticated, user } = usePrivy();
   const { data, error, isLoading } = useSWR<PaymentLink[]>(
-    merchantId ? [`/api/links`, merchantId] : null,
-    async ([url, mId]: [string, string]) => {
+    authenticated && user && merchantId ? [`/api/links`, merchantId, user.id] : null,
+    async ([url, mId, uId]: [string, string, string]) => {
       const token = await getAccessToken();
       return linksApi.list(token ?? "", mId);
     },
@@ -63,9 +63,9 @@ export function useStats(merchantId?: string): { stats: DashboardStats; isLoadin
 }
 
 export function useAllPayments() {
-  const { getAccessToken, authenticated } = usePrivy();
+  const { getAccessToken, authenticated, user } = usePrivy();
   const { data, error, isLoading } = useSWR(
-    authenticated ? `/api/links/all/payments` : null,
+    authenticated && user ? [`/api/links/all/payments`, user.id] : null,
     async () => {
       const token = await getAccessToken();
       return linksApi.allPayments(token ?? "");

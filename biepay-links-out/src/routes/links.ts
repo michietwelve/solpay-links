@@ -62,6 +62,18 @@ router.post("/", requireAuth, async (req: AuthenticatedRequest, res: Response): 
 
 // ─── GET /api/links/all/payments  ──────────────────────────────────────────
 // Global transaction history for a merchant
+router.get("/debug/me", requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  res.json({
+    user: req.user,
+    env: {
+      hasPrivyId: !!process.env.PRIVY_APP_ID,
+      hasPrivySecret: !!process.env.PRIVY_APP_SECRET
+    }
+  });
+});
+
+// ─── GET /api/links/all/payments  ──────────────────────────────────────────
+// Global transaction history for a merchant
 router.get("/all/payments", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const allowedIds = req.user?.allowedIds || [];
   
