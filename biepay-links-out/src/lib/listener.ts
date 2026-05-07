@@ -11,6 +11,7 @@
  *   startEventListener(connection);
  */
 
+import { createHmac } from "crypto";
 import { Connection, PublicKey, Logs } from "@solana/web3.js";
 import { incrementPaymentCount, confirmPayment, getLinkById } from "./store";
 import { getMerchantProfile } from "./merchant";
@@ -39,20 +40,30 @@ interface WebhookPayload {
   amount?: string;
   token?: string;
   timestamp: string;
+  isTest?: boolean;
 }
 
-async function deliverWebhook(url: string, payload: WebhookPayload): Promise<void> {
+async function deliverWebhook(url: string, payload: WebhookPayload, secret?: string | null): Promise<void> {
   try {
+    const body = JSON.stringify(payload);
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+
+    if (secret) {
+      const signature = createHmac("sha256", secret).update(body).digest("hex");
+      headers["X-BiePay-Signature"] = signature;
+    }
+
     const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      headers,
+      body,
       signal: AbortSignal.timeout(10_000),
     });
+    
     if (!res.ok) {
       console.warn(`[webhook] ${url} responded ${res.status}`);
     } else {
-      console.log(`[webhook] delivered to ${url}`);
+      console.log(`[webhook] delivered to ${url} (signed: ${!!secret})`);
     }
   } catch (err) {
     console.error(`[webhook] failed to deliver to ${url}:`, err);
@@ -114,7 +125,7 @@ export function startEventListener(connection: Connection): () => void {
             amount,
             token,
             timestamp: new Date().toISOString(),
-          });
+          }, merchant.webhookSecret);
         }
       }
     },

@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import { prisma } from "./db";
 import { MerchantProfile, UpdateMerchantProfileInput } from "../types";
 
@@ -19,9 +20,19 @@ export async function getMerchantProfile(merchantId: string): Promise<MerchantPr
         logoUrl: null,
         accentColor: "#c5a36e",
         webhookUrl: null,
+        webhookSecret: randomBytes(32).toString("hex"),
       },
     });
     return defaultProfile as unknown as MerchantProfile;
+  }
+  
+  // Ensure legacy profiles get a secret too
+  if (!profile.webhookSecret) {
+    const updated = await prisma.merchantProfile.update({
+      where: { merchantId },
+      data: { webhookSecret: randomBytes(32).toString("hex") }
+    });
+    return updated as unknown as MerchantProfile;
   }
   
   return profile as unknown as MerchantProfile;

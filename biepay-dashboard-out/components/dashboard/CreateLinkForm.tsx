@@ -22,6 +22,7 @@ interface FormState {
   maxPayments: string;
   redirectUrl: string;
   digitalAssetUrl: string;
+  recipientWallet: string;
 }
 
 const INITIAL: FormState = {
@@ -34,6 +35,7 @@ const INITIAL: FormState = {
   maxPayments: "",
   redirectUrl: "",
   digitalAssetUrl: "",
+  recipientWallet: "",
 };
 
 export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
@@ -62,6 +64,13 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+
+  // Initialize recipientWallet from detected address
+  useState(() => {
+    if (recipientAddress) {
+      setForm(prev => ({ ...prev, recipientWallet: recipientAddress }));
+    }
+  });
 
   const set = (k: keyof FormState) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -100,7 +109,7 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
     try {
       const token = await getAccessToken();
       const result = await createLink(token ?? "", {
-        recipientWallet: recipientAddress,
+        recipientWallet: form.recipientWallet.trim() || recipientAddress!,
         token: form.token,
         label: form.label.trim(),
         description: form.description.trim(),
@@ -129,16 +138,20 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200 flex items-center justify-between">
-        <div className="flex flex-col gap-0.5">
-          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Merchant Receiving Address</span>
-          <span className="text-xs font-mono text-zinc-900">{recipientAddress ? `${recipientAddress.slice(0, 12)}...${recipientAddress.slice(-12)}` : "No wallet detected"}</span>
+      <div>
+        <div className="flex items-center justify-between mb-2 px-1">
+          <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Recipient Wallet (Solana)</label>
+          <span className="text-[10px] font-bold text-zinc-400 bg-zinc-100 px-2 py-0.5 rounded uppercase tracking-tighter">Settlement Address</span>
         </div>
-        {recipientAddress && (
-          <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-bold">
-            {privySolanaWallets.find(w => w.address === recipientAddress)?.walletClientType === 'privy' ? 'Embedded' : 'External'}
-          </span>
-        )}
+        <input 
+          placeholder="Paste your Solana wallet address (e.g. Phantom)"
+          className="w-full p-4 bg-zinc-50 border border-zinc-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-zinc-900/5 outline-none transition-all"
+          value={form.recipientWallet}
+          onChange={set("recipientWallet")}
+        />
+        <p className="mt-2 px-1 text-[10px] text-zinc-400 font-medium">
+          <strong>Tip:</strong> This is where your sales revenue will be sent. We recommend using your <strong>Privy Embedded Wallet</strong> (see dashboard top bar) for the smoothest experience.
+        </p>
       </div>
 
       {apiError && (
@@ -263,18 +276,30 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-zinc-500 mb-1.5">
-          Digital asset / Book download URL
-        </label>
-        <input
-          className={inputCls("digitalAssetUrl")}
+        <div className="flex items-center justify-between mb-2 px-1">
+          <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Digital Asset / Download URL</label>
+          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded uppercase tracking-tighter">Automatic Delivery</span>
+        </div>
+        <input 
+          placeholder="https://drive.google.com/s/your-file..."
+          className="w-full p-4 bg-zinc-50 border border-zinc-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-zinc-900/5 outline-none transition-all"
           value={form.digitalAssetUrl}
           onChange={set("digitalAssetUrl")}
-          placeholder="https://yoursite.com/my-book.pdf"
         />
         {errors.digitalAssetUrl && (
           <p className="text-xs text-red-500 mt-1">{errors.digitalAssetUrl}</p>
         )}
+        <div className="mt-3 p-4 bg-zinc-950 rounded-2xl border border-white/5 space-y-2 shadow-2xl">
+          <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest flex items-center gap-2">
+            <svg className="w-3 h-3 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
+            Merchant Guide: Where to get this?
+          </p>
+          <p className="text-[11px] text-zinc-500 leading-relaxed">
+            Upload your file to <strong>Google Drive</strong>, <strong>Dropbox</strong>, or <strong>Pinata</strong>. 
+            Ensure sharing is set to "Anyone with link", then paste that link here. 
+            Customers will receive this link instantly upon payment confirmation.
+          </p>
+        </div>
       </div>
 
       <div className="flex gap-2 pt-2">
