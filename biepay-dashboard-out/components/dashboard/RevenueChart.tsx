@@ -43,8 +43,12 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export default function RevenueChart({ data }: RevenueChartProps) {
   if (!data || data.length === 0) {
     return (
-      <div className="h-48 flex items-center justify-center text-zinc-400 text-xs font-bold uppercase tracking-widest bg-zinc-50/50 rounded-3xl border border-dashed border-zinc-200">
-        Waiting for payment data...
+      <div className="h-48 flex flex-col items-center justify-center bg-zinc-50/50 rounded-[2rem] border border-dashed border-zinc-200 group">
+        <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+          <svg className="w-5 h-5 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+        </div>
+        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Live Analytics Pending</p>
+        <p className="text-[8px] font-bold text-zinc-300 uppercase tracking-widest mt-1 italic">Synchronization in progress...</p>
       </div>
     );
   }

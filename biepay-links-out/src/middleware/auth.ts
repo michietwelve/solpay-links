@@ -53,12 +53,14 @@ export const requireAuth = async (
     privyUser.linkedAccounts.forEach((account) => {
       if (account.type === 'wallet') {
         allowedIds.push(account.address);
+        // Add lowercased version just in case of transport/client mismatches
+        allowedIds.push(account.address.toLowerCase());
       }
     });
 
     req.user = {
       id: userId,
-      allowedIds,
+      allowedIds: Array.from(new Set(allowedIds)), // unique only
     };
     next();
   } catch (error) {

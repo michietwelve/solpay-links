@@ -98,6 +98,12 @@ export default function DashboardPage() {
   const { stats } = useStats(merchantIds);
 
   const [modal, setModal]       = useState<Modal>(null);
+  const [toast, setToast]       = useState<{ message: string; type: "success" | "info" | "error" } | null>(null);
+
+  const showToast = (message: string, type: "success" | "info" | "error" = "info") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 5000);
+  };
   const [shareLink, setShareLink] = useState<{ id: string; label: string } | null>(null);
   const [search, setSearch]     = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
@@ -748,9 +754,9 @@ export default function DashboardPage() {
               {activeTab === "transactions" && (
                 <button 
                   onClick={async () => {
-                    alert("On-chain reconciliation started. Scanning for missed memos...");
+                    showToast("On-chain reconciliation started. Scanning for missed memos...", "info");
                     // In a real app, this would call /api/links/all/sync
-                    setTimeout(() => alert("Reconciliation complete. Dashboard is now synced with Solana Ledger."), 2000);
+                    setTimeout(() => showToast("Reconciliation complete. Dashboard is now synced with Solana Ledger.", "success"), 2000);
                   }}
                   className="p-2.5 bg-zinc-950 text-amber-500 border border-amber-900/30 rounded-2xl hover:bg-zinc-900 transition-all shadow-xl flex items-center gap-2 group"
                   title="Sync with Chain"
@@ -1071,10 +1077,11 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <StorefrontSettings 
-                  profile={profile || { businessName: "", logoUrl: "", accentColor: "#c5a36e", webhookUrl: "", webhookSecret: "" }} 
-                  onSave={handleSaveProfile} 
-                  onExport={handleExportWallet}
-                />
+                profile={profile || { businessName: "", logoUrl: "", accentColor: "#c5a36e", webhookUrl: "", webhookSecret: "" }} 
+                onSave={handleSaveProfile}
+                onExport={() => setModal("sweep")}
+                onNotify={showToast}
+              />
               )}
 
             </div>
@@ -1180,6 +1187,24 @@ export default function DashboardPage() {
       )}
       <AIAssistant />
       <JupiterTerminal />
+      {/* Premium Toast Notification System */}
+      {toast && (
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-bottom-10 duration-500">
+          <div className={`px-6 py-4 rounded-[2rem] shadow-[0_30px_60px_rgba(0,0,0,0.3)] backdrop-blur-2xl border flex items-center gap-4 min-w-[320px] ${
+            toast.type === 'error' ? 'bg-red-500/90 border-red-400 text-white' : 
+            toast.type === 'success' ? 'bg-emerald-500/90 border-emerald-400 text-white' : 
+            'bg-zinc-900/90 border-white/10 text-white'
+          }`}>
+            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              {toast.type === 'error' ? '✕' : toast.type === 'success' ? '✓' : 'ℹ'}
+            </div>
+            <p className="text-[11px] font-black uppercase tracking-[0.1em]">{toast.message}</p>
+            <button onClick={() => setToast(null)} className="ml-auto opacity-50 hover:opacity-100 transition-opacity">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

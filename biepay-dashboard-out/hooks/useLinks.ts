@@ -78,7 +78,7 @@ export function useAllPayments() {
 export function useAnalytics(merchantId: string | undefined) {
   const { user, getAccessToken } = usePrivy();
   const { data, error, isLoading } = useSWR(
-    user && merchantId ? ["/api/analytics", merchantId] : null,
+    user && merchantId ? ["/api/analytics", merchantId, user.id] : null,
     async ([_, id]) => {
       const token = await getAccessToken();
       return linksApi.analytics(token ?? "", id);

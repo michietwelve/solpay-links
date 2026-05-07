@@ -14,9 +14,10 @@ interface StorefrontSettingsProps {
   profile: MerchantProfile;
   onSave: (data: Partial<MerchantProfile>) => Promise<void>;
   onExport: () => void;
+  onNotify?: (msg: string, type?: "success" | "info" | "error") => void;
 }
 
-export default function StorefrontSettings({ profile, onSave, onExport }: StorefrontSettingsProps) {
+export default function StorefrontSettings({ profile, onSave, onExport, onNotify }: StorefrontSettingsProps) {
   const [activeTab, setActiveTab] = useState<"brand" | "security">("brand");
   const [businessName, setBusinessName] = useState(profile.businessName ?? "");
   const [logoUrl, setLogoUrl] = useState(profile.logoUrl ?? "");
@@ -168,17 +169,22 @@ export default function StorefrontSettings({ profile, onSave, onExport }: Storef
                   <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 group hover:border-zinc-300 transition-colors relative overflow-hidden">
                     <div className="absolute top-2 right-2 px-2 py-0.5 bg-zinc-200 text-zinc-500 text-[7px] font-black uppercase rounded tracking-widest">SNS Identity</div>
                     <label className="text-[10px] font-black text-zinc-900 uppercase tracking-widest mb-3 block">Link .sol Domain</label>
-                    <div className="flex gap-2">
-                      <input 
-                        placeholder="e.g. merchant.sol"
-                        disabled={true}
-                        className="flex-1 p-4 bg-white border border-zinc-200 rounded-xl text-sm font-bold opacity-50 cursor-not-allowed"
-                      />
+                    <div className="flex gap-3">
+                      <div className="relative flex-1">
+                        <input 
+                          placeholder="e.g. merchant.sol"
+                          disabled={true}
+                          className="w-full p-4 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold opacity-70 cursor-not-allowed pr-12"
+                        />
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                          <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest bg-zinc-200 px-1.5 py-0.5 rounded">TBA</span>
+                        </div>
+                      </div>
                       <button 
-                        onClick={() => alert("SNS linking is coming soon! Claim your .sol handle on Mainnet launch.")}
-                        className="px-4 py-2 bg-zinc-900 text-white text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-zinc-800 transition-all"
+                        onClick={() => onNotify?.("SNS linking is coming soon! Claim your .sol handle on Mainnet launch.", "info")}
+                        className="px-6 py-2 bg-zinc-950 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-zinc-800 transition-all shadow-lg active:scale-95"
                       >
-                        Connect
+                        Reserve
                       </button>
                     </div>
                   </div>
@@ -225,17 +231,17 @@ export default function StorefrontSettings({ profile, onSave, onExport }: Storef
                     <div className="flex gap-2">
                       <button 
                         onClick={async () => {
-                          if (!webhookUrl) return alert("Enter a URL first.");
+                          if (!webhookUrl) return onNotify?.("Enter a URL first.", "error");
                           try {
                             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/merchants/test-webhook`, {
                               method: "POST",
                               headers: { "Content-Type": "application/json" },
                               body: JSON.stringify({ url: webhookUrl })
                             });
-                            if (res.ok) alert("Test webhook sent successfully!");
-                            else alert("Webhook endpoint returned an error.");
+                            if (res.ok) onNotify?.("Test webhook sent successfully!", "success");
+                            else onNotify?.("Webhook endpoint returned an error.", "error");
                           } catch (e) {
-                            alert("Failed to reach webhook endpoint.");
+                            onNotify?.("Failed to reach webhook endpoint.", "error");
                           }
                         }}
                         className="px-2 py-0.5 bg-zinc-800 text-zinc-400 hover:text-white text-[8px] font-black uppercase rounded transition-colors"
@@ -259,7 +265,7 @@ export default function StorefrontSettings({ profile, onSave, onExport }: Storef
                         <button 
                           onClick={() => {
                             navigator.clipboard.writeText(profile.webhookSecret!);
-                            alert("Secret copied! Use this to verify X-BiePay-Signature on your server.");
+                            onNotify?.("Secret copied! Use this to verify X-BiePay-Signature on your server.", "success");
                           }}
                           className="text-[10px] font-black text-zinc-400 hover:text-white uppercase underline"
                         >
