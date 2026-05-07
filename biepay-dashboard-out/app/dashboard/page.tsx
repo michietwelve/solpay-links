@@ -955,7 +955,7 @@ export default function DashboardPage() {
       {/* Settings Panel */}
       {modal === "settings" && (
         <div className="fixed inset-0 z-[60] flex justify-end animate-in fade-in duration-300 bg-black/40 backdrop-blur-sm" onClick={() => setModal(null)}>
-          <div className="w-full max-w-md bg-white h-full shadow-2xl animate-in slide-in-from-right duration-500" onClick={e => e.stopPropagation()}>
+          <div className="w-full max-w-md bg-white h-full shadow-2xl animate-in slide-in-from-right duration-500 overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="p-8 space-y-8">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold">Settings</h2>
