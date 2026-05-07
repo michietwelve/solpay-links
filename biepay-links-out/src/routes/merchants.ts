@@ -31,11 +31,19 @@ router.patch("/:merchantId", requireAuth, async (req: AuthenticatedRequest, res:
   res.json(profile);
 });
 
+import { createHmac } from "crypto";
+
 // POST /api/merchants/test-webhook
-router.post("/test-webhook", async (req: Request, res: Response) => {
+router.post("/test-webhook", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const { url } = req.body;
   if (!url) return res.status(400).json({ message: "URL required" });
   
+  // Use the first allowed ID for the merchant profile secret
+  const merchantId = req.user?.allowedIds[0];
+  if (!merchantId) return res.status(403).json({ message: "No merchant ID found" });
+  
+  const merchant = await getMerchantProfile(merchantId);
+
   try {
     const payload = {
       event: "payment.confirmed",
@@ -48,13 +56,22 @@ router.post("/test-webhook", async (req: Request, res: Response) => {
       isTest: true
     };
     
+    const body = JSON.stringify(payload);
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+
+    if (merchant.webhookSecret) {
+      headers["X-BiePay-Signature"] = createHmac("sha256", merchant.webhookSecret)
+        .update(body)
+        .digest("hex");
+    }
+
     const webhookRes = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      headers,
+      body
     });
     
-    if (webhookRes.ok) res.json({ success: true });
+    if (webhookRes.ok) res.json({ success: true, signed: !!merchant.webhookSecret });
     else res.status(400).json({ message: "Webhook returned error" });
   } catch (err) {
     res.status(500).json({ message: "Delivery failed" });

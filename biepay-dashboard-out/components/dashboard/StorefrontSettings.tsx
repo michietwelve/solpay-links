@@ -250,6 +250,29 @@ export default function StorefrontSettings({ profile, onSave, onExport }: Storef
                     onChange={e => setWebhookUrl(e.target.value)}
                     className="w-full p-5 bg-zinc-900/50 border border-zinc-800 text-white rounded-2xl text-sm font-mono focus:ring-2 focus:ring-white/10 outline-none transition-all"
                   />
+                  
+                  {profile?.webhookSecret && (
+                    <div className="p-4 bg-zinc-950 rounded-2xl border border-white/5 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Webhook Signing Secret</span>
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText(profile.webhookSecret!);
+                            alert("Secret copied! Use this to verify X-BiePay-Signature on your server.");
+                          }}
+                          className="text-[10px] font-black text-zinc-400 hover:text-white uppercase underline"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                      <code className="block text-xs font-mono text-zinc-400 truncate bg-black/50 p-3 rounded-xl border border-white/5">
+                        {profile.webhookSecret}
+                      </code>
+                      <p className="text-[9px] text-zinc-600 font-medium leading-relaxed">
+                        Every webhook payload includes an <strong>X-BiePay-Signature</strong> header. Use this secret to calculate the HMAC-SHA256 hash of the request body and verify it matches the header.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-6 border-t border-zinc-800/50">
