@@ -1,0 +1,6 @@
+{
+  "buildCommand": "cd biepay-dashboard-out && npm install && npm run build",
+  "outputDirectory": "biepay-dashboard-out/.next",
+  "installCommand": "cd biepay-dashboard-out && npm install",
+  "framework": "nextjs"
+}
