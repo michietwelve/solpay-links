@@ -43,7 +43,7 @@ interface WebhookPayload {
   isTest?: boolean;
 }
 
-async function deliverWebhook(url: string, payload: WebhookPayload, secret?: string | null): Promise<void> {
+async function deliverWebhook(url: string, payload: WebhookPayload, secret?: string | null, retryCount = 0): Promise<void> {
   try {
     const body = JSON.stringify(payload);
     const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -62,11 +62,21 @@ async function deliverWebhook(url: string, payload: WebhookPayload, secret?: str
     
     if (!res.ok) {
       console.warn(`[webhook] ${url} responded ${res.status}`);
+      if (retryCount < 3) {
+        const delay = Math.pow(2, retryCount) * 1000;
+        console.log(`[webhook] Retrying in ${delay}ms...`);
+        setTimeout(() => deliverWebhook(url, payload, secret, retryCount + 1), delay);
+      }
     } else {
       console.log(`[webhook] delivered to ${url} (signed: ${!!secret})`);
     }
   } catch (err) {
     console.error(`[webhook] failed to deliver to ${url}:`, err);
+    if (retryCount < 3) {
+      const delay = Math.pow(2, retryCount) * 1000;
+      console.log(`[webhook] Retrying in ${delay}ms...`);
+      setTimeout(() => deliverWebhook(url, payload, secret, retryCount + 1), delay);
+    }
   }
 }
 

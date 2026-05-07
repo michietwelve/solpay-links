@@ -276,12 +276,20 @@ router.post("/:id/reconcile", async (req: Request, res: Response) => {
       const isBiePay = logs.some((l: string) => l.includes("BiePay:"));
 
       if (isBiePay) {
-        // Success - update the store (this will confirm the record if found)
-        // For simplicity we just call our internal confirm logic
-        const { confirmPayment } = require("../lib/store");
-        // We'd need to find the recordId from the logs... 
-        // but for now let's just assume if it's a BiePay TX and it's confirmed, we're good.
-        res.json({ status: "confirmed", message: "Transaction verified on-chain." });
+        // Extract recordId from the logs
+        let recordId = null;
+        for (const log of logs) {
+          const match = log.match(/BiePay:([A-Za-z0-9_-]+)/);
+          if (match) { recordId = match[1]; break; }
+        }
+
+        if (recordId) {
+          const { confirmPayment } = require("../lib/store");
+          await confirmPayment(recordId, signature);
+          res.json({ status: "confirmed", message: "Transaction verified on-chain and recorded." });
+        } else {
+          res.status(400).json({ message: "BiePay memo found, but no Record ID." });
+        }
       } else {
         res.status(400).json({ message: "Not a valid BiePay transaction." });
       }

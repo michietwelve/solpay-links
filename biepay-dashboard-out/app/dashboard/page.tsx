@@ -692,19 +692,19 @@ export default function DashboardPage() {
             <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Available Balance</p>
             <div className="flex items-baseline gap-2">
               <h3 className="text-2xl font-black tracking-tighter">
-                {balance !== null ? balance.toFixed(4) : "0.0000"} <span className="text-sm font-bold text-zinc-400">SOL</span>
+                {isIncognito ? "••••" : (balance !== null ? balance.toFixed(4) : "0.0000")} {!isIncognito && <span className="text-sm font-bold text-zinc-400">SOL</span>}
               </h3>
             </div>
             <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tighter">Main Settlement Wallet</p>
           </div>
           <div className="p-6 bg-white rounded-3xl border border-zinc-200 shadow-sm space-y-1">
             <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Lifetime Value</p>
-            <h3 className="text-2xl font-black tracking-tighter">${stats.totalVolume.toLocaleString()}</h3>
+            <h3 className="text-2xl font-black tracking-tighter">{isIncognito ? "••••" : `$${stats.totalVolume.toLocaleString()}`}</h3>
             <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-tighter">Gross Revenue</p>
           </div>
           <div className="p-6 bg-white rounded-3xl border border-zinc-200 shadow-sm space-y-1">
             <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Payments Received</p>
-            <h3 className="text-2xl font-black tracking-tighter">{stats.totalPayments}</h3>
+            <h3 className="text-2xl font-black tracking-tighter">{isIncognito ? "••••" : stats.totalPayments}</h3>
             <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tighter">Total Completed</p>
           </div>
           <div className="p-6 bg-zinc-950 rounded-3xl border border-zinc-800 shadow-xl space-y-1 relative overflow-hidden group">
@@ -712,7 +712,7 @@ export default function DashboardPage() {
               <Logo className="w-16 h-16" variant="gold" />
             </div>
             <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Platform Fees</p>
-            <h3 className="text-2xl font-black tracking-tighter text-white">${stats.platformFees.toFixed(2)}</h3>
+            <h3 className="text-2xl font-black tracking-tighter text-white">{isIncognito ? "••••" : `$${stats.platformFees.toFixed(2)}`}</h3>
             <p className="text-[10px] text-amber-500 font-black uppercase tracking-tighter">Institutional v1.8</p>
           </div>
         </div>
@@ -853,8 +853,11 @@ export default function DashboardPage() {
                       ))
                     ) : payments.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-6 py-24 text-center">
-                          <p className="text-sm font-bold text-zinc-300 uppercase tracking-widest">No transactions recorded yet</p>
+                        <td colSpan={5} className="px-6 py-16 text-center">
+                          <div className="w-16 h-16 bg-zinc-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-zinc-100">
+                            <svg className="w-6 h-6 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                          </div>
+                          <p className="text-sm font-bold text-zinc-400 uppercase tracking-widest">No transactions recorded yet</p>
                         </td>
                       </tr>
                     ) : (
@@ -915,8 +918,8 @@ export default function DashboardPage() {
           <span className="text-xs font-bold tracking-tight">BiePay Institutional</span>
         </div>
         <div className="flex items-center gap-8">
-          <button onClick={() => alert("Terms of Service: This platform is provided for the Solana Frontier Hackathon as a demonstration of institutional commerce infrastructure.")} className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest hover:text-zinc-900 transition-colors">Terms</button>
-          <button onClick={() => alert("Privacy Policy: Merchant data is processed locally where possible. We do not sell transaction data to third parties.")} className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest hover:text-zinc-900 transition-colors">Privacy</button>
+          <button onClick={() => showToast("Terms of Service: This platform is provided for the Solana Frontier Hackathon as a demonstration of institutional commerce infrastructure.", "info")} className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest hover:text-zinc-900 transition-colors">Terms</button>
+          <button onClick={() => showToast("Privacy Policy: Merchant data is processed locally where possible. We do not sell transaction data to third parties.", "info")} className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest hover:text-zinc-900 transition-colors">Privacy</button>
           <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest">© 2026 BiePay</span>
         </div>
       </footer>
@@ -1079,7 +1082,7 @@ export default function DashboardPage() {
                 <StorefrontSettings 
                 profile={profile || { businessName: "", logoUrl: "", accentColor: "#c5a36e", webhookUrl: "", webhookSecret: "" }} 
                 onSave={handleSaveProfile}
-                onExport={() => setModal("sweep")}
+                onExport={handleExportWallet}
                 onNotify={showToast}
               />
               )}

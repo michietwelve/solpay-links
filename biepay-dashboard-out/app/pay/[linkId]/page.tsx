@@ -119,6 +119,39 @@ export default function PayPage() {
   const [showRetry, setShowRetry] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
   const [airdropStatus, setAirdropStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+
+  const generatePDF = async () => {
+    setIsGeneratingPDF(true);
+    try {
+      const { jsPDF } = await import("jspdf");
+      const html2canvas = (await import("html2canvas")).default;
+      const receiptElement = document.getElementById("receipt-card");
+      if (!receiptElement) return;
+
+      const canvas = await html2canvas(receiptElement, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+      });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`BiePay_Receipt_${link?.id || "download"}.pdf`);
+    } catch (error) {
+      console.error("PDF generation failed:", error);
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
 
   // ── Step 1: Fetch link metadata ─────────────────────────────────────────────
 
@@ -365,6 +398,18 @@ export default function PayPage() {
       );
 
       await connection.confirmTransaction(sig, "confirmed");
+      
+      // Notify the backend immediately as a fallback in case the listener misses the event
+      try {
+        await fetch(`${API_BASE}/links/${link.id}/reconcile`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ signature: sig })
+        });
+      } catch (err) {
+        console.error("Reconcile failed, but payment succeeded", err);
+      }
+
       setTxSig(sig);
       setStage("success");
 
@@ -446,7 +491,7 @@ export default function PayPage() {
 
     return (
       <Card>
-        <div className="animate-in fade-in zoom-in duration-700">
+        <div id="receipt-card" className="animate-in fade-in zoom-in duration-700 bg-white">
           {/* Header Branding */}
           <div className="p-8 text-center border-b border-zinc-100 bg-zinc-50/50">
             <div className="w-16 h-16 bg-white rounded-2xl shadow-xl flex items-center justify-center mx-auto mb-4 border border-zinc-100 relative">
@@ -513,10 +558,11 @@ export default function PayPage() {
               )}
               
               <button 
-                onClick={() => window.print()}
-                className="w-full py-4 bg-white border border-zinc-200 text-zinc-500 text-[10px] font-black uppercase tracking-[0.25em] rounded-xl hover:bg-zinc-50 transition-all"
+                onClick={generatePDF}
+                disabled={isGeneratingPDF}
+                className="w-full py-4 bg-white border border-zinc-200 text-zinc-500 text-[10px] font-black uppercase tracking-[0.25em] rounded-xl hover:bg-zinc-50 transition-all disabled:opacity-50"
               >
-                Download PDF Receipt
+                {isGeneratingPDF ? "Generating PDF..." : "Download PDF Receipt"}
               </button>
             </div>
 
