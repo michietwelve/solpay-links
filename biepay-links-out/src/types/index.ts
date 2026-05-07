@@ -45,6 +45,7 @@ export interface MerchantProfile {
   logoUrl: string | null;
   accentColor: string | null;    // hex code
   webhookUrl: string | null;
+  webhookSecret: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
