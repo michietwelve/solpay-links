@@ -747,7 +747,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex gap-3">
-              {activeTab === "payments" && (
+              {activeTab === "transactions" && (
                 <button 
                   onClick={async () => {
                     alert("On-chain reconciliation started. Scanning for missed memos...");
