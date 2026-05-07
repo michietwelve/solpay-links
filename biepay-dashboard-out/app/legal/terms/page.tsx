@@ -1,6 +1,6 @@
 "use client";
 
-import Logo from "../../components/layout/Logo";
+import Logo from "../../../components/layout/Logo";
 
 export default function TermsPage() {
   return (
