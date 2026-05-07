@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import { Connection } from "@solana/web3.js";
 import {
   createLink,
   getLinkById,
@@ -178,7 +179,7 @@ router.patch("/:id", requireAuth, async (req: AuthenticatedRequest, res: Respons
   }
 
   const updated = await prisma.paymentLink.update({
-    where: { id },
+    where: { id: id as string },
     data: {
       label: data.label,
       description: data.description,
@@ -212,7 +213,7 @@ router.post("/:id/reconcile", async (req: Request, res: Response) => {
       // Check if this signature contains our BiePay memo
       const tx = await connection.getTransaction(signature, { maxSupportedTransactionVersion: 0 });
       const logs = tx?.meta?.logMessages || [];
-      const isBiePay = logs.some(l => l.includes("BiePay:"));
+      const isBiePay = logs.some((l: string) => l.includes("BiePay:"));
 
       if (isBiePay) {
         // Success - update the store (this will confirm the record if found)
