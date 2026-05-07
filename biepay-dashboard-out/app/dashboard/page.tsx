@@ -936,8 +936,8 @@ export default function DashboardPage() {
           <span className="text-xs font-bold tracking-tight">BiePay Institutional</span>
         </div>
         <div className="flex items-center gap-8">
-          <button onClick={() => showToast("Terms of Service: This platform is provided for the Solana Frontier Hackathon as a demonstration of institutional commerce infrastructure.", "info")} className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest hover:text-zinc-900 transition-colors">Terms</button>
-          <button onClick={() => showToast("Privacy Policy: Merchant data is processed locally where possible. We do not sell transaction data to third parties.", "info")} className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest hover:text-zinc-900 transition-colors">Privacy</button>
+          <a href="/legal/terms" className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest hover:text-zinc-900 transition-colors">Terms</a>
+          <a href="/legal/privacy" className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest hover:text-zinc-900 transition-colors">Privacy</a>
           <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest">© 2026 BiePay</span>
         </div>
       </footer>
