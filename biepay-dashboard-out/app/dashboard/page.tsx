@@ -109,8 +109,6 @@ export default function DashboardPage() {
   const { payments = [], isLoading: isPaymentsLoading } = useAllPayments();
   const { analytics = [], isLoading: isAnalyticsLoading } = useAnalytics(merchantIds);
   
-  // Recharts components (import dynamically to avoid SSR issues if necessary, but here we just use them)
-  const { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } = require('recharts');
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {

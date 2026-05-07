@@ -17,6 +17,9 @@ import { startEventListener } from "./lib/listener";
 const app = express();
 const PORT = parseInt(process.env.PORT ?? "3001", 10);
 
+// Trust proxy for express-rate-limit to work correctly behind reverse proxies
+app.set("trust proxy", 1);
+
 // ─── Global middleware ────────────────────────────────────────────────────
 
 app.use(morgan("dev"));
