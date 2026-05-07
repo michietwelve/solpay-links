@@ -401,7 +401,7 @@ export default function PayPage() {
       
       // Notify the backend immediately as a fallback in case the listener misses the event
       try {
-        await fetch(`${API_BASE}/links/${link.id}/reconcile`, {
+        await fetch(`${API_BASE}/api/links/${link.id}/reconcile`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ signature: sig })
@@ -536,7 +536,7 @@ export default function PayPage() {
                   target="_blank"
                   rel="noreferrer"
                   onClick={() => {
-                    fetch(`${API_BASE}/links/${link.id}/fulfillment/access`, { method: "POST" }).catch(() => {});
+                    fetch(`${API_BASE}/api/links/${link.id}/fulfillment/access`, { method: "POST" }).catch(() => {});
                   }}
                   className="w-full py-4 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-[0.25em] rounded-xl hover:bg-emerald-500 transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-200"
                 >

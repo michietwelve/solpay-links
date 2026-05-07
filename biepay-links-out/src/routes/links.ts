@@ -271,7 +271,7 @@ router.post("/:id/reconcile", async (req: Request, res: Response) => {
     
     if (status.value?.confirmationStatus === "confirmed" || status.value?.confirmationStatus === "finalized") {
       // Check if this signature contains our BiePay memo
-      const tx = await connection.getTransaction(signature, { maxSupportedTransactionVersion: 0 });
+      const tx = await connection.getTransaction(signature, { maxSupportedTransactionVersion: 0, commitment: "confirmed" });
       const logs = tx?.meta?.logMessages || [];
       const isBiePay = logs.some((l: string) => l.includes("BiePay:"));
 
@@ -284,8 +284,39 @@ router.post("/:id/reconcile", async (req: Request, res: Response) => {
         }
 
         if (recordId) {
-          const { confirmPayment } = require("../lib/store");
+          const { confirmPayment, getLinkById } = require("../lib/store");
+          const { getMerchantProfile } = require("../lib/merchant");
+          const { deliverWebhook } = require("../lib/listener");
+          
           await confirmPayment(recordId, signature);
+          
+          // Fire webhook
+          try {
+            const link = await getLinkById(id);
+            if (link) {
+              const merchant = await getMerchantProfile(link.merchantId);
+              const webhookUrl = merchant.webhookUrl || process.env.WEBHOOK_URL;
+              if (webhookUrl) {
+                // We need to fetch the record to get amount/token
+                const { prisma } = require("../lib/db");
+                const record = await prisma.paymentRecord.findUnique({ where: { id: recordId } });
+                if (record) {
+                  await deliverWebhook(webhookUrl, {
+                    event: "payment.confirmed",
+                    signature,
+                    linkId: id,
+                    payer: record.payerWallet,
+                    amount: record.amountLamports,
+                    token: record.token,
+                    timestamp: new Date().toISOString(),
+                  }, merchant.webhookSecret);
+                }
+              }
+            }
+          } catch (webhookErr) {
+            console.error("Reconcile webhook error:", webhookErr);
+          }
+
           res.json({ status: "confirmed", message: "Transaction verified on-chain and recorded." });
         } else {
           res.status(400).json({ message: "BiePay memo found, but no Record ID." });
