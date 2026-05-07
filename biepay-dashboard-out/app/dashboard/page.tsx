@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { useLinks, useStats, useAllPayments, useAnalytics, createLink, deleteLink } from "../../hooks/useLinks";
 import { formatAmount, timeAgo, getShareUrls, getEffectiveStatus } from "../../lib/api";
@@ -114,6 +114,24 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<"links" | "transactions">("links");
   const { payments = [], isLoading: isPaymentsLoading } = useAllPayments();
   const { analytics = [], isLoading: isAnalyticsLoading } = useAnalytics(merchantIds);
+  
+  // Real-time Payment Notification Hook
+  const previousPaymentCount = useRef(payments.length);
+
+  useEffect(() => {
+    // Only trigger if we have new payments and this isn't the initial load
+    if (payments.length > previousPaymentCount.current && previousPaymentCount.current > 0) {
+      const newPayment = payments[0]; // Assuming payments are sorted desc by date
+      if (newPayment) {
+        showToast(`Payment Received! ${formatAmount(newPayment.amountLamports, newPayment.token)} ${newPayment.token}`, "success");
+        // Play subtle success sound
+        const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3");
+        audio.volume = 0.4;
+        audio.play().catch(() => {});
+      }
+    }
+    previousPaymentCount.current = payments.length;
+  }, [payments]);
   
 
   const CustomTooltip = ({ active, payload, label }: any) => {
