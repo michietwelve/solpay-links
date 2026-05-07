@@ -1073,7 +1073,7 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <StorefrontSettings 
-                  profile={profile || { businessName: "", logoUrl: "", accentColor: "#c5a36e", webhookUrl: "" }} 
+                  profile={profile || { businessName: "", logoUrl: "", accentColor: "#c5a36e", webhookUrl: "", webhookSecret: "" }} 
                   onSave={handleSaveProfile} 
                   onExport={handleExportWallet}
                 />
