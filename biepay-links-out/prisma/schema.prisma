@@ -46,6 +46,9 @@ model MerchantProfile {
   accentColor     String?  @default("#c5a36e")
   webhookUrl      String?
   webhookSecret   String?
+  email           String?
+  apiKey          String?  @unique
+  apiKeyLastUsed  DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

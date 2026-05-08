@@ -111,7 +111,9 @@ export default function DashboardPage() {
   const [withdrawSource, setWithdrawSource] = useState<string | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
   const [successData, setSuccessData] = useState<{ title: string; message: string; txSig?: string; isError?: boolean } | null>(null);
-  const [activeTab, setActiveTab] = useState<"links" | "transactions">("links");
+  const [activeTab, setActiveTab] = useState<"links" | "transactions" | "analytics" | "settings">("links");
+  const [settings, setSettings] = useState<{ email: string; apiKey: string | null } | null>(null);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
   const { payments = [], isLoading: isPaymentsLoading, mutate: mutatePayments } = useAllPayments();
   const { analytics = [], isLoading: isAnalyticsLoading } = useAnalytics(merchantIds);
 
@@ -237,6 +239,7 @@ export default function DashboardPage() {
       if (res.ok) {
         const data = await res.json();
         setProfile(data);
+        setSettings({ email: data.email ?? "", apiKey: data.apiKey ?? null });
       }
     } catch (e) {
       console.error("Profile fetch failed:", e);
@@ -398,12 +401,73 @@ export default function DashboardPage() {
       setModal("success");
 
       // Final refresh
-      setTimeout(refreshBalance, 2000);
+      mutatePayments();
     } catch (err: any) {
-      console.error("Withdraw failed:", err);
-      throw err; // WithdrawModal will handle the error display
+      console.error("[handleWithdraw]", err);
+      showToast(err.message || "Withdrawal failed", "error");
     }
   }
+
+  const handleRefund = async (paymentId: string, linkId: string) => {
+    if (!confirm("Are you sure you want to refund this transaction? This will reverse the payment on-chain.")) return;
+    
+    showToast("Constructing refund transaction...", "info");
+    
+    try {
+      const token = await getAccessToken();
+      const res = await fetch(`${API_BASE}/api/links/${linkId}/payments/${paymentId}/refund-tx`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Failed to construct transaction" }));
+        throw new Error(errorData.message);
+      }
+      
+      const { transaction: txBase64 } = await res.json();
+      const tx = Transaction.from(Buffer.from(txBase64, "base64"));
+      
+      // Find the payment link to get the recipient wallet
+      const payment = payments.find((p: any) => p.id === paymentId);
+      if (!payment) throw new Error("Payment record not found");
+      
+      const link = links.find(l => l.id === linkId);
+      if (!link) throw new Error("Link not found");
+      
+      const wallet = solanaWallets.find(w => w.address === link.recipientWallet);
+      if (!wallet) throw new Error("Merchant wallet not found. Please ensure the recipient wallet for this link is connected to your Privy profile.");
+      
+      const signedTx = await (wallet as any).signTransaction(tx);
+      
+      const RPC = process.env.NEXT_PUBLIC_RPC_ENDPOINT ?? "https://api.devnet.solana.com";
+      const connection = new Connection(RPC, "confirmed");
+      const sig = await connection.sendRawTransaction(signedTx.serialize());
+      
+      showToast("Broadcasting reversal...", "info");
+      await connection.confirmTransaction(sig, "confirmed");
+      
+      // Confirm refund with backend
+      await fetch(`${API_BASE}/api/links/${linkId}/payments/${paymentId}/refund-confirm`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ signature: sig })
+      });
+      
+      showToast("Refund successful!", "success");
+      mutatePayments();
+      
+    } catch (err: any) {
+      console.error("[refund]", err);
+      showToast(err.message || "Refund failed.", "error");
+    }
+  };
 
   async function handleSweep() {
     if (!address || !publicKey) {
@@ -836,6 +900,12 @@ export default function DashboardPage() {
               >
                 Transactions
               </button>
+              <button 
+                onClick={() => setActiveTab("settings")}
+                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === "settings" ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}
+              >
+                Settings
+              </button>
             </div>
 
             <div className="flex gap-3">
@@ -928,6 +998,105 @@ export default function DashboardPage() {
                 </tbody>
               </table>
             </div>
+          ) : activeTab === "settings" ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {/* Email Notifications */}
+              <div className="bg-white p-8 rounded-[2.5rem] border border-zinc-200 shadow-sm space-y-6">
+                <div>
+                  <h2 className="text-xl font-black text-zinc-900 tracking-tight">Email Notifications</h2>
+                  <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-1">Stay updated on your sales</p>
+                </div>
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest pl-1">Notification Email</label>
+                    <input 
+                      type="email" 
+                      placeholder="merchant@example.com"
+                      className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-2xl text-sm font-bold outline-none focus:border-zinc-900 transition-all"
+                      value={settings?.email ?? ""}
+                      onChange={e => setSettings(s => s ? { ...s, email: e.target.value } : { email: e.target.value, apiKey: null })}
+                    />
+                  </div>
+                  <button 
+                    onClick={async () => {
+                      setIsSavingSettings(true);
+                      try {
+                        const token = await getAccessToken();
+                        await fetch(`${API_BASE}/api/merchants/${user?.id}`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                          body: JSON.stringify({ email: settings?.email })
+                        });
+                        showToast("Notification email saved.", "success");
+                      } catch (e) {
+                        showToast("Failed to save email.", "error");
+                      } finally {
+                        setIsSavingSettings(false);
+                      }
+                    }}
+                    disabled={isSavingSettings}
+                    className="w-full py-3 bg-zinc-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-zinc-800 transition-all shadow-lg"
+                  >
+                    {isSavingSettings ? "Saving..." : "Save Preferences"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Developer API Keys */}
+              <div className="bg-zinc-950 p-8 rounded-[2.5rem] border border-zinc-800 shadow-2xl space-y-6">
+                <div>
+                  <h2 className="text-xl font-black text-white tracking-tight">Institutional API</h2>
+                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Long-lived access for your backend</p>
+                </div>
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-1">Secret Key</label>
+                    <div className="relative">
+                      <input 
+                        type={isIncognito ? "password" : "text"}
+                        readOnly
+                        value={settings?.apiKey ?? "No key generated"}
+                        className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-2xl text-xs font-mono text-amber-500/80 outline-none"
+                      />
+                      <button 
+                        onClick={() => {
+                          if (settings?.apiKey) {
+                            navigator.clipboard.writeText(settings.apiKey);
+                            showToast("API key copied to clipboard", "success");
+                          }
+                        }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-zinc-500 hover:text-white"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={async () => {
+                      if (!confirm("Generating a new key will invalidate your current one. Proceed?")) return;
+                      try {
+                        const token = await getAccessToken();
+                        const res = await fetch(`${API_BASE}/api/merchants/api-key`, {
+                          method: "POST",
+                          headers: { "Authorization": `Bearer ${token}` }
+                        });
+                        const data = await res.json();
+                        setSettings(s => s ? { ...s, apiKey: data.apiKey } : { email: "", apiKey: data.apiKey });
+                        showToast("New API key generated.", "success");
+                      } catch (e) {
+                        showToast("Failed to generate key.", "error");
+                      }
+                    }}
+                    className="w-full py-3 bg-white text-zinc-950 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-zinc-100 transition-all"
+                  >
+                    Generate New Key
+                  </button>
+                  <p className="text-[9px] text-zinc-600 font-medium text-center">
+                    Keep your key secret. BiePay will never ask for it via email.
+                  </p>
+                </div>
+              </div>
+            </div>
           ) : (
             /* Transaction History Table */
             <div className="bg-white rounded-3xl border border-zinc-200 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -1009,19 +1178,31 @@ export default function DashboardPage() {
                             <span className="text-xs font-black text-zinc-950">{formatAmount(p.amountLamports, p.token)}</span>
                           </td>
                           <td className="px-6 py-4 text-right">
-                            {p.signature ? (
-                              <a 
-                                href={`https://explorer.solana.com/tx/${p.signature}?cluster=devnet`} 
-                                target="_blank" 
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1.5 text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full hover:bg-emerald-100 transition-all uppercase tracking-widest"
-                              >
-                                Explorer
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                              </a>
-                            ) : (
-                              <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest">Pending</span>
-                            )}
+                            <div className="flex items-center justify-end gap-2">
+                              {p.status === "confirmed" && (
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); handleRefund(p.id, p.linkId); }}
+                                  className="px-2 py-1 bg-red-50 text-red-600 text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-red-100 transition-all opacity-0 group-hover:opacity-100"
+                                >
+                                  Refund
+                                </button>
+                              )}
+                              {p.status === "refunded" && (
+                                <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest">Refunded</span>
+                              )}
+                              {p.signature ? (
+                                <a 
+                                  href={`https://explorer.solana.com/tx/${p.signature}?cluster=devnet`} 
+                                  target="_blank" 
+                                  rel="noreferrer"
+                                  className="p-1.5 bg-zinc-50 border border-zinc-100 rounded-lg hover:bg-zinc-100 transition-colors"
+                                >
+                                  <svg className="w-3 h-3 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                </a>
+                              ) : (
+                                <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest">Pending</span>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))

@@ -8,6 +8,7 @@ import {
   getEffectiveStatus,
   deleteLink,
   confirmPayment,
+  getPaymentById,
 } from "../lib/store";
 import { CreateLinkSchema } from "../types";
 import { actionError } from "../middleware/actions";
@@ -16,6 +17,17 @@ import { prisma } from "../lib/db";
 
 const router = Router();
 const API_BASE = process.env.API_BASE_URL ?? "http://localhost:3000";
+
+const TOKEN_MINTS: Record<string, string> = {
+  USDC: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+  USDT: "EJwZwpRvqiS86SAt9ikRWB9S5bwGrnF399qcSip8T6Y3",
+};
+
+const TOKEN_DECIMALS: Record<string, number> = {
+  SOL: 9,
+  USDC: 6,
+  USDT: 6,
+};
 
 // ─── POST /api/links  ─────────────────────────────────────────────────────
 // Create a new payment link. Returns the link object + ready-to-share URLs.
@@ -429,6 +441,95 @@ router.post("/:linkId/fulfillment/access", async (req: Request, res: Response) =
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ message: "Failed to log fulfillment access" });
+  }
+});
+
+// POST /api/links/:id/payments/:paymentId/refund-tx
+router.post("/:id/payments/:paymentId/refund-tx", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  const { id: linkId, paymentId } = req.params;
+  
+  try {
+    const link = await prisma.paymentLink.findUnique({ where: { id: linkId } });
+    const payment = await prisma.paymentRecord.findUnique({ where: { id: paymentId } });
+
+    if (!link || !payment) {
+      res.status(404).json({ message: "Link or payment not found" });
+      return;
+    }
+
+    // Auth check: Only the merchant (recipientWallet owner) can refund
+    if (!req.user?.allowedIds.includes(link.recipientWallet)) {
+      res.status(403).json({ message: "Not authorized to issue refunds for this link." });
+      return;
+    }
+
+    if (payment.status !== "confirmed") {
+      res.status(400).json({ message: "Only confirmed payments can be refunded." });
+      return;
+    }
+
+    // Construct the reversal transaction
+    const connection = new Connection(process.env.RPC_ENDPOINT || "https://api.devnet.solana.com", "confirmed");
+    const { Transaction, SystemProgram, PublicKey } = require("@solana/web3.js");
+    const { getAssociatedTokenAddressSync, createTransferCheckedInstruction } = require("@solana/spl-token");
+
+    const tx = new Transaction();
+    const merchantPubkey = new PublicKey(link.recipientWallet);
+    const customerPubkey = new PublicKey(payment.payerWallet);
+    const amount = BigInt(payment.amountLamports);
+
+    if (payment.token === "SOL") {
+      tx.add(SystemProgram.transfer({
+        fromPubkey: merchantPubkey,
+        toPubkey: customerPubkey,
+        lamports: amount,
+      }));
+    } else {
+      const mint = new PublicKey(TOKEN_MINTS[payment.token]);
+      const sourceAta = getAssociatedTokenAddressSync(mint, merchantPubkey);
+      const destAta = getAssociatedTokenAddressSync(mint, customerPubkey);
+      
+      tx.add(createTransferCheckedInstruction(
+        sourceAta,
+        mint,
+        destAta,
+        merchantPubkey,
+        amount,
+        TOKEN_DECIMALS[payment.token]
+      ));
+    }
+
+    const { blockhash } = await connection.getLatestBlockhash();
+    tx.recentBlockhash = blockhash;
+    tx.feePayer = merchantPubkey;
+
+    const serialized = tx.serialize({ requireAllSignatures: false, verifySignatures: false });
+    res.json({ 
+      transaction: serialized.toString("base64"),
+      message: `Refund of ${payment.amountLamports} ${payment.token} to ${payment.payerWallet.slice(0,4)}...`
+    });
+
+  } catch (err) {
+    console.error("[refund] Error:", err);
+    res.status(500).json({ message: "Failed to construct refund transaction." });
+  }
+});
+
+// POST /api/links/:id/payments/:paymentId/refund-confirm
+router.post("/:id/payments/:paymentId/refund-confirm", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  const { id: linkId, paymentId } = req.params;
+  const { signature } = req.body;
+
+  if (!signature) return res.status(400).json({ message: "Signature required" });
+
+  try {
+    const payment = await prisma.paymentRecord.update({
+      where: { id: paymentId },
+      data: { status: "refunded" }
+    });
+    res.json({ success: true, payment });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to update payment status" });
   }
 });
 

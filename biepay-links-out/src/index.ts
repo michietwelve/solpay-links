@@ -13,6 +13,7 @@ import payRouter from "./routes/pay";
 import merchantsRouter from "./routes/merchants";
 import analyticsRouter from "./routes/analytics";
 import debugRouter from "./routes/debug";
+import fulfillmentRouter from "./routes/fulfillment";
 import { startEventListener } from "./lib/listener";
 
 const app = express();
@@ -72,6 +73,9 @@ app.use("/api/analytics", analyticsRouter);
 
 // Debug
 app.use("/api/debug", debugRouter);
+
+// Fulfillment
+app.use("/api/fulfillment", fulfillmentRouter);
 
 // ─── Health check ─────────────────────────────────────────────────────────
 

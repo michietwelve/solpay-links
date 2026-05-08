@@ -29,6 +29,8 @@ import {
 } from "@solana/web3.js";
 import { MoonPayBuyWidget } from "@moonpay/moonpay-react";
 import confetti from "canvas-confetti";
+import bs58 from "bs58";
+import Logo     from "../../../components/layout/Logo";
 import Logo     from "../../../components/layout/Logo";
 const ComponentAny = MoonPayBuyWidget as any;
 
@@ -120,6 +122,7 @@ export default function PayPage() {
   const [isInitializing, setIsInitializing] = useState(false);
   const [airdropStatus, setAirdropStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isSigning, setIsSigning] = useState(false);
 
   const generatePDF = async () => {
     setIsGeneratingPDF(true);
@@ -150,6 +153,49 @@ export default function PayPage() {
       console.error("PDF generation failed:", error);
     } finally {
       setIsGeneratingPDF(false);
+    }
+  };
+
+  const handleAccessAsset = async () => {
+    if (!link || !walletAddr) return;
+    setIsSigning(true);
+    setErrMsg(null);
+
+    try {
+      const activeWallet = allWallets.find(w => w.address === walletAddr);
+      if (!activeWallet) throw new Error("Active wallet not found for signing.");
+
+      const message = `BiePay Fulfillment: ${link.id}`;
+      const encodedMessage = new TextEncoder().encode(message);
+      
+      // Request signature from wallet
+      const signature = await (activeWallet as any).signMessage(encodedMessage);
+      const signatureBase58 = bs58.encode(signature);
+
+      // Verify with backend
+      const res = await fetch(`${API_BASE}/api/fulfillment/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          linkId: link.id,
+          publicKey: walletAddr,
+          signature: signatureBase58
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Ownership verification failed.");
+      }
+
+      const { assetUrl } = await res.json();
+      window.open(assetUrl, "_blank");
+
+    } catch (err: any) {
+      console.error("[fulfillment]", err);
+      setErrMsg(err.message || "Failed to verify ownership.");
+    } finally {
+      setIsSigning(false);
     }
   };
 
@@ -531,18 +577,18 @@ export default function PayPage() {
 
             <div className="pt-8 space-y-3 print:hidden">
               {link.digitalAssetUrl && (
-                <a
-                  href={link.digitalAssetUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() => {
-                    fetch(`${API_BASE}/api/links/${link.id}/fulfillment/access`, { method: "POST" }).catch(() => {});
-                  }}
-                  className="w-full py-4 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-[0.25em] rounded-xl hover:bg-emerald-500 transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-200"
+                <button
+                  onClick={handleAccessAsset}
+                  disabled={isSigning}
+                  className="w-full py-4 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-[0.25em] rounded-xl hover:bg-emerald-500 transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-200 disabled:opacity-50"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                  Access Digital Asset
-                </a>
+                  {isSigning ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                  )}
+                  {isSigning ? "Verifying..." : "Access Digital Asset"}
+                </button>
               )}
 
               {txSig && (

@@ -8,6 +8,8 @@ import {
   SupportedToken,
   LinkStatus,
 } from "../types";
+import { sendPaymentNotification } from "./notifications";
+import { getMerchantProfile } from "./merchant";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -178,6 +180,25 @@ export async function confirmPayment(recordId: string, signature: string): Promi
     });
     
     await incrementPaymentCount(record.linkId);
+
+    // ── Email Notification ──────────────────────────────────────────────────
+    try {
+      const link = await prisma.paymentLink.findUnique({ where: { id: record.linkId } });
+      if (link && link.merchantId) {
+        const merchant = await getMerchantProfile(link.merchantId);
+        if (merchant?.email) {
+          await sendPaymentNotification(merchant.email, {
+            amount: (BigInt(record.amountLamports) / BigInt(10 ** TOKEN_DECIMALS[record.token as SupportedToken])).toString(),
+            token: record.token,
+            linkLabel: link.label,
+            customerWallet: record.payerWallet,
+            signature: signature
+          });
+        }
+      }
+    } catch (err) {
+      console.error("[confirmPayment] Notification failed:", err);
+    }
   }
 }
 

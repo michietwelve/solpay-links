@@ -2,6 +2,8 @@ import { Router, Request, Response } from "express";
 import { getMerchantProfile, updateMerchantProfile } from "../lib/merchant";
 import { UpdateMerchantProfileSchema } from "../types";
 import { requireAuth, AuthenticatedRequest } from "../middleware/auth";
+import { prisma } from "../lib/db";
+import { nanoid } from "nanoid";
 
 const router = Router();
 
@@ -76,6 +78,32 @@ router.post("/test-webhook", requireAuth, async (req: AuthenticatedRequest, res:
   } catch (err) {
     res.status(500).json({ message: "Delivery failed" });
   }
+});
+
+// POST /api/merchants/api-key
+router.post("/api-key", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  const merchantId = req.user?.id; // Primary Privy ID
+  if (!merchantId) return res.status(401).json({ message: "Unauthorized" });
+
+  try {
+    const newKey = `bp_${nanoid(32)}`;
+    const updated = await prisma.merchantProfile.update({
+      where: { merchantId },
+      data: { apiKey: newKey }
+    });
+    res.json({ apiKey: updated.apiKey });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to generate key" });
+  }
+});
+
+// GET /api/merchants/me/settings
+router.get("/me/settings", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  const merchantId = req.user?.id;
+  if (!merchantId) return res.status(401).json({ message: "Unauthorized" });
+
+  const profile = await prisma.merchantProfile.findUnique({ where: { merchantId } });
+  res.json(profile);
 });
 
 export default router;
