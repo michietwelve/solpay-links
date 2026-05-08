@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { Connection } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import {
   createLink,
   getLinkById,
@@ -7,6 +7,7 @@ import {
   getPaymentsForLink,
   getEffectiveStatus,
   deleteLink,
+  confirmPayment,
 } from "../lib/store";
 import { CreateLinkSchema } from "../types";
 import { actionError } from "../middleware/actions";

@@ -106,7 +106,8 @@ export async function deleteLink(token: string, id: string): Promise<void> {
 }
 
 export async function triggerSync(token: string): Promise<{ success: boolean; count: number }> {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/links/all/sync`, {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "https://biepay-links-production.up.railway.app";
+  const res = await fetch(`${apiBase}/api/links/all/sync`, {
     method: "POST",
     headers: { 
       "Authorization": `Bearer ${token}`,
