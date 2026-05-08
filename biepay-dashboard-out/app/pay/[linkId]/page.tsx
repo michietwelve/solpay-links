@@ -31,7 +31,6 @@ import { MoonPayBuyWidget } from "@moonpay/moonpay-react";
 import confetti from "canvas-confetti";
 import bs58 from "bs58";
 import Logo     from "../../../components/layout/Logo";
-import Logo     from "../../../components/layout/Logo";
 const ComponentAny = MoonPayBuyWidget as any;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
