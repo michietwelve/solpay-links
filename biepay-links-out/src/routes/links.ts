@@ -102,8 +102,7 @@ router.get("/all/payments", requireAuth, async (req: AuthenticatedRequest, res: 
   // 2. Find all payments for these links
   const payments = await prisma.paymentRecord.findMany({
     where: { 
-      linkId: { in: linkIds },
-      status: "confirmed" 
+      linkId: { in: linkIds }
     },
     orderBy: { createdAt: "desc" },
   });
@@ -118,6 +117,90 @@ router.get("/all/payments", requireAuth, async (req: AuthenticatedRequest, res: 
       linkLabel: labelMap[p.linkId] || "Unknown Link"
     }))
   );
+});
+
+// ─── POST /api/links/all/sync  ────────────────────────────────────────────
+// Triggers an on-chain scan for any missed transactions across all merchant wallets.
+router.post("/all/sync", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const allowedIds = req.user?.allowedIds || [];
+  if (allowedIds.length === 0) {
+    res.json({ success: true, count: 0 });
+    return;
+  }
+
+  const connection = new Connection(process.env.RPC_ENDPOINT || "https://api.devnet.solana.com", "confirmed");
+  const { confirmPayment } = require("../lib/store");
+  const { deliverWebhook } = require("../lib/listener");
+  const { getMerchantProfile } = require("../lib/merchant");
+  
+  let reconciledCount = 0;
+
+  try {
+    // For each wallet, scan recent transactions
+    for (const address of allowedIds) {
+      if (!address.startsWith("did:privy")) { // Skip Privy IDs, only scan wallets
+        try {
+          const pubkey = new PublicKey(address);
+          const signatures = await connection.getSignaturesForAddress(pubkey, { limit: 10 });
+          
+          for (const sigInfo of signatures) {
+            if (sigInfo.err) continue;
+            
+            // Check if we already have this signature confirmed
+            const existing = await prisma.paymentRecord.findFirst({
+              where: { signature: sigInfo.signature, status: "confirmed" }
+            });
+            if (existing) continue;
+
+            // If not found, fetch the transaction logs to see if it's a BiePay tx
+            const tx = await connection.getTransaction(sigInfo.signature, { 
+              maxSupportedTransactionVersion: 0, 
+              commitment: "confirmed" 
+            });
+            const logs = tx?.meta?.logMessages || [];
+            
+            const match = logs.join(" ").match(/BiePay:([A-Za-z0-9_-]{12})/);
+            if (match) {
+              const recordId = match[1];
+              const record = await prisma.paymentRecord.findUnique({ where: { id: recordId } });
+              
+              if (record && record.status === "pending") {
+                await confirmPayment(recordId, sigInfo.signature);
+                reconciledCount++;
+                
+                // Fire webhook
+                try {
+                  const link = await prisma.paymentLink.findUnique({ where: { id: record.linkId } });
+                  if (link) {
+                    const merchant = await getMerchantProfile(link.merchantId);
+                    const webhookUrl = merchant.webhookUrl || process.env.WEBHOOK_URL;
+                    if (webhookUrl) {
+                      await deliverWebhook(webhookUrl, {
+                        event: "payment.confirmed",
+                        signature: sigInfo.signature,
+                        linkId: link.id,
+                        payer: record.payerWallet,
+                        amount: record.amountLamports,
+                        token: record.token,
+                        timestamp: new Date().toISOString(),
+                      }, merchant.webhookSecret);
+                    }
+                  }
+                } catch (we) { console.error("Sync webhook error:", we); }
+              }
+            }
+          }
+        } catch (walletErr) {
+          console.warn(`[sync] Failed to scan wallet ${address}:`, walletErr);
+        }
+      }
+    }
+
+    res.json({ success: true, count: reconciledCount });
+  } catch (err) {
+    console.error("[sync] Global sync failed:", err);
+    res.status(500).json({ message: "Sync failed" });
+  }
 });
 
 // ─── GET /api/links/:id  ──────────────────────────────────────────────────

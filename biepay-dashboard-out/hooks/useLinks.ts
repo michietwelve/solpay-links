@@ -104,3 +104,20 @@ export async function deleteLink(token: string, id: string): Promise<void> {
   await linksApi.delete(token, id);
   await globalMutate(key => Array.isArray(key) && key[0] === "/api/links");
 }
+
+export async function triggerSync(token: string): Promise<{ success: boolean; count: number }> {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/links/all/sync`, {
+    method: "POST",
+    headers: { 
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json"
+    }
+  });
+  if (!res.ok) throw new Error("Sync failed");
+  const data = await res.json();
+  
+  // Invalidate payments list to show new confirmed transactions
+  await globalMutate(key => Array.isArray(key) && key[0] === "/api/links/all/payments");
+  
+  return data;
+}

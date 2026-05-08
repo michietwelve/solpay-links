@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
-import { useLinks, useStats, useAllPayments, useAnalytics, createLink, deleteLink } from "../../hooks/useLinks";
+import { useLinks, useStats, useAllPayments, useAnalytics, createLink, deleteLink, triggerSync } from "../../hooks/useLinks";
 import { formatAmount, timeAgo, getShareUrls, getEffectiveStatus } from "../../lib/api";
 import type { PaymentLink, CreateLinkResponse } from "../../lib/api";
 import CreateLinkForm from "../../components/dashboard/CreateLinkForm";
@@ -112,8 +112,18 @@ export default function DashboardPage() {
   const [balance, setBalance] = useState<number | null>(null);
   const [successData, setSuccessData] = useState<{ title: string; message: string; txSig?: string; isError?: boolean } | null>(null);
   const [activeTab, setActiveTab] = useState<"links" | "transactions">("links");
-  const { payments = [], isLoading: isPaymentsLoading } = useAllPayments();
+  const { payments = [], isLoading: isPaymentsLoading, mutate: mutatePayments } = useAllPayments();
   const { analytics = [], isLoading: isAnalyticsLoading } = useAnalytics(merchantIds);
+
+  const unlinkedWallets = useMemo(() => {
+    if (!user) return [];
+    const linkedAddresses = user.linkedAccounts
+      .filter((a: any) => a.type === 'wallet')
+      .map((a: any) => a.address);
+    
+    // We only care about external wallets (not 'privy' embedded ones as they are always linked)
+    return solanaWallets.filter(w => w.walletClientType !== 'privy' && !linkedAddresses.includes(w.address));
+  }, [user, solanaWallets]);
   
   // Real-time Payment Notification Hook
   const previousPaymentCount = useRef(payments.length);
@@ -782,9 +792,19 @@ export default function DashboardPage() {
               {activeTab === "transactions" && (
                 <button 
                   onClick={async () => {
-                    showToast("On-chain reconciliation started. Scanning for missed memos...", "info");
-                    // In a real app, this would call /api/links/all/sync
-                    setTimeout(() => showToast("Reconciliation complete. Dashboard is now synced with Solana Ledger.", "success"), 2000);
+                    showToast("Syncing with Solana Ledger...", "info");
+                    try {
+                      const token = await getAccessToken();
+                      const result = await triggerSync(token ?? "");
+                      if (result.count > 0) {
+                        showToast(`Sync complete. Reconciled ${result.count} new transactions.`, "success");
+                        mutatePayments();
+                      } else {
+                        showToast("Dashboard is already up to date.", "info");
+                      }
+                    } catch (err) {
+                      showToast("Sync failed. Please try again later.", "error");
+                    }
                   }}
                   className="p-2.5 bg-zinc-950 text-amber-500 border border-amber-900/30 rounded-2xl hover:bg-zinc-900 transition-all shadow-xl flex items-center gap-2 group"
                   title="Sync with Chain"
@@ -879,13 +899,37 @@ export default function DashboardPage() {
                           <td colSpan={5} className="px-6 py-4 h-16 bg-zinc-50/30" />
                         </tr>
                       ))
-                    ) : payments.length === 0 ? (
+                    ) : (unlinkedWallets.length > 0 || payments.length === 0) ? (
                       <tr>
-                        <td colSpan={5} className="px-6 py-16 text-center">
-                          <div className="w-16 h-16 bg-zinc-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-zinc-100">
-                            <svg className="w-6 h-6 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                          </div>
-                          <p className="text-sm font-bold text-zinc-400 uppercase tracking-widest">No transactions recorded yet</p>
+                        <td colSpan={5} className="px-6 py-12">
+                          {unlinkedWallets.length > 0 && (
+                            <div className="mb-6 p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+                              <div className="flex items-center gap-3 text-left">
+                                <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 shrink-0">
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                </div>
+                                <div className="space-y-0.5">
+                                  <p className="text-[10px] font-black text-amber-900 uppercase tracking-tight">Unlinked Wallets Detected</p>
+                                  <p className="text-[11px] text-amber-700 leading-tight">Some connected wallets are not linked to your profile. Transactions for these wallets won't appear here.</p>
+                                </div>
+                              </div>
+                              <button 
+                                onClick={() => linkWallet()}
+                                className="px-4 py-2 bg-amber-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-amber-700 transition-all shadow-md active:scale-95 shrink-0"
+                              >
+                                Link Wallets
+                              </button>
+                            </div>
+                          )}
+
+                          {payments.length === 0 && (
+                            <div className="text-center py-8">
+                              <div className="w-16 h-16 bg-zinc-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-zinc-100">
+                                <svg className="w-6 h-6 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                              </div>
+                              <p className="text-sm font-bold text-zinc-400 uppercase tracking-widest">No transactions recorded yet</p>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ) : (

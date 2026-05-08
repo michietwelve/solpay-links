@@ -10,12 +10,12 @@ router.get("/:merchantId", requireAuth, async (req: AuthenticatedRequest, res: R
   const { merchantId } = req.params;
   const ids = (merchantId as string).split(",");
   
-  // Validate that all requested IDs belong to the authenticated user
+  // Filter IDs to only include those the user is authorized for
   const allowedIds = req.user?.allowedIds || [];
-  const unauthorized = ids.some(id => !allowedIds.includes(id));
+  const authorizedIds = ids.filter(id => allowedIds.includes(id));
   
-  if (unauthorized) {
-    res.status(403).json({ message: "Not authorized to view analytics for one or more requested IDs" });
+  if (authorizedIds.length === 0) {
+    res.json([]);
     return;
   }
   
@@ -25,8 +25,8 @@ router.get("/:merchantId", requireAuth, async (req: AuthenticatedRequest, res: R
       status: "confirmed",
       link: {
         OR: [
-          { merchantId: { in: ids } },
-          { recipientWallet: { in: ids } }
+          { merchantId: { in: authorizedIds } },
+          { recipientWallet: { in: authorizedIds } }
         ]
       }
     },
