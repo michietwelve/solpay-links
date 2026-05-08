@@ -24,7 +24,7 @@ import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import { Connection, Transaction, SystemProgram, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync, createTransferCheckedInstruction, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
-type Modal = "create" | "share" | "withdraw" | "success" | "settings" | "profile" | "sweep" | null;
+type Modal = "create" | "share" | "withdraw" | "success" | "settings" | "profile" | "sweep" | "debug" | null;
 
 export default function DashboardPage() {
   const { ready, authenticated, user, login, logout, linkWallet, exportWallet, getAccessToken } = usePrivy();
@@ -299,6 +299,7 @@ export default function DashboardPage() {
     setModal("share");
   }
 
+  const [debugData, setDebugData] = useState<any>(null);
   const showDebugInfo = async () => {
     try {
       const token = await getAccessToken();
@@ -306,10 +307,8 @@ export default function DashboardPage() {
         headers: { "Authorization": `Bearer ${token}` }
       });
       const data = await res.json();
-      const ids = data.user.allowedIds;
-      const count = ids.length;
-      const firstFew = ids.slice(0, 3).map((id: string) => id.slice(0, 6) + "...").join(", ");
-      showToast(`UID: ${data.user.id.slice(0,8)} | IDs: ${count} (${firstFew})`, "info");
+      setDebugData(data);
+      setModal("debug");
     } catch (e) {
       showToast("Debug fetch failed", "error");
     }
@@ -1138,24 +1137,37 @@ export default function DashboardPage() {
                 <p className="text-[10px] text-zinc-400 text-center mt-3 leading-relaxed">
                   Permanently remove this link and all its payment history from your dashboard.
                 </p>
+      {/* Withdraw modal */}
+      <WithdrawModal
+        isOpen={modal === "withdraw"}
+        onClose={() => setModal(null)}
+        sourceLink={withdrawSource}
+        address={address}
+        onSuccess={() => { mutatePayments(); }}
+      />
+
+      {modal === "debug" && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6" onClick={() => setModal(null)}>
+          <div className="bg-white rounded-[2.5rem] w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="p-8 border-b border-zinc-100 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-black text-zinc-900 tracking-tight">Session Debug Data</h2>
+                <p className="text-sm text-zinc-400 font-medium">Internal authentication state for BiePay support.</p>
               </div>
+              <button onClick={() => setModal(null)} className="p-2 hover:bg-zinc-100 rounded-full transition-colors">
+                <svg className="w-6 h-6 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="p-8 max-h-[60vh] overflow-y-auto bg-zinc-50 font-mono text-[10px]">
+              <pre>{JSON.stringify(debugData, null, 2)}</pre>
+            </div>
+            <div className="p-8 bg-white border-t border-zinc-100">
+              <button onClick={() => setModal(null)} className="w-full py-4 bg-zinc-900 text-white font-bold rounded-2xl">Close Debugger</button>
             </div>
           </div>
-        </>
+        </div>
       )}
-      {/* Withdraw modal */}
-      {modal === "withdraw" && withdrawSource && (
-        <WithdrawModal
-          sourceAddress={withdrawSource}
-          suggestedDest={publicKey?.toBase58()}
-          balance={balance}
-          onConfirm={handleWithdraw}
-          onClose={() => {
-            setModal(null);
-            setWithdrawSource(null);
-          }}
-        />
-      )}
+
       {/* Success modal */}
       {modal === "success" && successData && (
         <SuccessModal
