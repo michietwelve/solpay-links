@@ -82,6 +82,7 @@ router.get("/all/payments", requireAuth, async (req: AuthenticatedRequest, res: 
     res.json([]);
     return;
   }
+  res.setHeader("X-Debug-IDs", allowedIds.length);
 
   // 1. Find all links belonging to this merchant
   const links = await prisma.paymentLink.findMany({
