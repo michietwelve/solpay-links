@@ -1245,12 +1245,17 @@ export default function DashboardPage() {
                   </button>
                 </div>
 
-                <div className="flex gap-4 py-8 text-[10px] text-zinc-400 font-bold uppercase tracking-widest justify-center">
-                  <a href="/legal/terms" className="hover:text-zinc-900">Terms</a>
-                  <span>•</span>
-                  <a href="/legal/privacy" className="hover:text-zinc-900">Privacy</a>
-                  <span>•</span>
-                  <a href="#" className="hover:text-zinc-900">v1.2.0</a>
+                <div className="flex flex-col items-center gap-2 py-8">
+                  <div className="flex gap-4 text-[10px] text-zinc-400 font-bold uppercase tracking-widest justify-center">
+                    <a href="/legal/terms" className="hover:text-zinc-900">Terms</a>
+                    <span>•</span>
+                    <a href="/legal/privacy" className="hover:text-zinc-900">Privacy</a>
+                    <span>•</span>
+                    <a href="#" className="hover:text-zinc-900">v1.2.0</a>
+                  </div>
+                  <div className="text-[8px] font-mono text-zinc-300 uppercase tracking-tight">
+                    UID: {user?.id} | LNKD: {user?.linkedAccounts.filter((a: any) => a.type === 'wallet').length} wallets
+                  </div>
                 </div>
               </div>
             </div>
