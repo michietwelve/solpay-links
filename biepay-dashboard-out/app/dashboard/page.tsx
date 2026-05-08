@@ -1142,11 +1142,36 @@ export default function DashboardPage() {
                           )}
 
                           {payments.length === 0 && (
-                            <div className="text-center py-8">
+                            <div className="text-center py-8 space-y-5">
                               <div className="w-16 h-16 bg-zinc-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-zinc-100">
                                 <svg className="w-6 h-6 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                               </div>
                               <p className="text-sm font-bold text-zinc-400 uppercase tracking-widest">No transactions recorded yet</p>
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const token = await getAccessToken();
+                                    const res = await fetch(`${API_BASE}/api/debug/deep`, {
+                                      headers: { "Authorization": `Bearer ${token}` }
+                                    });
+                                    const data = await res.json();
+                                    const diag = data.diagnosis || "Could not diagnose.";
+                                    const recent = (data.recentPaymentsAcrossAllMerchants || [])
+                                      .slice(0, 5)
+                                      .map((p: any) => `• ${p.token} ${p.status} | link: ${p.linkLabel} | willShow: ${p.willShowInDashboard}`)
+                                      .join("\n") || "No recent payments found in DB at all.";
+                                    const allowedCount = (data.sessionAllowedIds || []).length;
+                                    const matchedCount = data.matchedLinksCount ?? 0;
+                                    alert(`🔍 DIAGNOSIS:\n${diag}\n\nSession has ${allowedCount} allowed IDs\nLinks matched to session: ${matchedCount}\n\nRecent DB payments:\n${recent}`);
+                                  } catch (e) {
+                                    alert("Failed to run diagnostics. Check console.");
+                                  }
+                                }}
+                                className="mx-auto flex items-center gap-2 px-4 py-2 bg-zinc-100 text-zinc-600 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-zinc-200 transition-all"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" /></svg>
+                                Run Diagnostics
+                              </button>
                             </div>
                           )}
                         </td>
