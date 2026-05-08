@@ -1144,13 +1144,18 @@ export default function DashboardPage() {
       )}
 
       {/* Withdraw modal */}
-      <WithdrawModal
-        isOpen={modal === "withdraw"}
-        onClose={() => setModal(null)}
-        sourceLink={withdrawSource}
-        address={address}
-        onSuccess={() => { mutatePayments(); }}
-      />
+      {modal === "withdraw" && withdrawSource && (
+        <WithdrawModal
+          sourceAddress={withdrawSource}
+          suggestedDest={publicKey?.toBase58()}
+          balance={balance}
+          onConfirm={handleWithdraw}
+          onClose={() => {
+            setModal(null);
+            setWithdrawSource(null);
+          }}
+        />
+      )}
 
       {modal === "debug" && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6" onClick={() => setModal(null)}>
