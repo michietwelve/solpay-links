@@ -1,6 +1,8 @@
 import { Resend } from 'resend';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+// Use your own verified domain in RESEND_FROM_EMAIL, or leave blank to use Resend's free sender
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
 
 export async function sendPaymentNotification(email: string, details: {
   amount: string;
@@ -18,7 +20,7 @@ export async function sendPaymentNotification(email: string, details: {
 
   try {
     const { data, error } = await resend.emails.send({
-      from: 'BiePay <notifications@biepay.xyz>', // Note: Real domain needs verification on Resend
+      from: `BiePay <${FROM_EMAIL}>`,
       to: [email],
       subject: `💰 Payment Received: ${details.amount} ${details.token}`,
       html: `
