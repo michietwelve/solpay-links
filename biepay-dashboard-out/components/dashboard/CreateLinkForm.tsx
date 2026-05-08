@@ -64,6 +64,7 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [enableRedirect, setEnableRedirect] = useState(false);
 
   // Initialize recipientWallet from detected address
   useState(() => {
@@ -117,7 +118,7 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
         ...(form.memo ? { memo: form.memo.trim() } : {}),
         ...(form.expiresIn !== "0" ? { expiresInMinutes: parseInt(form.expiresIn) } : {}),
         ...(form.maxPayments ? { maxPayments: parseInt(form.maxPayments) } : {}),
-        ...(form.redirectUrl ? { redirectUrl: form.redirectUrl.trim() } : {}),
+        ...(enableRedirect && form.redirectUrl ? { redirectUrl: form.redirectUrl.trim() } : {}),
         ...(form.digitalAssetUrl ? { digitalAssetUrl: form.digitalAssetUrl.trim() } : {}),
         merchantId: user?.id ?? recipientAddress,
       });
@@ -260,18 +261,36 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
         {errors.memo && <p className="text-xs text-red-500 mt-1">{errors.memo}</p>}
       </div>
 
-      <div>
-        <label className="block text-xs font-medium text-zinc-500 mb-1.5">
-          Redirect URL after payment
-        </label>
-        <input
-          className={inputCls("redirectUrl")}
-          value={form.redirectUrl}
-          onChange={set("redirectUrl")}
-          placeholder="https://yoursite.com/thank-you"
-        />
-        {errors.redirectUrl && (
-          <p className="text-xs text-red-500 mt-1">{errors.redirectUrl}</p>
+      <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Custom Thank You URL</label>
+            <p className="text-[10px] text-zinc-500 font-medium mt-0.5">Redirect customers to your site after payment</p>
+          </div>
+          <button 
+            type="button"
+            onClick={() => {
+              setEnableRedirect(!enableRedirect);
+              if (enableRedirect) set((k) => ({ ...k, redirectUrl: "" }) as any)({ target: { value: "" } } as any);
+            }}
+            className={`w-10 h-5 rounded-full transition-colors relative ${enableRedirect ? 'bg-emerald-500' : 'bg-zinc-200'}`}
+          >
+            <div className={`w-3 h-3 bg-white rounded-full absolute top-1 transition-transform ${enableRedirect ? 'translate-x-6' : 'translate-x-1'}`} />
+          </button>
+        </div>
+        
+        {enableRedirect && (
+          <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+            <input
+              className={inputCls("redirectUrl")}
+              value={form.redirectUrl}
+              onChange={set("redirectUrl")}
+              placeholder="https://yoursite.com/thank-you"
+            />
+            {errors.redirectUrl && (
+              <p className="text-xs text-red-500 mt-1">{errors.redirectUrl}</p>
+            )}
+          </div>
         )}
       </div>
 

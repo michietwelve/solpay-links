@@ -117,10 +117,20 @@ export default function DashboardPage() {
   
   // Real-time Payment Notification Hook
   const previousPaymentCount = useRef(payments.length);
+  const isInitialLoad = useRef(true);
 
   useEffect(() => {
-    // Only trigger if we have new payments and this isn't the initial load
-    if (payments.length > previousPaymentCount.current && previousPaymentCount.current > 0) {
+    if (isPaymentsLoading) return;
+    
+    // On the first successful fetch, just record the baseline
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false;
+      previousPaymentCount.current = payments.length;
+      return;
+    }
+
+    // After baseline, if count goes up, it's a new payment!
+    if (payments.length > previousPaymentCount.current) {
       const newPayment = payments[0]; // Assuming payments are sorted desc by date
       if (newPayment) {
         showToast(`Payment Received! ${formatAmount(newPayment.amountLamports, newPayment.token)} ${newPayment.token}`, "success");
@@ -131,7 +141,7 @@ export default function DashboardPage() {
       }
     }
     previousPaymentCount.current = payments.length;
-  }, [payments]);
+  }, [payments, isPaymentsLoading]);
   
 
   const CustomTooltip = ({ active, payload, label }: any) => {
