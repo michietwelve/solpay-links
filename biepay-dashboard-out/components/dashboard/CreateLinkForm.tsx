@@ -271,7 +271,7 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
             type="button"
             onClick={() => {
               setEnableRedirect(!enableRedirect);
-              if (enableRedirect) set((k) => ({ ...k, redirectUrl: "" }) as any)({ target: { value: "" } } as any);
+              if (enableRedirect) setForm((prev) => ({ ...prev, redirectUrl: "" }));
             }}
             className={`w-10 h-5 rounded-full transition-colors relative ${enableRedirect ? 'bg-emerald-500' : 'bg-zinc-200'}`}
           >
