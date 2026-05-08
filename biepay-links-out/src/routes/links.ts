@@ -8,7 +8,6 @@ import {
   getEffectiveStatus,
   deleteLink,
   confirmPayment,
-  getPaymentById,
 } from "../lib/store";
 import { CreateLinkSchema } from "../types";
 import { actionError } from "../middleware/actions";
@@ -449,8 +448,8 @@ router.post("/:id/payments/:paymentId/refund-tx", requireAuth, async (req: Authe
   const { id: linkId, paymentId } = req.params;
   
   try {
-    const link = await prisma.paymentLink.findUnique({ where: { id: linkId } });
-    const payment = await prisma.paymentRecord.findUnique({ where: { id: paymentId } });
+    const link = await prisma.paymentLink.findUnique({ where: { id: linkId as string } });
+    const payment = await prisma.paymentRecord.findUnique({ where: { id: paymentId as string } });
 
     if (!link || !payment) {
       res.status(404).json({ message: "Link or payment not found" });
@@ -524,7 +523,7 @@ router.post("/:id/payments/:paymentId/refund-confirm", requireAuth, async (req: 
 
   try {
     const payment = await prisma.paymentRecord.update({
-      where: { id: paymentId },
+      where: { id: paymentId as string },
       data: { status: "refunded" }
     });
     res.json({ success: true, payment });

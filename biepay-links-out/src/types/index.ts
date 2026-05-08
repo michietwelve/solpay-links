@@ -46,6 +46,9 @@ export interface MerchantProfile {
   accentColor: string | null;    // hex code
   webhookUrl: string | null;
   webhookSecret: string | null;
+  email: string | null;          // merchant notification email
+  apiKey: string | null;         // institutional API key
+  apiKeyLastUsed: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -96,6 +99,7 @@ export const UpdateMerchantProfileSchema = z.object({
   logoUrl: z.string().optional().nullable(),
   accentColor: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/).optional().nullable(),
   webhookUrl: z.string().url().optional().nullable(),
+  email: z.string().email().optional().nullable(),
 });
 
 export type UpdateMerchantProfileInput = z.infer<typeof UpdateMerchantProfileSchema>;
