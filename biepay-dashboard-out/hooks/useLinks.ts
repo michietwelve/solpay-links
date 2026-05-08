@@ -64,7 +64,7 @@ export function useStats(merchantId?: string): { stats: DashboardStats; isLoadin
 
 export function useAllPayments() {
   const { getAccessToken, authenticated, user } = usePrivy();
-  const { data, error, isLoading } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR(
     authenticated && user ? [`/api/links/all/payments`, user.id] : null,
     async () => {
       const token = await getAccessToken();
@@ -72,7 +72,7 @@ export function useAllPayments() {
     },
     { refreshInterval: 15_000 }
   );
-  return { payments: data ?? [], error, isLoading };
+  return { payments: data ?? [], error, isLoading, mutate };
 }
 
 export function useAnalytics(merchantId: string | undefined) {
