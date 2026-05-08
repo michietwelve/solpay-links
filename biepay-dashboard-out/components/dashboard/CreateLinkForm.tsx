@@ -138,203 +138,192 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
     }`;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <div className="flex items-center justify-between mb-2 px-1">
-          <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Recipient Wallet (Solana)</label>
-          <span className="text-[10px] font-bold text-zinc-400 bg-zinc-100 px-2 py-0.5 rounded uppercase tracking-tighter">Settlement Address</span>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between px-1">
+          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Settlement Destination</label>
+          <span className="text-[9px] font-black text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full uppercase tracking-tighter">Verified Solana</span>
         </div>
         <input 
-          placeholder="Paste your Solana wallet address (e.g. Phantom)"
-          className="w-full p-4 bg-zinc-50 border border-zinc-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-zinc-900/5 outline-none transition-all"
+          placeholder="Paste Solana address (e.g. Phantom)"
+          className="w-full p-4 bg-zinc-50 border border-zinc-200 rounded-2xl text-sm font-mono focus:ring-4 focus:ring-zinc-900/5 focus:border-zinc-900 outline-none transition-all shadow-sm"
           value={form.recipientWallet}
           onChange={set("recipientWallet")}
         />
-        <p className="mt-2 px-1 text-[10px] text-zinc-400 font-medium">
-          <strong>Tip:</strong> This is where your sales revenue will be sent. We recommend using your <strong>Privy Embedded Wallet</strong> (see dashboard top bar) for the smoothest experience.
+        <p className="px-1 text-[9px] text-zinc-400 font-bold uppercase tracking-tight">
+          Revenue is settled instantly to this address.
         </p>
       </div>
 
       {apiError && (
-        <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
-          {apiError}
+        <div className="p-4 bg-red-50 border border-red-100 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-300 flex items-start gap-3">
+          <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-[11px] text-red-600 font-bold leading-tight">{apiError}</p>
         </div>
       )}
 
-      <div>
-        <label className="block text-xs font-medium text-zinc-500 mb-1.5">
-          Label <span className="text-red-400">*</span>
-        </label>
-        <input
-          className={inputCls("label")}
-          value={form.label}
-          onChange={set("label")}
-          placeholder="e.g. Invoice #42, Monthly retainer…"
-        />
-        {errors.label && <p className="text-xs text-red-500 mt-1">{errors.label}</p>}
-      </div>
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-4">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] pl-1">Product Identity</label>
+            <input
+              className="w-full p-4 bg-white border border-zinc-200 rounded-2xl text-sm font-black tracking-tight focus:ring-4 focus:ring-zinc-900/5 focus:border-zinc-900 outline-none transition-all"
+              value={form.label}
+              onChange={set("label")}
+              placeholder="e.g. Luxury Timepiece #42"
+            />
+            {errors.label && <p className="text-[10px] text-red-500 font-black uppercase tracking-widest pl-1">{errors.label}</p>}
+          </div>
 
-      <div>
-        <label className="block text-xs font-medium text-zinc-500 mb-1.5">
-          Description <span className="text-red-400">*</span>
-        </label>
-        <input
-          className={inputCls("description")}
-          value={form.description}
-          onChange={set("description")}
-          placeholder="Short description shown to payer in Phantom"
-        />
-        {errors.description && (
-          <p className="text-xs text-red-500 mt-1">{errors.description}</p>
-        )}
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-zinc-500 mb-1.5">Token</label>
-          <select
-            className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg bg-white outline-none focus:border-zinc-400"
-            value={form.token}
-            onChange={set("token")}
-          >
-            <option value="USDC">USDC</option>
-            <option value="SOL">SOL</option>
-            <option value="USDT">USDT</option>
-          </select>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] pl-1">Customer Description</label>
+            <textarea
+              className="w-full p-4 bg-white border border-zinc-200 rounded-2xl text-sm font-medium focus:ring-4 focus:ring-zinc-900/5 focus:border-zinc-900 outline-none transition-all min-h-[100px] resize-none"
+              value={form.description}
+              onChange={set("description")}
+              placeholder="Brief description shown to the payer during checkout..."
+            />
+            {errors.description && <p className="text-[10px] text-red-500 font-black uppercase tracking-widest pl-1">{errors.description}</p>}
+          </div>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-zinc-500 mb-1.5">Amount</label>
-          <input
-            className={inputCls("amount")}
-            type="number"
-            min="0"
-            step="any"
-            value={form.amount}
-            onChange={set("amount")}
-            placeholder="Leave blank = open"
-          />
-          {errors.amount && <p className="text-xs text-red-500 mt-1">{errors.amount}</p>}
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] pl-1">Currency</label>
+            <div className="relative">
+              <select
+                className="w-full p-4 bg-white border border-zinc-200 rounded-2xl text-sm font-black appearance-none focus:ring-4 focus:ring-zinc-900/5 focus:border-zinc-900 outline-none transition-all cursor-pointer"
+                value={form.token}
+                onChange={set("token")}
+              >
+                <option value="USDC">USDC (Stable)</option>
+                <option value="SOL">SOL (Native)</option>
+                <option value="USDT">USDT (Stable)</option>
+              </select>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] pl-1">Fixed Price</label>
+            <div className="relative">
+              <input
+                className="w-full p-4 bg-white border border-zinc-200 rounded-2xl text-sm font-black focus:ring-4 focus:ring-zinc-900/5 focus:border-zinc-900 outline-none transition-all"
+                type="number"
+                min="0"
+                step="any"
+                value={form.amount}
+                onChange={set("amount")}
+                placeholder="Leave blank for open"
+              />
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-zinc-300 uppercase tracking-widest">
+                {form.token}
+              </div>
+            </div>
+            {errors.amount && <p className="text-[10px] text-red-500 font-black uppercase tracking-widest pl-1">{errors.amount}</p>}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] pl-1">Expiration</label>
+            <select
+              className="w-full p-4 bg-white border border-zinc-200 rounded-2xl text-sm font-bold appearance-none focus:ring-4 focus:ring-zinc-900/5 focus:border-zinc-900 outline-none transition-all cursor-pointer"
+              value={form.expiresIn}
+              onChange={set("expiresIn")}
+            >
+              <option value="0">Never Expires</option>
+              <option value="1440">24 Hours</option>
+              <option value="10080">7 Days</option>
+              <option value="43200">30 Days</option>
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] pl-1">Inventory Limit</label>
+            <input
+              className="w-full p-4 bg-white border border-zinc-200 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-zinc-900/5 focus:border-zinc-900 outline-none transition-all"
+              type="number"
+              min="1"
+              value={form.maxPayments}
+              onChange={set("maxPayments")}
+              placeholder="Unlimited"
+            />
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-zinc-500 mb-1.5">Expires in</label>
-          <select
-            className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg bg-white outline-none focus:border-zinc-400"
-            value={form.expiresIn}
-            onChange={set("expiresIn")}
-          >
-            <option value="0">Never</option>
-            <option value="1440">24 hours</option>
-            <option value="10080">7 days</option>
-            <option value="43200">30 days</option>
-          </select>
+      <div className="p-6 bg-zinc-950 rounded-3xl border border-white/10 space-y-5 shadow-2xl overflow-hidden relative group">
+        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
+          <svg className="w-24 h-24 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-zinc-500 mb-1.5">
-            Max payments
-          </label>
-          <input
-            className={inputCls("maxPayments")}
-            type="number"
-            min="1"
-            value={form.maxPayments}
-            onChange={set("maxPayments")}
-            placeholder="Unlimited"
-          />
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-xs font-medium text-zinc-500 mb-1.5">
-          On-chain memo
-          <span className="text-zinc-400 font-normal ml-1">(max 32 chars)</span>
-        </label>
-        <input
-          className={inputCls("memo")}
-          value={form.memo}
-          onChange={set("memo")}
-          placeholder="INV-042"
-          maxLength={32}
-        />
-        {errors.memo && <p className="text-xs text-red-500 mt-1">{errors.memo}</p>}
-      </div>
-
-      <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 space-y-4">
+        
         <div className="flex items-center justify-between">
-          <div>
-            <label className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Custom Thank You URL</label>
-            <p className="text-[10px] text-zinc-500 font-medium mt-0.5">Redirect customers to your site after payment</p>
+          <div className="space-y-0.5">
+            <h4 className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Fulfillment & Post-Pay</h4>
+            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-tight">Automation after successful payment</p>
           </div>
           <button 
             type="button"
-            onClick={() => {
-              setEnableRedirect(!enableRedirect);
-              if (enableRedirect) setForm((prev) => ({ ...prev, redirectUrl: "" }));
-            }}
-            className={`w-10 h-5 rounded-full transition-colors relative ${enableRedirect ? 'bg-emerald-500' : 'bg-zinc-200'}`}
+            onClick={() => setEnableRedirect(!enableRedirect)}
+            className={`w-12 h-6 rounded-full transition-all duration-500 relative p-1 ${enableRedirect ? 'bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'bg-zinc-800'}`}
           >
-            <div className={`w-3 h-3 bg-white rounded-full absolute top-1 transition-transform ${enableRedirect ? 'translate-x-6' : 'translate-x-1'}`} />
+            <div className={`w-4 h-4 bg-white rounded-full transition-transform duration-500 ${enableRedirect ? 'translate-x-6' : 'translate-x-0'}`} />
           </button>
         </div>
         
         {enableRedirect && (
-          <div className="animate-in fade-in slide-in-from-top-2 duration-200">
-            <input
-              className={inputCls("redirectUrl")}
-              value={form.redirectUrl}
-              onChange={set("redirectUrl")}
-              placeholder="https://yoursite.com/thank-you"
-            />
-            {errors.redirectUrl && (
-              <p className="text-xs text-red-500 mt-1">{errors.redirectUrl}</p>
-            )}
+          <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-500">
+            <div className="space-y-2">
+              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Redirect URL (Success)</label>
+              <input
+                className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl text-sm font-mono text-white focus:border-white/30 outline-none transition-all"
+                value={form.redirectUrl}
+                onChange={set("redirectUrl")}
+                placeholder="https://yoursite.com/thank-you"
+              />
+              {errors.redirectUrl && <p className="text-[10px] text-red-400 font-black uppercase tracking-widest pl-1">{errors.redirectUrl}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Digital Content Access</label>
+                <span className="text-[8px] font-black text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded uppercase tracking-tighter border border-emerald-400/20">Auto-Delivery</span>
+              </div>
+              <input 
+                placeholder="Direct Download or Access Link"
+                className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl text-sm font-mono text-white focus:border-white/30 outline-none transition-all"
+                value={form.digitalAssetUrl}
+                onChange={set("digitalAssetUrl")}
+              />
+            </div>
           </div>
         )}
       </div>
 
-      <div>
-        <div className="flex items-center justify-between mb-2 px-1">
-          <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Digital Asset / Download URL</label>
-          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded uppercase tracking-tighter">Automatic Delivery</span>
-        </div>
-        <input 
-          placeholder="https://drive.google.com/s/your-file..."
-          className="w-full p-4 bg-zinc-50 border border-zinc-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-zinc-900/5 outline-none transition-all"
-          value={form.digitalAssetUrl}
-          onChange={set("digitalAssetUrl")}
-        />
-        {errors.digitalAssetUrl && (
-          <p className="text-xs text-red-500 mt-1">{errors.digitalAssetUrl}</p>
-        )}
-        <div className="mt-3 p-4 bg-zinc-950 rounded-2xl border border-white/5 space-y-2 shadow-2xl">
-          <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest flex items-center gap-2">
-            <svg className="w-3 h-3 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
-            Merchant Guide: Where to get this?
-          </p>
-          <p className="text-[11px] text-zinc-500 leading-relaxed">
-            Upload your file to <strong>Google Drive</strong>, <strong>Dropbox</strong>, or <strong>Pinata</strong>. 
-            Ensure sharing is set to "Anyone with link", then paste that link here. 
-            Customers will receive this link instantly upon payment confirmation.
-          </p>
-        </div>
-      </div>
-
-      <div className="flex gap-2 pt-2">
+      <div className="flex gap-4 pt-4">
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 px-4 py-2 text-sm border border-zinc-200 rounded-lg hover:bg-zinc-50 transition-colors"
+          className="flex-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-zinc-900 transition-all active:scale-95"
         >
-          Cancel
+          Discard
         </button>
         <button
           type="submit"
           disabled={loading}
-          className="flex-1 px-4 py-2 text-sm bg-zinc-900 text-white rounded-lg hover:bg-zinc-700 transition-colors disabled:opacity-50"
+          className="flex-[2] py-4 bg-zinc-950 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-zinc-800 transition-all shadow-2xl shadow-zinc-200 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3"
         >
-          {loading ? "Creating…" : "Generate link"}
+          {loading ? (
+            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <>
+              <span>Deploy Link</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
+            </>
+          )}
         </button>
       </div>
     </form>

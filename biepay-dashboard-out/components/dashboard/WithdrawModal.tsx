@@ -94,33 +94,36 @@ export default function WithdrawModal({
 
   return (
     <div 
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-300"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="px-6 py-5 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-zinc-900 rounded-lg flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+      <div className="bg-zinc-950 border border-white/10 rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)] w-full max-w-md overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500">
+        <div className="px-8 py-6 border-b border-white/5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-amber-500/10 rounded-2xl flex items-center justify-center border border-amber-500/20">
+              <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
               </svg>
             </div>
-            <h2 className="text-sm font-semibold text-zinc-900">Withdraw Funds</h2>
+            <div>
+              <h2 className="text-xl font-black text-white tracking-tight">Withdraw Funds</h2>
+              <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">Move assets to custody</p>
+            </div>
           </div>
-          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600 transition-colors text-xl">×</button>
+          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors text-zinc-500 hover:text-white text-2xl">×</button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Source Wallet</label>
-            <div className="bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 flex items-center justify-between">
-              <span className="text-xs font-mono text-zinc-600">{sourceAddress.slice(0, 12)}...{sourceAddress.slice(-12)}</span>
-              <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Embedded</span>
+        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-1">Source Settlement Wallet</label>
+            <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-4 flex items-center justify-between">
+              <span className="text-xs font-mono text-zinc-400">{sourceAddress.slice(0, 12)}...{sourceAddress.slice(-12)}</span>
+              <span className="text-[9px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-2.5 py-1 rounded-full font-black uppercase tracking-tighter">Embedded</span>
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Destination Address</label>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-1">Destination Address</label>
             <div className="relative">
               <input
                 autoFocus
@@ -130,86 +133,79 @@ export default function WithdrawModal({
                   setError(null);
                 }}
                 placeholder="Paste Solana address or .sol domain"
-                className={`w-full bg-white border ${error ? "border-red-200 ring-1 ring-red-100" : "border-zinc-200 focus:border-zinc-900"} rounded-xl px-4 py-3 text-sm outline-none transition-all placeholder:text-zinc-400 font-mono`}
+                className={`w-full bg-white/5 border ${error ? "border-red-500/50 ring-1 ring-red-500/20" : "border-white/10 focus:border-white/30 focus:bg-white/[0.07]"} rounded-2xl px-4 py-4 text-sm outline-none transition-all placeholder:text-zinc-600 font-mono text-white`}
                 disabled={loading || isResolving}
               />
               {isResolving && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <div className="w-4 h-4 border-2 border-zinc-300 border-t-zinc-900 rounded-full animate-spin" />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                  <div className="w-5 h-5 border-2 border-white/10 border-t-white rounded-full animate-spin" />
                 </div>
               )}
               {suggestedDest && dest !== suggestedDest && !isResolving && !resolvedAddress && (
                 <button
                   type="button"
                   onClick={() => setDest(suggestedDest)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] bg-zinc-100 hover:bg-zinc-200 text-zinc-600 px-2 py-1 rounded-md transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black uppercase tracking-widest bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-xl transition-all active:scale-95"
                 >
                   Use Connected
                 </button>
               )}
             </div>
-            {error && <p className="text-[11px] text-red-500 font-medium pl-1">{error}</p>}
+            {error && <p className="text-[11px] text-red-500 font-bold pl-1 animate-in fade-in slide-in-from-left-1">{error}</p>}
             {resolvedAddress && !error && (
-              <p className="text-[11px] text-emerald-600 font-medium pl-1 flex items-center gap-1">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                Resolved to: <span className="font-mono">{resolvedAddress.slice(0,8)}...{resolvedAddress.slice(-8)}</span>
+              <p className="text-[11px] text-emerald-500 font-bold pl-1 flex items-center gap-2 animate-in fade-in slide-in-from-left-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                Resolved: <span className="font-mono opacity-60">{resolvedAddress.slice(0,8)}...{resolvedAddress.slice(-8)}</span>
               </p>
             )}
           </div>
 
-          <div className="bg-zinc-50 rounded-xl p-4 space-y-2">
-            <div className="flex justify-between text-xs">
+          <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 space-y-3">
+            <div className="flex justify-between items-center text-[11px] font-bold uppercase tracking-widest">
               <span className="text-zinc-500">Transfer amount</span>
-              <span className="text-zinc-900 font-medium font-mono">{balance !== null && balance !== undefined ? `${balance.toFixed(4)} SOL` : "Calculating..."}</span>
+              <span className="text-white font-mono">{balance !== null && balance !== undefined ? `${balance.toFixed(4)} SOL` : "Calculating..."}</span>
             </div>
-            <div className="flex justify-between text-xs">
+            <div className="flex justify-between items-center text-[11px] font-bold uppercase tracking-widest">
               <span className="text-zinc-500">Network fee</span>
-              <span className="text-zinc-900 font-medium font-mono">~0.000005 SOL</span>
+              <span className="text-zinc-400 font-mono">~0.000005 SOL</span>
             </div>
           </div>
 
-          <div className="pt-2">
+          <div className="flex flex-col gap-3 pt-2">
+            <button
+              type="submit"
+              disabled={loading || !dest}
+              className="w-full py-4 bg-[#c5a36e] text-black font-black text-[10px] uppercase tracking-[0.2em] rounded-2xl hover:bg-[#d4b98c] disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl shadow-[#c5a36e]/10 flex items-center justify-center gap-3 active:scale-95"
+            >
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+              ) : (
+                <>
+                  <span>Confirm Withdrawal</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                </>
+              )}
+            </button>
             <button
               type="button"
               onClick={() => {
                 onClose();
                 setTimeout(() => window.Jupiter.resume(), 100);
               }}
-              className="w-full p-4 bg-gradient-to-r from-zinc-800 to-zinc-900 text-[#c5a36e] border border-zinc-700 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:shadow-[0_10px_25px_rgba(197,163,110,0.15)] transition-all flex items-center justify-center gap-3 group"
+              className="w-full py-4 bg-white/5 border border-white/10 text-zinc-400 hover:text-white hover:bg-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 active:scale-95 group"
             >
               <svg className="w-4 h-4 group-hover:rotate-12 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L13 16M17 20L21 16" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              Swap via Jupiter Instead
-            </button>
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-3 text-sm font-medium text-zinc-600 hover:bg-zinc-50 rounded-xl transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading || !dest}
-              className="flex-2 px-8 py-3 bg-zinc-900 text-white text-sm font-semibold rounded-xl hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-zinc-200 flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                "Confirm Withdrawal"
-              )}
+              Swap via Jupiter
             </button>
           </div>
         </form>
 
-        <div className="px-6 py-4 bg-zinc-50 border-t border-zinc-100">
-          <p className="text-[10px] text-zinc-400 text-center leading-relaxed">
-            Funds will be transferred from your Privy embedded wallet to the address specified. 
-            This action is final and cannot be reversed on the Solana blockchain.
+        <div className="px-8 py-5 bg-black/40 border-t border-white/5">
+          <p className="text-[9px] text-zinc-600 text-center font-bold uppercase tracking-[0.05em] leading-relaxed">
+            Funds will be transferred from your self-custodial embedded wallet. 
+            Final transaction is irreversible on the Solana network.
           </p>
         </div>
       </div>

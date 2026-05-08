@@ -409,64 +409,67 @@ export default function DashboardPage() {
   }
 
   const handleRefund = async (paymentId: string, linkId: string) => {
-    if (!confirm("Are you sure you want to refund this transaction? This will reverse the payment on-chain.")) return;
-    
-    showToast("Constructing refund transaction...", "info");
-    
-    try {
-      const token = await getAccessToken();
-      const res = await fetch(`${API_BASE}/api/links/${linkId}/payments/${paymentId}/refund-tx`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+    setConfirmConfig({
+      title: "Confirm Refund",
+      message: "Are you sure you want to refund this transaction? This will reverse the payment on-chain and move funds back to the customer.",
+      variant: "danger",
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        showToast("Constructing refund transaction...", "info");
+        try {
+          const token = await getAccessToken();
+          const res = await fetch(`${API_BASE}/api/links/${linkId}/payments/${paymentId}/refund-tx`, {
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
+            }
+          });
+          
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({ message: "Failed to construct transaction" }));
+            throw new Error(errorData.message);
+          }
+          
+          const { transaction: txBase64 } = await res.json();
+          const tx = Transaction.from(Buffer.from(txBase64, "base64"));
+          
+          const payment = payments.find((p: any) => p.id === paymentId);
+          if (!payment) throw new Error("Payment record not found");
+          
+          const link = links.find(l => l.id === linkId);
+          if (!link) throw new Error("Link not found");
+          
+          const wallet = solanaWallets.find(w => w.address === link.recipientWallet);
+          if (!wallet) throw new Error("Merchant wallet not found. Please ensure the recipient wallet for this link is connected to your Privy profile.");
+          
+          const signedTx = await (wallet as any).signTransaction(tx);
+          
+          const RPC = process.env.NEXT_PUBLIC_RPC_ENDPOINT ?? "https://api.devnet.solana.com";
+          const connection = new Connection(RPC, "confirmed");
+          const sig = await connection.sendRawTransaction(signedTx.serialize());
+          
+          showToast("Broadcasting reversal...", "info");
+          await connection.confirmTransaction(sig, "confirmed");
+          
+          await fetch(`${API_BASE}/api/links/${linkId}/payments/${paymentId}/refund-confirm`, {
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ signature: sig })
+          });
+          
+          showToast("Refund successful!", "success");
+          mutatePayments();
+          
+        } catch (err: any) {
+          console.error("[refund]", err);
+          showToast(err.message || "Refund failed.", "error");
         }
-      });
-      
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ message: "Failed to construct transaction" }));
-        throw new Error(errorData.message);
       }
-      
-      const { transaction: txBase64 } = await res.json();
-      const tx = Transaction.from(Buffer.from(txBase64, "base64"));
-      
-      // Find the payment link to get the recipient wallet
-      const payment = payments.find((p: any) => p.id === paymentId);
-      if (!payment) throw new Error("Payment record not found");
-      
-      const link = links.find(l => l.id === linkId);
-      if (!link) throw new Error("Link not found");
-      
-      const wallet = solanaWallets.find(w => w.address === link.recipientWallet);
-      if (!wallet) throw new Error("Merchant wallet not found. Please ensure the recipient wallet for this link is connected to your Privy profile.");
-      
-      const signedTx = await (wallet as any).signTransaction(tx);
-      
-      const RPC = process.env.NEXT_PUBLIC_RPC_ENDPOINT ?? "https://api.devnet.solana.com";
-      const connection = new Connection(RPC, "confirmed");
-      const sig = await connection.sendRawTransaction(signedTx.serialize());
-      
-      showToast("Broadcasting reversal...", "info");
-      await connection.confirmTransaction(sig, "confirmed");
-      
-      // Confirm refund with backend
-      await fetch(`${API_BASE}/api/links/${linkId}/payments/${paymentId}/refund-confirm`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ signature: sig })
-      });
-      
-      showToast("Refund successful!", "success");
-      mutatePayments();
-      
-    } catch (err: any) {
-      console.error("[refund]", err);
-      showToast(err.message || "Refund failed.", "error");
-    }
+    });
   };
 
   async function handleSweep() {
@@ -638,7 +641,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-zinc-50">
 
       {/* Topbar */}
-      <header className="bg-white border-b border-zinc-200 px-6 h-14 flex items-center justify-between sticky top-0 z-10">
+      <header className="premium-glass px-6 h-16 flex items-center justify-between sticky top-0 z-[50]">
         <div className="flex items-center gap-3">
           <Logo className="w-7 h-7" variant="gold" />
           <span className="font-bold text-sm tracking-tight">BiePay Links</span>
@@ -832,7 +835,7 @@ export default function DashboardPage() {
 
         {/* Stats Bar */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="p-6 bg-white rounded-3xl border border-zinc-200 shadow-sm space-y-1">
+          <div className="premium-card p-6 space-y-1">
             <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Available Balance</p>
             <div className="flex items-baseline gap-2">
               <h3 className="text-2xl font-black tracking-tighter">
@@ -841,12 +844,12 @@ export default function DashboardPage() {
             </div>
             <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tighter">Main Settlement Wallet</p>
           </div>
-          <div className="p-6 bg-white rounded-3xl border border-zinc-200 shadow-sm space-y-1">
+          <div className="premium-card p-6 space-y-1">
             <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Lifetime Value</p>
             <h3 className="text-2xl font-black tracking-tighter">{isIncognito ? "••••" : `$${stats.totalVolume.toLocaleString()}`}</h3>
             <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-tighter">Gross Revenue</p>
           </div>
-          <div className="p-6 bg-white rounded-3xl border border-zinc-200 shadow-sm space-y-1">
+          <div className="premium-card p-6 space-y-1">
             <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Payments Received</p>
             <h3 className="text-2xl font-black tracking-tighter">{isIncognito ? "••••" : stats.totalPayments}</h3>
             <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tighter">Total Completed</p>
@@ -862,7 +865,7 @@ export default function DashboardPage() {
         </div>
         
         {/* Revenue Analytics Chart */}
-        <div className="p-8 bg-white rounded-[2.5rem] border border-zinc-200 shadow-sm space-y-6">
+        <div className="premium-card p-8 space-y-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-black text-zinc-900 tracking-tight">Revenue Analytics</h2>
@@ -942,7 +945,7 @@ export default function DashboardPage() {
           </div>
 
           {activeTab === "links" ? (
-            <div className="bg-white border border-zinc-200 rounded-3xl overflow-hidden shadow-sm">
+            <div className="premium-card overflow-hidden shadow-sm">
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-zinc-50 border-b border-zinc-100">
@@ -1091,7 +1094,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             /* Transaction History Table */
-            <div className="bg-white rounded-3xl border border-zinc-200 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="premium-card overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
