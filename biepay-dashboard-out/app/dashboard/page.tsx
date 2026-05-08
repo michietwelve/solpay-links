@@ -1137,6 +1137,12 @@ export default function DashboardPage() {
                 <p className="text-[10px] text-zinc-400 text-center mt-3 leading-relaxed">
                   Permanently remove this link and all its payment history from your dashboard.
                 </p>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Withdraw modal */}
       <WithdrawModal
         isOpen={modal === "withdraw"}
