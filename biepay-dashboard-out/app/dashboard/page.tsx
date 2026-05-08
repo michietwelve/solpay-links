@@ -299,6 +299,22 @@ export default function DashboardPage() {
     setModal("share");
   }
 
+  const showDebugInfo = async () => {
+    try {
+      const token = await getAccessToken();
+      const res = await fetch(`${API_BASE}/api/debug`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      const data = await res.json();
+      const ids = data.user.allowedIds;
+      const count = ids.length;
+      const firstFew = ids.slice(0, 3).map((id: string) => id.slice(0, 6) + "...").join(", ");
+      showToast(`UID: ${data.user.id.slice(0,8)} | IDs: ${count} (${firstFew})`, "info");
+    } catch (e) {
+      showToast("Debug fetch failed", "error");
+    }
+  };
+
   function handleCreated(result: CreateLinkResponse) {
     setModal(null);
     setShareLink({ id: result.link.id, label: result.link.label });
@@ -601,6 +617,41 @@ export default function DashboardPage() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
             )}
           </button>
+          
+          <button
+            onClick={showDebugInfo}
+            className="w-9 h-9 flex items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 hover:bg-zinc-50 transition-all"
+            title="Session Debug"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          </button>
+
+          <div className="relative group">
+            <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 hover:bg-zinc-50 transition-all">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+              {payments.filter((p: any) => p.status === 'confirmed').length > 0 && (
+                <span className="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full border border-white"></span>
+              )}
+            </button>
+            <div className="absolute right-0 mt-2 w-64 bg-white border border-zinc-200 rounded-xl shadow-xl z-50 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all">
+              <div className="px-4 py-3 border-b border-zinc-100">
+                <p className="text-xs font-black uppercase tracking-widest text-zinc-400">Recent Notifications</p>
+              </div>
+              <div className="max-h-64 overflow-y-auto">
+                {payments.length === 0 ? (
+                  <div className="p-4 text-center text-xs text-zinc-400">No new notifications</div>
+                ) : (
+                  payments.slice(0, 5).map((p: any) => (
+                    <div key={p.id} className="p-3 border-b border-zinc-50 hover:bg-zinc-50 transition-colors">
+                      <p className="text-[10px] font-black text-zinc-900 uppercase">{p.linkLabel}</p>
+                      <p className="text-[9px] text-emerald-600 font-bold">Payment Confirmed</p>
+                      <p className="text-[8px] text-zinc-400 mt-1">{timeAgo(p.createdAt)}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
           <button
             onClick={() => setModal("create")}
             disabled={!address || address.startsWith("0x")}
