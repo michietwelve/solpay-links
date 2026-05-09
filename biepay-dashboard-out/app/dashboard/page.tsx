@@ -1067,20 +1067,27 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <button 
-                    onClick={async () => {
-                      if (!confirm("Generating a new key will invalidate your current one. Proceed?")) return;
-                      try {
-                        const token = await getAccessToken();
-                        const res = await fetch(`${API_BASE}/api/merchants/api-key`, {
-                          method: "POST",
-                          headers: { "Authorization": `Bearer ${token}` }
-                        });
-                        const data = await res.json();
-                        setSettings(s => s ? { ...s, apiKey: data.apiKey } : { email: "", apiKey: data.apiKey });
-                        showToast("New API key generated.", "success");
-                      } catch (e) {
-                        showToast("Failed to generate key.", "error");
-                      }
+                    onClick={() => {
+                      setConfirmConfig({
+                        title: "Rotate API Key",
+                        message: "Generating a new key will immediately invalidate your current one. Any backend systems using the old key will stop working. Proceed?",
+                        variant: "warning",
+                        onConfirm: async () => {
+                          setConfirmConfig(null);
+                          try {
+                            const token = await getAccessToken();
+                            const res = await fetch(`${API_BASE}/api/merchants/api-key`, {
+                              method: "POST",
+                              headers: { "Authorization": `Bearer ${token}` }
+                            });
+                            const data = await res.json();
+                            setSettings(s => s ? { ...s, apiKey: data.apiKey } : { email: "", apiKey: data.apiKey });
+                            showToast("New API key generated.", "success");
+                          } catch (e) {
+                            showToast("Failed to generate key.", "error");
+                          }
+                        }
+                      });
                     }}
                     className="w-full py-3 bg-white text-zinc-950 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-zinc-100 transition-all"
                   >
