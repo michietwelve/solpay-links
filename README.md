@@ -22,6 +22,8 @@ We have integrated the Jupiter Terminal natively. Merchants can swap earnings in
 ### Palm USD (PUSD)
 BiePay natively supports PUSD as a settlement currency. This qualifies the platform for the **Palm USD x Superteam UAE** track, providing merchants in the MENA region with a robust, USD-pegged stablecoin option for global trade.
 
+**Protocol Program ID:** `FEzAVNf3syjNViUQ16GiKz3x15srLxvLPdM9KUyf4pJm`
+
 ### SNS Identity
 The platform utilizes Bonfida SPL Name Service for identity resolution. When performing withdrawals, merchants can use .sol domains instead of raw public keys, reducing manual entry errors and improving the security of fund transfers.
 

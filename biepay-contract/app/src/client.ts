@@ -31,7 +31,7 @@ import { Program, AnchorProvider, web3, BN } from "@coral-xyz/anchor";
 // ─── Program ID ───────────────────────────────────────────────────────────────
 
 export const PROGRAM_ID = new PublicKey(
-  "BiePayLinks1111111111111111111111111111111"
+  "FEzAVNf3syjNViUQ16GiKz3x15srLxvLPdM9KUyf4pJm"
 );
 
 // ─── PDA derivation ───────────────────────────────────────────────────────────

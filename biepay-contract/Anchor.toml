@@ -6,10 +6,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-biepay_links = "BiePayLinks1111111111111111111111111111111"
+biepay_links = "FEzAVNf3syjNViUQ16GiKz3x15srLxvLPdM9KUyf4pJm"
 
 [programs.devnet]
-biepay_links = "BiePayLinks1111111111111111111111111111111"
+biepay_links = "FEzAVNf3syjNViUQ16GiKz3x15srLxvLPdM9KUyf4pJm"
 
 [registry]
 url = "https://api.apr.dev"
