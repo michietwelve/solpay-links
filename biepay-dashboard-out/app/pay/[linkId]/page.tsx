@@ -40,7 +40,7 @@ interface LinkData {
   label: string;
   description: string;
   recipientWallet: string;
-  token: "SOL" | "USDC" | "USDT";
+  token: "SOL" | "USDC" | "USDT" | "PUSD";
   amountHuman: string | null;
   isOpenAmount: boolean;
   memo: string | null;
@@ -80,18 +80,21 @@ const MOONPAY_CURRENCY: Record<string, string> = {
   SOL:  "sol",
   USDC: "usdc_sol",   // Solana USDC on MoonPay
   USDT: "usdt_sol",
+  PUSD: "pusd_sol",   // Placeholder for MoonPay
 };
 
 const TOKEN_MINTS: Record<string, string | null> = {
   SOL: null,
   USDC: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
   USDT: "EJwZwpRvqiS86SAt9ikRWB9S5bwGrnF399qcSip8T6Y3",
+  PUSD: "A9m2Vduv3mS88E3YvTuxm9E9Lh77Fq7rD176X8X9K8K",
 };
 
 const TOKEN_DECIMALS: Record<string, number> = {
   SOL: 9,
   USDC: 6,
   USDT: 6,
+  PUSD: 6,
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────

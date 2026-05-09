@@ -19,6 +19,9 @@ USDT is a critical settlement layer for emerging markets. BiePay treats USDT as 
 ### Jupiter Integration
 We have integrated the Jupiter Terminal natively. Merchants can swap earnings into alternative assets directly from their dashboard using Jupiter's best-price routing, streamlining liquidity management without leaving the application.
 
+### Palm USD (PUSD)
+BiePay natively supports PUSD as a settlement currency. This qualifies the platform for the **Palm USD x Superteam UAE** track, providing merchants in the MENA region with a robust, USD-pegged stablecoin option for global trade.
+
 ### SNS Identity
 The platform utilizes Bonfida SPL Name Service for identity resolution. When performing withdrawals, merchants can use .sol domains instead of raw public keys, reducing manual entry errors and improving the security of fund transfers.
 

@@ -18,7 +18,7 @@ const DASHBOARD_BASE =
     ? window.location.origin
     : (process.env.NEXT_PUBLIC_DASHBOARD_URL ?? "http://localhost:3000");
 
-export type SupportedToken = "SOL" | "USDC" | "USDT";
+export type SupportedToken = "SOL" | "USDC" | "USDT" | "PUSD";
 export type LinkStatus = "active" | "completed" | "expired" | "cancelled";
 
 export interface PaymentLink {
@@ -169,7 +169,7 @@ export function computeStats(links: PaymentLink[]): DashboardStats {
     if (l.amountLamports !== null) {
       const perPayment = Number(l.amountLamports);
       const decimals = l.token === "SOL" ? 9 : 6;
-      const usdPerUnit = l.token === "SOL" ? 140 : 1; // rough price oracle
+      const usdPerUnit = (l.token === "SOL") ? 140 : 1; // stablecoins (USDC/USDT/PUSD) = $1
       totalVolumeLamports +=
         (perPayment / 10 ** decimals) * l.paymentCount * usdPerUnit;
     }
