@@ -36,12 +36,16 @@ router.get("/:linkId", async (req: Request, res: Response): Promise<void> => {
   // PPP Localization logic
   let localFiat = null;
   if (amountNum !== null) {
-    const currency = detectLocalCurrency(req);
-    const fiatValue = getFiatEquivalent(amountNum, link.token, currency);
+    // Extract country code from Cloudflare/Railway proxy header
+    const countryCode = (req.headers["cf-ipcountry"] as string)
+      ?? (req.headers["x-vercel-ip-country"] as string)
+      ?? undefined;
+    const currency = detectLocalCurrency(countryCode);
+    const fiatValue = getFiatEquivalent(amountNum, currency);
     localFiat = {
       currency,
       value: fiatValue,
-      label: `~${fiatValue.toLocaleString()} ${currency}`
+      label: `~${fiatValue} ${currency}`
     };
   }
 
