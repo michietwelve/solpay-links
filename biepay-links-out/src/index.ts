@@ -3,6 +3,7 @@ import express from "express";
 import morgan from "morgan";
 import { Connection } from "@solana/web3.js";
 import helmet from "helmet";
+import cors from "cors";
 import rateLimit from "express-rate-limit";
 
 import { actionsHeaders } from "./middleware/actions";
@@ -27,28 +28,21 @@ app.set("trust proxy", 1);
 app.use(morgan("dev"));
 app.use(express.json());
 
-// Basic security headers, but allow cross-origin for Solana Actions
+// Enable standard CORS for all origins (Crucial for Vercel -> Railway communication)
+app.use(cors());
+
+// Basic security headers, but disabled for cross-domain API functionality
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" }
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: false,
+  frameguard: false
 }));
 
-// Global rate limiting (100 requests per 15 minutes per IP)
-const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: { message: "Too many requests from this IP, please try again after 15 minutes" },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use("/api/", globalLimiter);
-app.use("/actions/", globalLimiter);
-
-// Solana Actions headers must be on every response
-app.use(actionsHeaders);
-
-// Handle CORS preflight
-app.options("*", (_req, res) => {
-  res.status(200).end();
+// Solana Actions specific headers (Protocol versioning)
+app.use((_req, res, next) => {
+  res.setHeader("X-Action-Version", "2.4");
+  res.setHeader("X-Blockchain-Ids", "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1");
+  next();
 });
 
 // ─── Routes ───────────────────────────────────────────────────────────────

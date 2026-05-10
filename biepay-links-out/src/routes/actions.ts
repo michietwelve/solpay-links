@@ -25,11 +25,6 @@ const ICON_URL =
   process.env.ICON_URL ??
   "https://biepay.link/icon.png";
 
-// ─── OPTIONS preflight ────────────────────────────────────────────────────
-
-router.options("/:linkId", optionsPreflight);
-router.options("/:linkId/pay", optionsPreflight);
-
 // ─── GET /actions/:linkId  ————————————————————————————————————————────────
 // Returns Blink metadata: icon, title, description, and action buttons.
 // Phantom / Backpack renders this before the user signs anything.
