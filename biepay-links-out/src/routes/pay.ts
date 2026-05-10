@@ -2,16 +2,9 @@ import { Router, Request, Response } from "express";
 import { getLinkById, getLinkStatus, getEffectiveStatus } from "../lib/store";
 import { getMerchantProfile } from "../lib/merchant";
 import { actionError } from "../middleware/actions";
+import { detectLocalCurrency, getFiatEquivalent } from "../lib/fx";
 
-/**
- * GET /pay/:linkId
- *
- * Returns JSON that the hosted payment page (biepay-dashboard) consumes to
- * render a self-contained checkout experience using Privy (embedded wallet)
- * and MoonPay (fiat-to-crypto ramp) for users who don't have a Solana wallet.
- *
- * The dashboard's /pay/[linkId] Next.js page calls this endpoint on load.
- */
+// ... (rest of imports)
 
 const router = Router();
 
@@ -27,12 +20,26 @@ router.get("/:linkId", async (req: Request, res: Response): Promise<void> => {
   const { active, reason } = getLinkStatus(link);
 
   const decimals = link.token === "SOL" ? 9 : 6;
-  const amountHuman =
+  const amountNum =
     link.amountLamports !== null
-      ? (Number(link.amountLamports) / 10 ** decimals).toFixed(
-          link.token === "SOL" ? 4 : 2
-        )
+      ? Number(link.amountLamports) / 10 ** decimals
       : null;
+  
+  const amountHuman = amountNum !== null
+      ? amountNum.toFixed(link.token === "SOL" ? 4 : 2)
+      : null;
+
+  // PPP Localization logic
+  let localFiat = null;
+  if (amountNum !== null) {
+    const currency = detectLocalCurrency(req);
+    const fiatValue = getFiatEquivalent(amountNum, link.token, currency);
+    localFiat = {
+      currency,
+      value: fiatValue,
+      label: `~${fiatValue.toLocaleString()} ${currency}`
+    };
+  }
 
   res.json({
     id: link.id,
@@ -40,7 +47,8 @@ router.get("/:linkId", async (req: Request, res: Response): Promise<void> => {
     description: link.description,
     recipientWallet: link.recipientWallet,
     token: link.token,
-    amountHuman,                    // null = open amount
+    amountHuman,
+    localFiat, // New field for PPP
     isOpenAmount: link.amountLamports === null,
     memo: link.memo,
     redirectUrl: link.redirectUrl,

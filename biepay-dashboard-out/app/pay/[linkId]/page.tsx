@@ -42,6 +42,11 @@ interface LinkData {
   recipientWallet: string;
   token: "SOL" | "USDC" | "USDT" | "PUSD";
   amountHuman: string | null;
+  localFiat?: {
+    currency: string;
+    value: number;
+    label: string;
+  } | null;
   isOpenAmount: boolean;
   memo: string | null;
   redirectUrl: string | null;
@@ -744,9 +749,16 @@ export default function PayPage() {
                   />
                 </div>
               ) : (
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold tracking-tight">{link.amountHuman}</span>
-                  <span className="text-base text-zinc-500 font-medium">{link.token}</span>
+                <div className="flex flex-col">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-bold tracking-tight">{link.amountHuman}</span>
+                    <span className="text-base text-zinc-500 font-medium">{link.token}</span>
+                  </div>
+                  {link.localFiat && (
+                    <span className="text-sm font-bold text-emerald-600 tracking-tight">
+                      {link.localFiat.label}
+                    </span>
+                  )}
                 </div>
               )}
 

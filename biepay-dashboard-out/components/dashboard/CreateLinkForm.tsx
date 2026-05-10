@@ -263,16 +263,23 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] pl-1">Expiration</label>
-            <select
-              className="w-full p-4 bg-white border border-zinc-200 rounded-2xl text-sm font-bold appearance-none focus:ring-4 focus:ring-zinc-900/5 focus:border-zinc-900 outline-none transition-all cursor-pointer"
-              value={form.expiresIn}
-              onChange={set("expiresIn")}
-            >
-              <option value="0">Never Expires</option>
-              <option value="1440">24 Hours</option>
-              <option value="10080">7 Days</option>
-              <option value="43200">30 Days</option>
-            </select>
+            <div className="relative">
+              <select
+                className="w-full p-4 bg-white border border-zinc-200 rounded-2xl text-sm font-bold appearance-none focus:ring-4 focus:ring-zinc-900/5 focus:border-zinc-900 outline-none transition-all cursor-pointer"
+                value={form.expiresIn}
+                onChange={set("expiresIn")}
+              >
+                <option value="0">Never Expires</option>
+                <option value="1">1 Minute (Test)</option>
+                <option value="5">5 Minutes (Test)</option>
+                <option value="1440">24 Hours</option>
+                <option value="10080">7 Days</option>
+                <option value="43200">30 Days</option>
+              </select>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+              </div>
+            </div>
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] pl-1">Inventory Limit</label>
