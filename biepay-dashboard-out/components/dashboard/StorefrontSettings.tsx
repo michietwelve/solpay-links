@@ -484,6 +484,79 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
             </div>
           </div>
         ) : (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="p-8 bg-zinc-950 rounded-[2.5rem] border border-white/5 space-y-8 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent"></div>
+              
+              <div className="space-y-2">
+                <h3 className="text-white text-lg font-black tracking-tight">Enterprise Infrastructure</h3>
+                <p className="text-zinc-500 text-xs leading-relaxed max-w-sm">
+                  Configure high-throughput webhooks and export your private keys for full self-custody.
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between px-1">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Webhook API Endpoint</label>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={async () => {
+                          if (!webhookUrl) return onNotify?.("Enter a URL first.", "error");
+                          try {
+                            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/merchants/test-webhook`, {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ url: webhookUrl })
+                            });
+                            if (res.ok) onNotify?.("Test webhook sent successfully!", "success");
+                            else onNotify?.("Webhook endpoint returned an error.", "error");
+                          } catch (e) {
+                            onNotify?.("Failed to reach webhook endpoint.", "error");
+                          }
+                        }}
+                        className="text-[9px] font-black text-emerald-400 hover:text-emerald-300 uppercase tracking-widest transition-colors"
+                      >
+                        Test URL
+                      </button>
+                    </div>
+                  </div>
+                  <input 
+                    placeholder="https://api.yoursite.com/webhooks/solpay"
+                    value={webhookUrl}
+                    onChange={e => setWebhookUrl(e.target.value)}
+                    className="w-full p-5 bg-white/5 border border-white/10 rounded-2xl text-sm font-mono text-white focus:border-white/30 outline-none transition-all"
+                  />
+                </div>
+
+                <div className="pt-4 border-t border-white/5">
+                  <button 
+                    onClick={onExport}
+                    className="w-full p-5 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-zinc-200 transition-all shadow-xl shadow-white/5"
+                  >
+                    Export Private Keys
+                  </button>
+                  <p className="text-[9px] text-zinc-500 text-center mt-4 font-bold uppercase tracking-tight">Move funds to a hardware wallet or external signer.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-8 bg-red-50/50 rounded-[2.5rem] border border-red-100 shadow-sm group hover:bg-red-50 transition-colors">
+              <h4 className="text-red-900 text-sm font-black tracking-tight mb-2">Danger Zone</h4>
+              <p className="text-red-500 text-[10px] font-bold uppercase tracking-[0.15em] mb-6">Irreversible Account Deletion</p>
+              <button 
+                onClick={() => {
+                  if (confirm("Are you sure you want to permanently delete your merchant account and all associated payment links? This cannot be undone.")) {
+                    onDelete?.();
+                  }
+                }}
+                className="w-full p-5 bg-white border border-red-200 text-red-600 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-red-600 hover:text-white transition-all shadow-lg hover:shadow-red-200"
+              >
+                Purge Merchant Data
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Action Footer */}

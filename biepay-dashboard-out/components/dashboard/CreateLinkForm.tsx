@@ -407,7 +407,9 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
                 onChange={set("targetAmount")}
               />
             </div>
+            </div>
           )}
+        </div>
         {/* Umbra Stealth Section */}
         <div className="space-y-4 p-4 bg-zinc-900/50 rounded-2xl border border-white/5 group-hover:border-white/10 transition-colors">
           <div className="flex items-center justify-between">
