@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import React, { useState, useRef } from "react";
 import nacl from "tweetnacl";
 import bs58 from "bs58";
 import WebhookLogs from "./WebhookLogs";
