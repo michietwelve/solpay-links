@@ -158,45 +158,50 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
             <div className="space-y-8">
               {/* Identity Section */}
               <div className="space-y-4">
-                <div className="flex items-center gap-4 mb-2">
-                  <div className="h-px flex-1 bg-zinc-100"></div>
-                  <span className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Visual Identity</span>
-                  <div className="h-px flex-1 bg-zinc-100"></div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 group hover:border-zinc-300 transition-colors">
-                    <div className="flex items-center justify-between mb-4">
-                      <label className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Brand Logo</label>
-                      <button onClick={() => fileInputRef.current?.click()} className="text-[9px] font-bold text-zinc-400 hover:text-zinc-900 underline uppercase">Upload</button>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div 
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-16 h-16 bg-white rounded-2xl border-2 border-dashed border-zinc-200 flex items-center justify-center overflow-hidden hover:border-zinc-400 transition-all cursor-pointer shadow-sm"
-                      >
-                        {logoUrl ? <img src={logoUrl} className="w-full h-full object-cover" /> : <svg className="w-6 h-6 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>}
-                      </div>
-                      <input 
-                        placeholder="Or paste Logo URL..."
-                        value={logoUrl}
-                        onChange={e => setLogoUrl(e.target.value)}
-                        className="flex-1 p-3 bg-white border border-zinc-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-zinc-900/5 outline-none transition-all"
-                      />
-                      <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 group hover:border-zinc-300 transition-colors">
-                    <label className="text-[10px] font-black text-zinc-900 uppercase tracking-widest mb-3 block">Business Name</label>
+                <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] px-1">Brand Identity</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-6 bg-white border border-zinc-200 rounded-[2rem] shadow-sm hover:shadow-md transition-shadow">
+                    <label className="text-[10px] font-black text-zinc-900 uppercase tracking-widest mb-4 block">Storefront Name</label>
                     <input 
-                      placeholder="e.g. BiePay Luxury"
+                      placeholder="e.g. Acme Store"
+                      className="w-full p-4 bg-zinc-50 border border-zinc-200 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-zinc-900/5 focus:border-zinc-900 outline-none transition-all shadow-inner"
                       value={businessName}
-                      onChange={e => setBusinessName(e.target.value)}
-                      className="w-full p-4 bg-white border border-zinc-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-zinc-900/5 outline-none transition-all shadow-sm"
+                      onChange={(e) => setBusinessName(e.target.value)}
                     />
                   </div>
 
+                  <div className="p-6 bg-white border border-zinc-200 rounded-[2rem] shadow-sm hover:shadow-md transition-shadow">
+                    <label className="text-[10px] font-black text-zinc-900 uppercase tracking-widest mb-4 block">Storefront Logo</label>
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 bg-zinc-50 rounded-2xl border-2 border-dashed border-zinc-200 flex items-center justify-center overflow-hidden shrink-0">
+                        {logoUrl ? (
+                          <img src={logoUrl} className="w-full h-full object-cover" />
+                        ) : (
+                          <svg className="w-6 h-6 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        )}
+                      </div>
+                      <input 
+                        type="file" 
+                        ref={fileInputRef}
+                        onChange={handleFileUpload}
+                        className="hidden" 
+                        accept="image/*"
+                      />
+                      <button 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex-1 py-3 px-4 bg-zinc-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-zinc-800 transition-colors shadow-lg shadow-zinc-900/10"
+                      >
+                        Upload Image
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Personalization Section */}
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] px-1">Personalization</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 group hover:border-zinc-300 transition-colors relative overflow-hidden">
                     <label className="text-[10px] font-black text-zinc-900 uppercase tracking-widest mb-3 block">Link .sol Domain</label>
                     <div className="flex gap-3">
@@ -234,7 +239,7 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
               </div>
             </div>
           </div>
-        ) : (
+        ) : activeTab === "security" ? (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="p-8 bg-zinc-950 rounded-[2.5rem] border border-white/5 space-y-8 shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent"></div>
@@ -280,7 +285,8 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
                     className="w-full p-5 bg-zinc-900/50 border border-zinc-800 text-white rounded-2xl text-sm font-mono focus:ring-2 focus:ring-white/10 outline-none transition-all"
                   />
                   
-                <WebhookLogs />
+                  <WebhookLogs />
+
                   {profile?.webhookSecret && (
                     <div className="p-4 bg-zinc-950 rounded-2xl border border-white/5 space-y-3">
                       <div className="flex items-center justify-between">
@@ -298,78 +304,45 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
                       <code className="block text-xs font-mono text-zinc-400 truncate bg-black/50 p-3 rounded-xl border border-white/5">
                         {profile.webhookSecret}
                       </code>
-                      <p className="text-[9px] text-zinc-600 font-medium leading-relaxed">
-                        Every webhook payload includes an <strong>X-BiePay-Signature</strong> header. Use this secret to calculate the HMAC-SHA256 hash of the request body and verify it matches the header.
-                      </p>
                     </div>
                   )}
                 </div>
 
-                <div className="pt-6 border-t border-zinc-800/50">
-                  <button 
-                    onClick={onExport}
-                    className="w-full p-5 bg-zinc-800/50 hover:bg-white hover:text-black text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 group border border-white/5 shadow-xl"
-                  >
-                    <svg className="w-5 h-5 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                    Export Security Keys
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Pro Upgrade Section */}
-            <div className="relative group p-8 rounded-[2.5rem] bg-gradient-to-br from-zinc-900 via-[#1a1a1a] to-black border border-white/10 shadow-2xl overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                <svg className="w-24 h-24 text-[#c5a36e]" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                </svg>
-              </div>
-              
-              <div className="relative space-y-6">
-                <div className="flex items-center gap-3">
-                  <span className="px-3 py-1 bg-[#c5a36e]/10 text-[#c5a36e] text-[10px] font-black uppercase tracking-widest rounded-full border border-[#c5a36e]/20">
-                    BiePay Pro
-                  </span>
-                  <div className="h-px flex-1 bg-white/5"></div>
-                </div>
-
-                <div className="space-y-2">
-                  <h3 className="text-white text-xl font-black tracking-tight">Scale Your Commerce</h3>
-                  <p className="text-zinc-400 text-xs leading-relaxed max-w-sm">
-                    Unlock enterprise-grade features designed for high-volume merchants and global brands.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  {[
-                    { label: "Custom Domains" },
-                    { label: "Zero Fees" },
-                    { label: "Predictive Analytics" },
-                    { label: "Priority API" }
-                  ].map((feature, i) => (
-                    <div key={i} className="p-3 bg-white/5 rounded-xl border border-white/5 flex items-center gap-3">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#c5a36e]/40" />
-                      <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-tight">{feature.label}</span>
+                <div className="pt-8 border-t border-white/5 space-y-6">
+                  <div className="space-y-4">
+                    <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">BiePay Pro Features</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { label: "0% Transaction Fees", pro: true },
+                        { label: "Custom Thank-You Redirects", pro: true },
+                        { label: "Priority Webhook Delivery", pro: true },
+                        { label: "Institutional Analytics", pro: true },
+                      ].map((feature, i) => (
+                        <div key={i} className="p-3 bg-white/5 rounded-xl border border-white/5 flex items-center gap-3">
+                          <div className="w-1.5 h-1.5 rounded-full bg-[#c5a36e]/40" />
+                          <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-tight">{feature.label}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
 
-                {profile.isPro ? (
-                  <div className="w-full py-4 bg-zinc-800 text-zinc-400 font-black text-xs uppercase tracking-[0.2em] rounded-xl text-center border border-zinc-700">
-                    Pro Unlocked
+                    {profile.isPro ? (
+                      <div className="w-full py-4 bg-zinc-800 text-zinc-400 font-black text-xs uppercase tracking-[0.2em] rounded-xl text-center border border-zinc-700">
+                        Pro Unlocked
+                      </div>
+                    ) : (
+                      <button 
+                        className="w-full py-4 bg-[#c5a36e] text-black font-black text-xs uppercase tracking-[0.2em] rounded-xl hover:bg-[#d4b98c] transition-all shadow-[0_10px_30px_rgba(197,163,110,0.25)] hover:shadow-[0_15px_40px_rgba(197,163,110,0.35)] hover:-translate-y-0.5 active:translate-y-0"
+                        onClick={async () => {
+                          onNotify?.("Unlocking BiePay Pro...", "info");
+                          await onSave({ isPro: true });
+                          onNotify?.("BiePay Pro unlocked successfully!", "success");
+                        }}
+                      >
+                        Upgrade to Pro
+                      </button>
+                    )}
                   </div>
-                ) : (
-                  <button 
-                    className="w-full py-4 bg-[#c5a36e] text-black font-black text-xs uppercase tracking-[0.2em] rounded-xl hover:bg-[#d4b98c] transition-all shadow-[0_10px_30px_rgba(197,163,110,0.25)] hover:shadow-[0_15px_40px_rgba(197,163,110,0.35)] hover:-translate-y-0.5 active:translate-y-0"
-                    onClick={async () => {
-                      onNotify?.("Unlocking BiePay Pro...", "info");
-                      await onSave({ isPro: true });
-                      onNotify?.("BiePay Pro unlocked successfully!", "success");
-                    }}
-                  >
-                    Upgrade to Pro
-                  </button>
-                )}
+                </div>
               </div>
             </div>
 
@@ -387,9 +360,8 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
                 Purge Merchant Data
               </button>
             </div>
-            </div>
           </div>
-        ) : activeTab === "privacy" ? (
+        ) : (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="p-8 bg-purple-950/10 rounded-[2.5rem] border border-purple-500/10 space-y-8 shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 p-8 opacity-5">
@@ -450,69 +422,51 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
                             {stealthSecret}
                           </code>
                           <button 
-                            onClick={() => { navigator.clipboard.writeText(stealthSecret); onNotify?.("Secret Copied!", "success"); }}
-                            className="p-3 bg-red-500/20 border border-red-500/20 rounded-xl hover:bg-red-500/30 transition-colors"
+                            onClick={() => { navigator.clipboard.writeText(stealthSecret); onNotify?.("Secret Key Copied", "success"); }}
+                            className="p-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20"
                           >
-                            <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4l-2 2m0 0l-2-2m2 2v-5" /></svg>
                           </button>
                         </div>
                       </div>
                     )}
 
-                    <div className="flex gap-3 pt-2">
-                      <button 
-                        onClick={generateStealthKeys}
-                        className="flex-1 py-3 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black text-zinc-400 uppercase tracking-widest hover:bg-white/10 transition-all"
-                      >
-                        Rotate Identity
-                      </button>
-                      <button 
-                        onClick={() => { setStealthViewPubkey(""); setStealthSecret(null); }}
-                        className="flex-1 py-3 bg-red-500/5 border border-red-500/10 rounded-xl text-[9px] font-black text-red-400/60 uppercase tracking-widest hover:bg-red-500/10 transition-all"
-                      >
-                        Deactivate
-                      </button>
+                    <div className="pt-4 border-t border-white/5 space-y-4">
+                      <div className="flex items-center justify-between px-1">
+                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Stealth Recovery</label>
+                        <button 
+                          onClick={async () => {
+                            if (!stealthSecret) return onNotify?.("Enter or generate a secret key first.", "error");
+                            onNotify?.("Scanning for stealth funds...", "info");
+                            try {
+                              const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/stealth/scan`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ stealthSecret })
+                              });
+                              if (res.ok) {
+                                const findings = await res.json();
+                                onNotify?.(`Found ${findings.length} stealth payments.`, "success");
+                              }
+                            } catch (e) {
+                              onNotify?.("Scan failed.", "error");
+                            }
+                          }}
+                          className="text-[9px] font-black text-purple-400 hover:text-purple-300 uppercase tracking-widest transition-colors"
+                        >
+                          Run Scan
+                        </button>
+                      </div>
+                      
+                      <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
+                        <p className="text-[10px] text-zinc-500 font-medium leading-relaxed">
+                          Enter your secret key above and click &quot;Run Scan&quot; to check for incoming stealth payments.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
-
-              {/* Recovery Scanner */}
-              {stealthViewPubkey && (
-                <div className="pt-8 border-t border-purple-500/10 space-y-6">
-                  <div className="space-y-2">
-                    <h4 className="text-[10px] font-black text-purple-300 uppercase tracking-widest">Privacy Recovery Tool</h4>
-                    <p className="text-zinc-500 text-[10px] font-medium leading-relaxed">
-                      Funds sent via Umbra go to ephemeral addresses. Use your secret key to scan and sweep them.
-                    </p>
-                  </div>
-                  
-                  <div className="relative">
-                    <input 
-                      type="password"
-                      placeholder="Enter Stealth Secret Key to scan..."
-                      className="w-full p-4 bg-purple-500/5 border border-purple-500/20 rounded-2xl text-xs font-mono text-purple-200 outline-none focus:border-purple-500/40 transition-all placeholder:text-zinc-700"
-                      onChange={async (e) => {
-                        const sec = e.target.value.trim();
-                        if (sec.length > 40) { // basic b58 length check
-                          try {
-                            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/stealth/scan`, {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ stealthSecret: sec })
-                            });
-                            if (res.ok) {
-                              const balances = await res.json();
-                              // We can store these in local state to show a list of sweepable funds
-                              onNotify?.(`Found ${balances.length} sweepable stealth accounts.`, "info");
-                            }
-                          } catch (e) {}
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
             </div>
 
             <div className="p-8 bg-zinc-50 rounded-[2.5rem] border border-zinc-100 space-y-4">
@@ -520,79 +474,6 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
               <p className="text-zinc-500 text-[10px] font-medium leading-relaxed">
                 Umbra stealth addresses are derived using ECDH. While the transaction is private on-chain, you are still responsible for maintaining records for tax and legal compliance.
               </p>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="p-8 bg-zinc-950 rounded-[2.5rem] border border-white/5 space-y-8 shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent"></div>
-              
-              <div className="space-y-2">
-                <h3 className="text-white text-lg font-black tracking-tight">Enterprise Infrastructure</h3>
-                <p className="text-zinc-500 text-xs leading-relaxed max-w-sm">
-                  Configure high-throughput webhooks and export your private keys for full self-custody.
-                </p>
-              </div>
-
-              <div className="space-y-6">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between px-1">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Webhook API Endpoint</label>
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={async () => {
-                          if (!webhookUrl) return onNotify?.("Enter a URL first.", "error");
-                          try {
-                            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/merchants/test-webhook`, {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ url: webhookUrl })
-                            });
-                            if (res.ok) onNotify?.("Test webhook sent successfully!", "success");
-                            else onNotify?.("Webhook endpoint returned an error.", "error");
-                          } catch (e) {
-                            onNotify?.("Failed to reach webhook endpoint.", "error");
-                          }
-                        }}
-                        className="text-[9px] font-black text-emerald-400 hover:text-emerald-300 uppercase tracking-widest transition-colors"
-                      >
-                        Test URL
-                      </button>
-                    </div>
-                  </div>
-                  <input 
-                    placeholder="https://api.yoursite.com/webhooks/solpay"
-                    value={webhookUrl}
-                    onChange={e => setWebhookUrl(e.target.value)}
-                    className="w-full p-5 bg-white/5 border border-white/10 rounded-2xl text-sm font-mono text-white focus:border-white/30 outline-none transition-all"
-                  />
-                </div>
-
-                <div className="pt-4 border-t border-white/5">
-                  <button 
-                    onClick={onExport}
-                    className="w-full p-5 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-zinc-200 transition-all shadow-xl shadow-white/5"
-                  >
-                    Export Private Keys
-                  </button>
-                  <p className="text-[9px] text-zinc-500 text-center mt-4 font-bold uppercase tracking-tight">Move funds to a hardware wallet or external signer.</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-8 bg-red-50/50 rounded-[2.5rem] border border-red-100 shadow-sm group hover:bg-red-50 transition-colors">
-              <h4 className="text-red-900 text-sm font-black tracking-tight mb-2">Danger Zone</h4>
-              <p className="text-red-500 text-[10px] font-bold uppercase tracking-[0.15em] mb-6">Irreversible Account Deletion</p>
-              <button 
-                onClick={() => {
-                  if (confirm("Are you sure you want to permanently delete your merchant account and all associated payment links? This cannot be undone.")) {
-                    onDelete?.();
-                  }
-                }}
-                className="w-full p-5 bg-white border border-red-200 text-red-600 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-red-600 hover:text-white transition-all shadow-lg hover:shadow-red-200"
-              >
-                Purge Merchant Data
-              </button>
             </div>
           </div>
         )}
