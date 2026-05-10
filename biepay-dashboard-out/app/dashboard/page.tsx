@@ -723,11 +723,20 @@ export default function DashboardPage() {
                   <div className="p-4 text-center text-xs text-zinc-400">No new notifications</div>
                 ) : (
                   payments.slice(0, 5).map((p: any) => (
-                    <div key={p.id} className="p-3 border-b border-zinc-50 hover:bg-zinc-50 transition-colors">
-                      <p className="text-[10px] font-black text-zinc-900 uppercase">{p.linkLabel}</p>
+                    <a
+                      key={p.id}
+                      href={p.signature ? `https://explorer.solana.com/tx/${p.signature}?cluster=devnet` : "#"}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block p-3 border-b border-zinc-50 hover:bg-zinc-50 transition-colors cursor-pointer"
+                    >
+                      <div className="flex justify-between items-start">
+                        <p className="text-[10px] font-black text-zinc-900 uppercase">{p.linkLabel}</p>
+                        <svg className="w-2.5 h-2.5 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                      </div>
                       <p className="text-[9px] text-emerald-600 font-bold">Payment Confirmed</p>
                       <p className="text-[8px] text-zinc-400 mt-1">{timeAgo(p.createdAt)}</p>
-                    </div>
+                    </a>
                   ))
                 )}
               </div>
