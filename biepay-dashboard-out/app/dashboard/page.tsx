@@ -1094,7 +1094,7 @@ export default function DashboardPage() {
                       setConfirmConfig({
                         title: "Rotate API Key",
                         message: "Generating a new key will immediately invalidate your current one. Any backend systems using the old key will stop working. Proceed?",
-                        variant: "warning",
+                        variant: "gold",
                         onConfirm: async () => {
                           setConfirmConfig(null);
                           try {
