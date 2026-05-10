@@ -10,11 +10,11 @@ export default function Logo({ className = "w-8 h-8", variant = "gold" }: LogoPr
   const isGold = variant === "gold";
 
   return (
-    <div className={`${className} flex items-center justify-center overflow-hidden rounded-xl ${isIcon ? "" : isGold ? "bg-[#c5a36e]" : "bg-zinc-900"} transition-all shadow-sm`}>
+    <div className={`${className} flex items-center justify-center overflow-hidden rounded-full ${isIcon ? "" : isGold ? "bg-[#c5a36e]" : "bg-zinc-900"} transition-all shadow-sm ring-1 ring-black/5`}>
       <img 
         src="/logo.png" 
         alt="BiePay Logo" 
-        className={isIcon ? "w-full h-full object-cover" : "w-full h-full object-contain p-1"} 
+        className={isIcon ? "w-full h-full object-cover" : "w-full h-full object-contain p-2"} 
       />
     </div>
   );
