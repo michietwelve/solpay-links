@@ -1,7 +1,8 @@
 import "dotenv/config";
 import express from "express";
 import morgan from "morgan";
-import { Connection } from "@solana/web3.js";
+import { Connection, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import bs58 from "bs58";
 import helmet from "helmet";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
@@ -19,6 +20,8 @@ import { startEventListener } from "./lib/listener";
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? "3001", 10);
+const rpcUrl = process.env.RPC_ENDPOINT ?? "https://api.devnet.solana.com";
+const connection = new Connection(rpcUrl, "confirmed");
 
 // Trust proxy for express-rate-limit to work correctly behind reverse proxies
 app.set("trust proxy", 1);
@@ -37,6 +40,26 @@ app.use(helmet({
   crossOriginResourcePolicy: false,
   frameguard: false
 }));
+
+// ─── Rate Limiting (Institutional Protection) ─────────────────────────────
+
+// Global API limiter
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500, // limit each IP to 500 requests per window
+  message: { message: "Too many requests from this IP, please try again later." }
+});
+
+// Stricter limiter for Blinks/Actions to protect the Fee Payer wallet
+const actionLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 20, // limit each IP to 20 actions per 5 minutes
+  message: { message: "Action rate limit exceeded. Please wait a few minutes." }
+});
+
+app.use("/api", globalLimiter);
+app.use("/actions", actionLimiter);
+app.use("/pay", globalLimiter);
 
 // Solana Actions specific headers (Protocol versioning)
 app.use((_req, res, next) => {
@@ -73,12 +96,30 @@ app.use("/api/fulfillment", fulfillmentRouter);
 
 // ─── Health check ─────────────────────────────────────────────────────────
 
-app.get("/health", (_req, res) => {
+app.get("/health", async (_req, res) => {
+  let feePayerBalance = null;
+  const secret = process.env.FEE_PAYER_SECRET;
+  
+  if (secret) {
+    try {
+      const keypair = Keypair.fromSecretKey(bs58.decode(secret));
+      const bal = await connection.getBalance(keypair.publicKey);
+      feePayerBalance = bal / LAMPORTS_PER_SOL;
+      
+      if (feePayerBalance < 0.1) {
+        console.warn(`[LIQUIDITY ALERT] Fee Payer balance low: ${feePayerBalance} SOL`);
+      }
+    } catch (e) {
+      console.error("[Health] Failed to fetch fee payer balance", e);
+    }
+  }
+
   res.json({
     status: "ok",
     service: "biepay-links-api",
-    version: "0.1.0",
-    rpc: process.env.RPC_ENDPOINT ?? "devnet",
+    version: "1.8.0-institutional",
+    rpc: rpcUrl,
+    feePayer: feePayerBalance !== null ? `${feePayerBalance} SOL` : "not configured",
     timestamp: new Date().toISOString(),
   });
 });
@@ -111,11 +152,9 @@ app.listen(PORT, () => {
   console.log(`   Actions: http://localhost:${PORT}/actions/:linkId`);
   console.log(`   Links  : http://localhost:${PORT}/api/links`);
   console.log(`   Pay    : http://localhost:${PORT}/pay/:linkId`);
-  console.log(`   RPC    : ${process.env.RPC_ENDPOINT ?? "https://api.devnet.solana.com"}`);
+  console.log(`   RPC    : ${rpcUrl}`);
 
   // Start on-chain event listener for payment confirmations
-  const rpc = process.env.RPC_ENDPOINT ?? "https://api.devnet.solana.com";
-  const connection = new Connection(rpc, "confirmed");
   const unsubscribe = startEventListener(connection);
 
   // Clean shutdown

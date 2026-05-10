@@ -77,6 +77,7 @@ export async function createLink(input: CreateLinkInput): Promise<PaymentLink> {
       tippingPointCount: input.tippingPointCount ?? 0,
       tippingPointAmount: input.tippingPointAmount ? BigInt(Math.round(input.tippingPointAmount * 10 ** decimals)).toString() : null,
       isEscrowEnabled: input.isEscrowEnabled ?? false,
+      maxSlippageBps: input.maxSlippageBps ?? 50,
     },
   });
 
@@ -126,6 +127,13 @@ export async function incrementPaymentCount(id: string): Promise<void> {
       },
     });
   }
+}
+
+export async function incrementViewCount(id: string): Promise<void> {
+  await prisma.paymentLink.update({
+    where: { id },
+    data: { viewCount: { increment: 1 } },
+  }).catch(e => console.error("[incrementViewCount]", e));
 }
 
 export async function deleteLink(id: string): Promise<void> {

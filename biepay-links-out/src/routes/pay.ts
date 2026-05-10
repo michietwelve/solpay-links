@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { getLinkById, getLinkStatus, getEffectiveStatus } from "../lib/store";
+import { getLinkById, getLinkStatus, getEffectiveStatus, incrementViewCount } from "../lib/store";
 import { getMerchantProfile } from "../lib/merchant";
 import { actionError } from "../middleware/actions";
 import { detectLocalCurrency, getFiatEquivalent } from "../lib/fx";
@@ -9,12 +9,16 @@ import { detectLocalCurrency, getFiatEquivalent } from "../lib/fx";
 const router = Router();
 
 router.get("/:linkId", async (req: Request, res: Response): Promise<void> => {
-  const link = await getLinkById(req.params.linkId as string);
+  const linkId = req.params.linkId as string;
+  const link = await getLinkById(linkId);
 
   if (!link) {
     actionError(res, 404, "Payment link not found.");
     return;
   }
+
+  // Fire and forget view tracking
+  incrementViewCount(linkId);
 
   const merchant = await getMerchantProfile(link.merchantId);
   const { active, reason } = getLinkStatus(link);

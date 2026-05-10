@@ -52,6 +52,8 @@ export interface PaymentLink {
   tippingPointCount: number | null;
   tippingPointAmountLamports: bigint | null;
   isEscrowEnabled: boolean | null;
+  maxSlippageBps: number;
+  viewCount: number;
 }
 
 export interface MerchantProfile {
@@ -113,6 +115,7 @@ export const CreateLinkSchema = z.object({
   tippingPointCount: z.number().int().min(0).optional(),
   tippingPointAmount: z.number().positive().optional(),
   isEscrowEnabled: z.boolean().optional(),
+  maxSlippageBps: z.number().int().min(1).max(5000).default(50),
 });
 
 export type CreateLinkInput = z.infer<typeof CreateLinkSchema>;

@@ -18,6 +18,7 @@ model PaymentLink {
   expiresAt       DateTime?
   maxPayments     Int?
   paymentCount    Int      @default(0)
+  viewCount       Int      @default(0)
   redirectUrl     String?
   digitalAssetUrl String?
   status          String   @default("active")
@@ -43,6 +44,9 @@ model PaymentLink {
   
   // Escrow
   isEscrowEnabled     Boolean? @default(false)
+  
+  // Institutional Controls
+  maxSlippageBps      Int      @default(50)
 }
 
 model PaymentRecord {
