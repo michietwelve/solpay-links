@@ -47,6 +47,11 @@ model PaymentLink {
   
   // Institutional Controls
   maxSlippageBps      Int      @default(50)
+
+  // Umbra Stealth Payments
+  isStealthEnabled    Boolean  @default(false)
+  stealthAddress      String?  // derived Solana address — where funds actually go
+  ephemeralPubkey     String?  // X25519 ephemeral pubkey — embedded in tx memo
 }
 
 model PaymentRecord {
@@ -76,4 +81,7 @@ model MerchantProfile {
   apiKeyLastUsed  DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  // Umbra Stealth Identity
+  stealthViewPubkey   String?  // X25519 pubkey — published, used for ECDH by senders
 }

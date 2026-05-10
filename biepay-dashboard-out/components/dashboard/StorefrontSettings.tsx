@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef } from "react";
+import nacl from "tweetnacl";
+import bs58 from "bs58";
 
 interface MerchantProfile {
   businessName: string | null;
@@ -10,6 +12,7 @@ interface MerchantProfile {
   webhookSecret: string | null;
   snsDomain?: string | null;
   isPro?: boolean;
+  stealthViewPubkey?: string | null;
 }
 
 interface StorefrontSettingsProps {
@@ -21,7 +24,7 @@ interface StorefrontSettingsProps {
 }
 
 export default function StorefrontSettings({ profile, onSave, onExport, onNotify, onDelete }: StorefrontSettingsProps) {
-  const [activeTab, setActiveTab] = useState<"brand" | "security">("brand");
+  const [activeTab, setActiveTab] = useState<"brand" | "security" | "privacy">("brand");
   const [businessName, setBusinessName] = useState(profile.businessName ?? "");
   const [logoUrl, setLogoUrl] = useState(profile.logoUrl ?? "");
   const [accentColor, setAccentColor] = useState(profile.accentColor ?? "#c5a36e");
@@ -30,6 +33,8 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [stealthViewPubkey, setStealthViewPubkey] = useState(profile.stealthViewPubkey ?? "");
+  const [stealthSecret, setStealthSecret] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = async () => {
@@ -55,6 +60,7 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
         accentColor: sanitizedColor || "#c5a36e",
         webhookUrl: sanitizedWebhook || null,
         snsDomain: snsDomain || null,
+        stealthViewPubkey: stealthViewPubkey || null,
       });
       setSaveStatus("success");
       setTimeout(() => setSaveStatus("idle"), 3000);
@@ -68,6 +74,19 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
       }, 5000);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const generateStealthKeys = () => {
+    try {
+      const kp = nacl.box.keyPair();
+      const pub = bs58.encode(Buffer.from(kp.publicKey));
+      const sec = bs58.encode(Buffer.from(kp.secretKey));
+      setStealthViewPubkey(pub);
+      setStealthSecret(sec);
+      onNotify?.("Generated new stealth keypair. Save your secret key!", "success");
+    } catch (e) {
+      onNotify?.("Failed to generate keys.", "error");
     }
   };
 
@@ -94,6 +113,12 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
           className={`flex-1 py-3 text-xs font-black uppercase tracking-[0.15em] rounded-xl transition-all duration-300 ${activeTab === "security" ? "bg-white shadow-xl text-zinc-900 scale-[1.02]" : "text-zinc-400 hover:text-zinc-600"}`}
         >
           Advanced
+        </button>
+        <button
+          onClick={() => setActiveTab("privacy")}
+          className={`flex-1 py-3 text-xs font-black uppercase tracking-[0.15em] rounded-xl transition-all duration-300 ${activeTab === "privacy" ? "bg-white shadow-xl text-zinc-900 scale-[1.02]" : "text-zinc-400 hover:text-zinc-600"}`}
+        >
+          Privacy
         </button>
       </div>
 
@@ -360,8 +385,105 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
                 Purge Merchant Data
               </button>
             </div>
+            </div>
           </div>
-        )}
+        ) : activeTab === "privacy" ? (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="p-8 bg-purple-950/10 rounded-[2.5rem] border border-purple-500/10 space-y-8 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-8 opacity-5">
+                <svg className="w-32 h-32 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-purple-300 text-lg font-black tracking-tight uppercase tracking-widest">Umbra Protocol</h3>
+                  <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 text-[8px] font-black rounded border border-purple-500/30 uppercase tracking-widest">Privacy Engine</span>
+                </div>
+                <p className="text-zinc-500 text-xs leading-relaxed max-w-sm font-medium">
+                  Enable stealth payments to decouple your business identity from on-chain transactions.
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                {!stealthViewPubkey ? (
+                  <div className="p-6 bg-purple-500/5 rounded-3xl border border-purple-500/10 text-center space-y-4">
+                    <p className="text-[10px] text-purple-300/60 font-bold uppercase tracking-widest leading-relaxed">
+                      You haven&apos;t set up a stealth view key yet.<br/>Generate one to unlock private payments.
+                    </p>
+                    <button 
+                      onClick={generateStealthKeys}
+                      className="px-6 py-3 bg-purple-500 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-purple-400 transition-all shadow-lg shadow-purple-500/20"
+                    >
+                      Initialize Stealth Identity
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-[9px] font-black text-purple-400/60 uppercase tracking-[0.2em] pl-1">Stealth View Public Key (Published)</label>
+                      <div className="flex gap-2">
+                        <code className="flex-1 p-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-mono text-purple-200 truncate">
+                          {stealthViewPubkey}
+                        </code>
+                        <button 
+                          onClick={() => { navigator.clipboard.writeText(stealthViewPubkey); onNotify?.("Copied Pubkey", "info"); }}
+                          className="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-colors"
+                        >
+                          <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    {stealthSecret && (
+                      <div className="p-6 bg-red-500/10 rounded-3xl border border-red-500/20 space-y-3 animate-in zoom-in-95 duration-500">
+                        <div className="flex items-center gap-2">
+                          <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                          <label className="text-[9px] font-black text-red-400 uppercase tracking-[0.2em]">Secret Key — Save it now!</label>
+                        </div>
+                        <p className="text-[9px] text-red-400/70 font-bold leading-tight">
+                          BiePay does not store your secret key. You need this to sweep funds from stealth addresses.
+                        </p>
+                        <div className="flex gap-2 pt-1">
+                          <code className="flex-1 p-3 bg-red-950/20 border border-red-500/20 rounded-xl text-[9px] font-mono text-red-200 break-all">
+                            {stealthSecret}
+                          </code>
+                          <button 
+                            onClick={() => { navigator.clipboard.writeText(stealthSecret); onNotify?.("Secret Copied!", "success"); }}
+                            className="p-3 bg-red-500/20 border border-red-500/20 rounded-xl hover:bg-red-500/30 transition-colors"
+                          >
+                            <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex gap-3 pt-2">
+                      <button 
+                        onClick={generateStealthKeys}
+                        className="flex-1 py-3 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black text-zinc-400 uppercase tracking-widest hover:bg-white/10 transition-all"
+                      >
+                        Rotate Identity
+                      </button>
+                      <button 
+                        onClick={() => { setStealthViewPubkey(""); setStealthSecret(null); }}
+                        className="flex-1 py-3 bg-red-500/5 border border-red-500/10 rounded-xl text-[9px] font-black text-red-400/60 uppercase tracking-widest hover:bg-red-500/10 transition-all"
+                      >
+                        Deactivate
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="p-8 bg-zinc-50 rounded-[2.5rem] border border-zinc-100 space-y-4">
+              <h4 className="text-zinc-900 text-[10px] font-black uppercase tracking-[0.2em]">Stealth Compliance</h4>
+              <p className="text-zinc-500 text-[10px] font-medium leading-relaxed">
+                Umbra stealth addresses are derived using ECDH. While the transaction is private on-chain, you are still responsible for maintaining records for tax and legal compliance.
+              </p>
+            </div>
+          </div>
+        ) : (
       </div>
 
       {/* Action Footer */}

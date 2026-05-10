@@ -21,6 +21,18 @@ const DASHBOARD_BASE =
 export type SupportedToken = "SOL" | "USDC" | "USDT" | "PUSD";
 export type LinkStatus = "active" | "completed" | "expired" | "cancelled";
 
+export interface MerchantProfile {
+  merchantId: string;
+  businessName: string | null;
+  logoUrl: string | null;
+  accentColor: string | null;
+  webhookUrl: string | null;
+  email: string | null;
+  snsDomain: string | null;
+  isPro: boolean;
+  stealthViewPubkey: string | null;
+}
+
 export interface PaymentLink {
   id: string;
   recipientWallet: string;
@@ -39,6 +51,9 @@ export interface PaymentLink {
   merchantId: string;
   viewCount: number;
   maxSlippageBps: number;
+  isStealthEnabled: boolean;
+  stealthAddress: string | null;
+  ephemeralPubkey: string | null;
 }
 
 export interface CreateLinkPayload {
@@ -64,6 +79,7 @@ export interface CreateLinkPayload {
   referralBps?: number;
   discountBps?: number;
   maxSlippageBps?: number;
+  isStealthEnabled?: boolean;
 }
 
 export interface CreateLinkResponse {

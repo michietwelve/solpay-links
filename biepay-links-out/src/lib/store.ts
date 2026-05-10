@@ -10,6 +10,7 @@ import {
 } from "../types";
 import { sendPaymentNotification } from "./notifications";
 import { getMerchantProfile } from "./merchant";
+import { deriveStealthPaymentAddress } from "./stealth";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -78,8 +79,27 @@ export async function createLink(input: CreateLinkInput): Promise<PaymentLink> {
       tippingPointAmount: input.tippingPointAmount ? BigInt(Math.round(input.tippingPointAmount * 10 ** decimals)).toString() : null,
       isEscrowEnabled: input.isEscrowEnabled ?? false,
       maxSlippageBps: input.maxSlippageBps ?? 50,
+      isStealthEnabled: false, // will update below if enabled
     },
   });
+
+  // Umbra Stealth Logic
+  if (input.isStealthEnabled) {
+    const merchant = await getMerchantProfile(input.merchantId);
+    if (merchant.stealthViewPubkey) {
+      const { stealthAddress, ephemeralPubkey } = deriveStealthPaymentAddress(merchant.stealthViewPubkey);
+      
+      const updated = await prisma.paymentLink.update({
+        where: { id },
+        data: {
+          isStealthEnabled: true,
+          stealthAddress,
+          ephemeralPubkey,
+        }
+      });
+      return mapLink(updated);
+    }
+  }
 
   return mapLink(link);
 }

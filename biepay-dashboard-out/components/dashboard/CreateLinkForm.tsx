@@ -33,6 +33,7 @@ interface FormState {
   referralBps: string;
   discountBps: string;
   maxSlippageBps: string;
+  isStealthEnabled: boolean;
 }
 
 const INITIAL: FormState = {
@@ -56,6 +57,7 @@ const INITIAL: FormState = {
   referralBps: "",
   discountBps: "",
   maxSlippageBps: "50",
+  isStealthEnabled: false,
 };
 
 export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
@@ -156,6 +158,7 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
         referralBps: form.referralBps ? parseInt(form.referralBps) : undefined,
         discountBps: form.discountBps ? parseInt(form.discountBps) : undefined,
         maxSlippageBps: form.maxSlippageBps ? parseInt(form.maxSlippageBps) : undefined,
+        isStealthEnabled: form.isStealthEnabled,
       });
       onSuccess(result);
     } catch (err) {
@@ -403,6 +406,31 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
                 value={form.targetAmount}
                 onChange={set("targetAmount")}
               />
+            </div>
+          )}
+        {/* Umbra Stealth Section */}
+        <div className="space-y-4 p-4 bg-zinc-900/50 rounded-2xl border border-white/5 group-hover:border-white/10 transition-colors">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2">
+                <p className="text-[10px] font-black text-white uppercase tracking-wider">Umbra Stealth Mode</p>
+                <span className="text-[7px] font-black bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded uppercase tracking-[0.2em] border border-purple-500/30">Privacy Track</span>
+              </div>
+              <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-tight">Unlinkable on-chain transactions</p>
+            </div>
+            <button 
+              type="button"
+              onClick={toggle("isStealthEnabled")}
+              className={`w-10 h-5 rounded-full transition-all relative p-1 ${form.isStealthEnabled ? 'bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.3)]' : 'bg-white/10'}`}
+            >
+              <div className={`w-3 h-3 bg-white rounded-full transition-transform ${form.isStealthEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+            </button>
+          </div>
+          {form.isStealthEnabled && (
+            <div className="animate-in fade-in slide-in-from-top-1 duration-300">
+              <p className="text-[9px] text-purple-300 font-medium leading-relaxed bg-purple-500/5 p-3 rounded-xl border border-purple-500/10">
+                Merchant wallet identity will be obscured. Funds will be routed to a unique stealth address derived from your view key.
+              </p>
             </div>
           )}
         </div>

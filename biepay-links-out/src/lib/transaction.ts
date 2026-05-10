@@ -17,6 +17,7 @@ import {
   TOKEN_2022_PROGRAM_ID,
 } from "@solana/spl-token";
 import { PaymentLink, TOKEN_MINT, TOKEN_DECIMALS } from "../types";
+import { buildStealthMemo } from "./stealth";
 
 // ─── Platform fee config ──────────────────────────────────────────────────
 
@@ -57,7 +58,9 @@ async function buildSolTransferTx(
   referenceId: string,
   referrerWallet?: string
 ): Promise<Transaction> {
-  const recipient = new PublicKey(link.recipientWallet);
+  const recipient = link.isStealthEnabled && link.stealthAddress
+    ? new PublicKey(link.stealthAddress)
+    : new PublicKey(link.recipientWallet);
   const { blockhash, lastValidBlockHeight } =
     await connection.getLatestBlockhash("confirmed");
 
@@ -151,7 +154,12 @@ async function buildSolTransferTx(
     tx.add(buildMemoInstruction(link.memo));
   }
 
-  // 11. cNFT Loyalty Receipt (Simplified placeholder for demo)
+  // Stealth Announcement
+  if (link.isStealthEnabled && link.ephemeralPubkey) {
+    tx.add(buildMemoInstruction(buildStealthMemo(link.ephemeralPubkey)));
+  }
+
+  tx.add(buildMemoInstruction(`BiePay:ref:${referenceId}`));
   tx.add(buildMemoInstruction(`BiePay:cNFT:LoyaltyReceipt:${link.merchantId.slice(0, 8)}`));
 
   // If sponsoring, the server MUST sign here so the wallet only needs to sign for the transfers.
@@ -186,7 +194,9 @@ async function buildSplTransferTx(
   referenceId: string,
   referrerWallet?: string
 ): Promise<Transaction> {
-  const recipient = new PublicKey(link.recipientWallet);
+  const recipient = link.isStealthEnabled && link.stealthAddress
+    ? new PublicKey(link.stealthAddress)
+    : new PublicKey(link.recipientWallet);
   const mint = new PublicKey(mintAddress);
   const decimals = TOKEN_DECIMALS[link.token];
 
@@ -317,6 +327,11 @@ async function buildSplTransferTx(
   // 2. Optional user-visible memo
   if (link.memo) {
     tx.add(buildMemoInstruction(link.memo));
+  }
+
+  // Stealth Announcement
+  if (link.isStealthEnabled && link.ephemeralPubkey) {
+    tx.add(buildMemoInstruction(buildStealthMemo(link.ephemeralPubkey)));
   }
 
   return tx;

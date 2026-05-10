@@ -32,6 +32,7 @@
     "react-qr-code": "^2.0.18",
     "recharts": "^3.8.1",
     "swr": "^2.3.0",
+    "tweetnacl": "^1.0.3",
     "zod": "^3.24.2"
   },
   "devDependencies": {

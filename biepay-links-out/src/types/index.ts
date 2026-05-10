@@ -54,6 +54,11 @@ export interface PaymentLink {
   isEscrowEnabled: boolean | null;
   maxSlippageBps: number;
   viewCount: number;
+
+  // Umbra Stealth Payments
+  isStealthEnabled: boolean;
+  stealthAddress: string | null;
+  ephemeralPubkey: string | null;
 }
 
 export interface MerchantProfile {
@@ -70,6 +75,9 @@ export interface MerchantProfile {
   isPro: boolean;
   createdAt: Date;
   updatedAt: Date;
+
+  // Umbra Stealth Identity
+  stealthViewPubkey: string | null;
 }
 
 // ─── In-memory store (swap for Postgres/Redis in prod) ──────────────────────
@@ -116,6 +124,7 @@ export const CreateLinkSchema = z.object({
   tippingPointAmount: z.number().positive().optional(),
   isEscrowEnabled: z.boolean().optional(),
   maxSlippageBps: z.number().int().min(1).max(5000).default(50),
+  isStealthEnabled: z.boolean().optional(),
 });
 
 export type CreateLinkInput = z.infer<typeof CreateLinkSchema>;
@@ -137,6 +146,7 @@ export const UpdateMerchantProfileSchema = z.object({
   email: z.string().email().optional().nullable(),
   snsDomain: z.string().optional().nullable(),
   isPro: z.boolean().optional(),
+  stealthViewPubkey: z.string().optional().nullable(),
 });
 
 export type UpdateMerchantProfileInput = z.infer<typeof UpdateMerchantProfileSchema>;
