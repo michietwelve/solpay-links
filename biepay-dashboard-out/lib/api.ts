@@ -37,6 +37,8 @@ export interface PaymentLink {
   status: LinkStatus;
   createdAt: string;
   merchantId: string;
+  viewCount: number;
+  maxSlippageBps: number;
 }
 
 export interface CreateLinkPayload {
@@ -61,6 +63,7 @@ export interface CreateLinkPayload {
   cashbackBps?: number;
   referralBps?: number;
   discountBps?: number;
+  maxSlippageBps?: number;
 }
 
 export interface CreateLinkResponse {
