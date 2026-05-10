@@ -41,13 +41,29 @@
 
 /* Wallet Adapter Custom Premium Styling */
 .wallet-adapter-button {
-  @apply !bg-zinc-900 !rounded-2xl !font-black !text-[10px] !uppercase !tracking-widest !h-12 !px-6 !shadow-xl !transition-all !duration-300 hover:!bg-zinc-800 hover:!scale-[1.02] active:!scale-95 !border-none;
+  @apply !bg-zinc-900 !rounded-2xl !font-black !text-[11px] !uppercase !tracking-[0.15em] !h-12 !px-8 !shadow-xl !transition-all !duration-300 hover:!bg-zinc-800 hover:!scale-[1.02] active:!scale-95 !border-none !whitespace-nowrap !flex !items-center !justify-center;
 }
 
 .wallet-adapter-modal-wrapper {
-  @apply !rounded-[2.5rem] !bg-white !p-4 !border-none;
+  @apply !rounded-[2.5rem] !bg-[#c5a36e] !p-8 !border-none !shadow-2xl;
+}
+
+.wallet-adapter-modal-title {
+  @apply !text-white !font-black !uppercase !tracking-widest !text-sm !mb-6 !text-center;
+}
+
+.wallet-adapter-modal-list {
+  @apply !grid !gap-2;
+}
+
+.wallet-adapter-modal-list .wallet-adapter-button {
+  @apply !w-full !justify-start !bg-zinc-900/10 !backdrop-blur-md !text-zinc-900 !font-bold hover:!bg-zinc-900/20 !transition-all;
 }
 
 .wallet-adapter-modal-button-close {
-  @apply !bg-zinc-100 !rounded-full !p-2 hover:!bg-zinc-200 !transition-colors;
+  @apply !bg-black/10 !rounded-full !p-2 hover:!bg-black/20 !transition-colors !m-2;
+}
+
+.wallet-adapter-modal-button-close svg {
+  @apply !fill-white;
 }
