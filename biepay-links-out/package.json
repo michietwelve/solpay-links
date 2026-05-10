@@ -12,6 +12,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@bonfida/spl-name-service": "^3.0.21",
     "@prisma/client": "^6.1.0",
     "@privy-io/server-auth": "^1.32.5",
     "@solana/actions": "^1.6.3",

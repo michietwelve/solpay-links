@@ -297,6 +297,29 @@ export default function DashboardPage() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (!user?.id) return;
+    try {
+      const token = await getAccessToken();
+      const res = await fetch(`${API_BASE}/api/merchants/${user.id}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        showToast("Merchant data purged successfully.", "success");
+        setTimeout(() => {
+          logout();
+          window.location.href = "/";
+        }, 1500);
+      } else {
+        throw new Error("Failed to purge merchant data.");
+      }
+    } catch (e: any) {
+      console.error("Delete account error:", e);
+      showToast(e.message || "Failed to purge merchant data.", "error");
+    }
+  };
+
   function openShare(l: PaymentLink) {
     setShareLink({ id: l.id, label: l.label });
     setModal("share");
@@ -1438,6 +1461,7 @@ export default function DashboardPage() {
                 onSave={handleSaveProfile}
                 onExport={handleExportWallet}
                 onNotify={showToast}
+                onDelete={handleDeleteAccount}
               />
               )}
 

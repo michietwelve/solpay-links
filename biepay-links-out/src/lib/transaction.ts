@@ -6,7 +6,9 @@ import {
   TransactionInstruction,
   LAMPORTS_PER_SOL,
   ComputeBudgetProgram,
+  Keypair,
 } from "@solana/web3.js";
+import bs58 from "bs58";
 import {
   createTransferCheckedInstruction,
   getAssociatedTokenAddressSync,
@@ -20,6 +22,7 @@ import { PaymentLink, TOKEN_MINT, TOKEN_DECIMALS } from "../types";
 
 const PLATFORM_FEE_BPS = parseInt(process.env.PLATFORM_FEE_BPS ?? "50", 10); // 0.5%
 const TREASURY = process.env.TREASURY_WALLET;
+const FEE_PAYER_SECRET = process.env.FEE_PAYER_SECRET;
 
 // ─── Memo program ─────────────────────────────────────────────────────────
 
@@ -51,7 +54,8 @@ async function buildSolTransferTx(
   payer: PublicKey,
   link: PaymentLink,
   amountLamports: bigint,
-  referenceId: string
+  referenceId: string,
+  referrerWallet?: string
 ): Promise<Transaction> {
   const recipient = new PublicKey(link.recipientWallet);
   const { blockhash, lastValidBlockHeight } =
@@ -60,24 +64,47 @@ async function buildSolTransferTx(
   const tx = new Transaction();
   tx.recentBlockhash = blockhash;
   tx.lastValidBlockHeight = lastValidBlockHeight;
-  tx.feePayer = payer;
+  
+  // 3. Gasless Sponsorship: If secret is available, server pays for gas
+  let sponsorKeypair: Keypair | null = null;
+  if (FEE_PAYER_SECRET) {
+    try {
+      sponsorKeypair = Keypair.fromSecretKey(bs58.decode(FEE_PAYER_SECRET));
+      tx.feePayer = sponsorKeypair.publicKey;
+      console.log(`[Gasless] Sponsoring transaction via ${tx.feePayer.toBase58()}`);
+    } catch (err) {
+      console.error("[Gasless] Failed to load sponsor keypair:", err);
+      tx.feePayer = payer;
+    }
+  } else {
+    tx.feePayer = payer;
+  }
 
   // Priority fee for faster inclusion
   tx.add(
     ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 5_000 })
   );
 
-  const fee = calculateFee(amountLamports);
-  const netAmount = amountLamports - fee;
+  let fee = calculateFee(amountLamports);
+  let referralRebate = 0n;
+  
+  // Viral Growth Loop: Referrer gets a cut
+  if (referrerWallet && link.referralBps && link.referralBps > 0) {
+    referralRebate = (amountLamports * BigInt(link.referralBps)) / 10_000n;
+  }
+
+  const netAmount = amountLamports - fee - referralRebate;
 
   // Transfer to recipient
-  tx.add(
-    SystemProgram.transfer({
-      fromPubkey: payer,
-      toPubkey: recipient,
-      lamports: netAmount,
-    })
-  );
+  if (netAmount > 0n) {
+    tx.add(
+      SystemProgram.transfer({
+        fromPubkey: payer,
+        toPubkey: recipient,
+        lamports: netAmount,
+      })
+    );
+  }
 
   // Platform fee to treasury
   if (fee > 0n && TREASURY) {
@@ -90,12 +117,51 @@ async function buildSolTransferTx(
     );
   }
 
+  // Referral rebate
+  if (referralRebate > 0n && referrerWallet) {
+    tx.add(
+      SystemProgram.transfer({
+        fromPubkey: payer,
+        toPubkey: new PublicKey(referrerWallet),
+        lamports: referralRebate,
+      })
+    );
+  }
+
+  // Yield-Powered Cashback: Treasury sends 1-2% back to payer
+  if (link.cashbackBps && link.cashbackBps > 0 && TREASURY) {
+    const cashbackAmount = (amountLamports * BigInt(link.cashbackBps)) / 10_000n;
+    if (cashbackAmount > 0n) {
+      console.log(`[Cashback] Routing ${cashbackAmount} lamports back to payer.`);
+      tx.add(
+        SystemProgram.transfer({
+          fromPubkey: new PublicKey(TREASURY),
+          toPubkey: payer,
+          lamports: cashbackAmount,
+        })
+      );
+    }
+  }
+
   // 1. Mandatory tracking memo for our listener
   tx.add(buildMemoInstruction(`BiePay:${referenceId}`));
 
   // 2. Optional user-visible memo
   if (link.memo) {
     tx.add(buildMemoInstruction(link.memo));
+  }
+
+  // 11. cNFT Loyalty Receipt (Simplified placeholder for demo)
+  tx.add(buildMemoInstruction(`BiePay:cNFT:LoyaltyReceipt:${link.merchantId.slice(0, 8)}`));
+
+  // If sponsoring, the server MUST sign here so the wallet only needs to sign for the transfers.
+  if (FEE_PAYER_SECRET) {
+    try {
+      const sponsor = Keypair.fromSecretKey(bs58.decode(FEE_PAYER_SECRET));
+      tx.partialSign(sponsor);
+    } catch (err) {
+      // already logged
+    }
   }
 
   return tx;
@@ -117,7 +183,8 @@ async function buildSplTransferTx(
   link: PaymentLink,
   amountRaw: bigint,         // in token's smallest unit
   mintAddress: string,
-  referenceId: string
+  referenceId: string,
+  referrerWallet?: string
 ): Promise<Transaction> {
   const recipient = new PublicKey(link.recipientWallet);
   const mint = new PublicKey(mintAddress);
@@ -155,22 +222,30 @@ async function buildSplTransferTx(
     );
   }
 
-  const fee = calculateFee(amountRaw);
-  const netAmount = amountRaw - fee;
+  let fee = calculateFee(amountRaw);
+  let referralRebate = 0n;
+
+  if (referrerWallet && link.referralBps && link.referralBps > 0) {
+    referralRebate = (amountRaw * BigInt(link.referralBps)) / 10_000n;
+  }
+
+  const netAmount = amountRaw - fee - referralRebate;
 
   // Transfer to recipient
-  tx.add(
-    createTransferCheckedInstruction(
-      payerAta,
-      mint,
-      recipientAta,
-      payer,
-      netAmount,
-      decimals,
-      [],
-      tokenProgram
-    )
-  );
+  if (netAmount > 0n) {
+    tx.add(
+      createTransferCheckedInstruction(
+        payerAta,
+        mint,
+        recipientAta,
+        payer,
+        netAmount,
+        decimals,
+        [],
+        tokenProgram
+      )
+    );
+  }
 
   // Platform fee to treasury ATA
   if (fee > 0n && TREASURY) {
@@ -204,6 +279,38 @@ async function buildSplTransferTx(
     );
   }
 
+  // Referral rebate to referrer ATA
+  if (referralRebate > 0n && referrerWallet) {
+    const referrerPubkey = new PublicKey(referrerWallet);
+    const referrerAta = getAssociatedTokenAddressSync(mint, referrerPubkey, false, tokenProgram);
+
+    const referrerAtaInfo = await connection.getAccountInfo(referrerAta);
+    if (!referrerAtaInfo) {
+      tx.add(
+        createAssociatedTokenAccountInstruction(
+          payer,
+          referrerAta,
+          referrerPubkey,
+          mint,
+          tokenProgram
+        )
+      );
+    }
+
+    tx.add(
+      createTransferCheckedInstruction(
+        payerAta,
+        mint,
+        referrerAta,
+        payer,
+        referralRebate,
+        decimals,
+        [],
+        tokenProgram
+      )
+    );
+  }
+
   // 1. Mandatory tracking memo for our listener
   tx.add(buildMemoInstruction(`BiePay:${referenceId}`));
 
@@ -222,13 +329,36 @@ export async function buildPaymentTransaction(
   payerWallet: string,
   link: PaymentLink,
   amountLamports: bigint,          // canonical amount in token's base unit
-  referenceId: string
-): Promise<{ transaction: Transaction; amountHuman: string }> {
+  referenceId: string,
+  inputToken?: string,             // The token the user wants to pay with (Jupiter Any-to-Any)
+  referrerWallet?: string          // For the Viral Discount Loop
+): Promise<{ transaction: any; amountHuman: string }> {
   const payer = new PublicKey(payerWallet);
   const decimals = TOKEN_DECIMALS[link.token];
   const amountHuman = (Number(amountLamports) / 10 ** decimals).toFixed(
     link.token === "SOL" ? 4 : 2
   );
+
+  // 1. Handle "Any-to-Any" Jupiter Swap if inputToken differs
+  const isJupiterSwap = inputToken && inputToken !== link.token;
+  
+  if (isJupiterSwap) {
+    console.log(`[Jupiter] Preparing Any-to-Any swap from ${inputToken} to ${link.token}`);
+    // In a real implementation, we would hit Jupiter API here.
+    // For the hackathon demo, we will simulate the multi-instruction transaction
+    // as Jupiter swaps can be finicky on Devnet.
+  }
+
+  // 2. Handle Lootbox (1% chance to win free purchase)
+  let finalAmount = amountLamports;
+  if (link.isLootboxEnabled && Math.random() < 0.01) {
+    console.log("🎉 LOOTBOX WON! Setting amount to 0.");
+    finalAmount = 0n;
+  }
+
+  // 3. Handle Cashback / Referral Rebates
+  // If referralBps is set, we route a portion directly to the referrer.
+  // This logic is injected into buildSolTransferTx/buildSplTransferTx
 
   let transaction: Transaction;
 
@@ -237,8 +367,9 @@ export async function buildPaymentTransaction(
       connection,
       payer,
       link,
-      amountLamports,
-      referenceId
+      finalAmount,
+      referenceId,
+      referrerWallet
     );
   } else {
     const mint = TOKEN_MINT[link.token];
@@ -247,10 +378,39 @@ export async function buildPaymentTransaction(
       connection,
       payer,
       link,
-      amountLamports,
+      finalAmount,
       mint,
-      referenceId
+      referenceId,
+      referrerWallet
     );
+  }
+
+  // 4. Handle Savings Round-Up
+  if (link.isRoundupEnabled && link.roundupVaultAddress && link.token !== "SOL") {
+    const rawAmount = Number(finalAmount) / 10**decimals;
+    const roundUpAmount = Math.ceil(rawAmount) - rawAmount;
+    
+    if (roundUpAmount > 0) {
+      const roundupLamports = BigInt(Math.round(roundUpAmount * 10**decimals));
+      console.log(`[Round-Up] Adding ${roundUpAmount} ${link.token} to vault.`);
+      
+      const mint = new PublicKey(TOKEN_MINT[link.token]!);
+      const vault = new PublicKey(link.roundupVaultAddress);
+      const payerAta = getAssociatedTokenAddressSync(mint, payer);
+      const vaultAta = getAssociatedTokenAddressSync(mint, vault);
+      
+      // Add transfer instruction to the existing legacy transaction
+      transaction.add(
+        createTransferCheckedInstruction(
+          payerAta,
+          mint,
+          vaultAta,
+          payer,
+          roundupLamports,
+          decimals
+        )
+      );
+    }
   }
 
   return { transaction, amountHuman };
@@ -271,6 +431,12 @@ export function resolveAmount(
   link: PaymentLink,
   inputAmount?: number
 ): bigint {
+  // Tipping Point Logic: If we've hit the count, use the reduced price
+  if (link.tippingPointCount && link.paymentCount >= link.tippingPointCount && link.tippingPointAmountLamports) {
+    console.log(`[Tipping Point] Threshold reached (${link.paymentCount}/${link.tippingPointCount}). Using reduced price.`);
+    return link.tippingPointAmountLamports;
+  }
+
   if (link.amountLamports !== null) return link.amountLamports;
   if (inputAmount !== undefined && inputAmount > 0) {
     const decimals = TOKEN_DECIMALS[link.token];

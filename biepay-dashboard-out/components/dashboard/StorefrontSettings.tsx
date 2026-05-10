@@ -8,6 +8,8 @@ interface MerchantProfile {
   accentColor: string | null;
   webhookUrl: string | null;
   webhookSecret: string | null;
+  snsDomain?: string | null;
+  isPro?: boolean;
 }
 
 interface StorefrontSettingsProps {
@@ -15,14 +17,16 @@ interface StorefrontSettingsProps {
   onSave: (data: Partial<MerchantProfile>) => Promise<void>;
   onExport: () => void;
   onNotify?: (msg: string, type?: "success" | "info" | "error") => void;
+  onDelete?: () => void;
 }
 
-export default function StorefrontSettings({ profile, onSave, onExport, onNotify }: StorefrontSettingsProps) {
+export default function StorefrontSettings({ profile, onSave, onExport, onNotify, onDelete }: StorefrontSettingsProps) {
   const [activeTab, setActiveTab] = useState<"brand" | "security">("brand");
   const [businessName, setBusinessName] = useState(profile.businessName ?? "");
   const [logoUrl, setLogoUrl] = useState(profile.logoUrl ?? "");
   const [accentColor, setAccentColor] = useState(profile.accentColor ?? "#c5a36e");
   const [webhookUrl, setWebhookUrl] = useState(profile.webhookUrl ?? "");
+  const [snsDomain, setSnsDomain] = useState(profile.snsDomain ?? "");
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -50,6 +54,7 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
         logoUrl: logoUrl || null,
         accentColor: sanitizedColor || "#c5a36e",
         webhookUrl: sanitizedWebhook || null,
+        snsDomain: snsDomain || null,
       });
       setSaveStatus("success");
       setTimeout(() => setSaveStatus("idle"), 3000);
@@ -167,25 +172,16 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
                   </div>
 
                   <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 group hover:border-zinc-300 transition-colors relative overflow-hidden">
-                    <div className="absolute top-2 right-2 px-2 py-0.5 bg-zinc-200 text-zinc-500 text-[7px] font-black uppercase rounded tracking-widest">SNS Identity</div>
                     <label className="text-[10px] font-black text-zinc-900 uppercase tracking-widest mb-3 block">Link .sol Domain</label>
                     <div className="flex gap-3">
                       <div className="relative flex-1">
                         <input 
                           placeholder="e.g. merchant.sol"
-                          disabled={true}
-                          className="w-full p-4 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-bold opacity-70 cursor-not-allowed pr-12"
+                          value={snsDomain}
+                          onChange={(e) => setSnsDomain(e.target.value)}
+                          className="w-full p-4 bg-white border border-zinc-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-zinc-900/5 outline-none transition-all shadow-sm"
                         />
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                          <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest bg-zinc-200 px-1.5 py-0.5 rounded">TBA</span>
-                        </div>
                       </div>
-                      <button 
-                        onClick={() => onNotify?.("SNS linking is coming soon! Claim your .sol handle on Mainnet launch.", "info")}
-                        className="px-6 py-2 bg-zinc-950 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-zinc-800 transition-all shadow-lg active:scale-95"
-                      >
-                        Reserve
-                      </button>
                     </div>
                   </div>
 
@@ -331,23 +327,36 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
                   ))}
                 </div>
 
-                <button 
-                  className="w-full py-4 bg-[#c5a36e] text-black font-black text-xs uppercase tracking-[0.2em] rounded-xl hover:bg-[#d4b98c] transition-all shadow-[0_10px_30px_rgba(197,163,110,0.25)] hover:shadow-[0_15px_40px_rgba(197,163,110,0.35)] hover:-translate-y-0.5 active:translate-y-0"
-                  onClick={() => {
-                    // Logic to show enterprise modal or redirect
-                    const btn = document.querySelector('button[onClick*="settings"]');
-                    if (btn) (btn as any).click(); // Close settings
-                  }}
-                >
-                  Upgrade to Pro
-                </button>
+                {profile.isPro ? (
+                  <div className="w-full py-4 bg-zinc-800 text-zinc-400 font-black text-xs uppercase tracking-[0.2em] rounded-xl text-center border border-zinc-700">
+                    Pro Unlocked
+                  </div>
+                ) : (
+                  <button 
+                    className="w-full py-4 bg-[#c5a36e] text-black font-black text-xs uppercase tracking-[0.2em] rounded-xl hover:bg-[#d4b98c] transition-all shadow-[0_10px_30px_rgba(197,163,110,0.25)] hover:shadow-[0_15px_40px_rgba(197,163,110,0.35)] hover:-translate-y-0.5 active:translate-y-0"
+                    onClick={async () => {
+                      onNotify?.("Unlocking BiePay Pro...", "info");
+                      await onSave({ isPro: true });
+                      onNotify?.("BiePay Pro unlocked successfully!", "success");
+                    }}
+                  >
+                    Upgrade to Pro
+                  </button>
+                )}
               </div>
             </div>
 
             <div className="p-8 bg-red-50/50 rounded-[2.5rem] border border-red-100 shadow-sm group hover:bg-red-50 transition-colors">
               <h4 className="text-red-900 text-sm font-black tracking-tight mb-2">Danger Zone</h4>
               <p className="text-red-500 text-[10px] font-bold uppercase tracking-[0.15em] mb-6">Irreversible Account Deletion</p>
-              <button className="w-full p-5 bg-white border border-red-200 text-red-600 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-red-600 hover:text-white transition-all shadow-lg hover:shadow-red-200">
+              <button 
+                onClick={() => {
+                  if (confirm("Are you sure you want to permanently delete your merchant account and all associated payment links? This cannot be undone.")) {
+                    onDelete?.();
+                  }
+                }}
+                className="w-full p-5 bg-white border border-red-200 text-red-600 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-red-600 hover:text-white transition-all shadow-lg hover:shadow-red-200"
+              >
                 Purge Merchant Data
               </button>
             </div>

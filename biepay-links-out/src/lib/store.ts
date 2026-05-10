@@ -17,6 +17,8 @@ function mapLink(data: any): PaymentLink {
   return {
     ...data,
     amountLamports: data.amountLamports ? BigInt(data.amountLamports) : null,
+    targetAmountLamports: data.targetAmountLamports ? BigInt(data.targetAmountLamports) : null,
+    tippingPointAmountLamports: data.tippingPointAmount ? BigInt(data.tippingPointAmount) : null,
     expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
     createdAt: new Date(data.createdAt),
   };
@@ -62,6 +64,19 @@ export async function createLink(input: CreateLinkInput): Promise<PaymentLink> {
       digitalAssetUrl: input.digitalAssetUrl ?? null,
       status: "active",
       merchantId: input.merchantId,
+      
+      // Hackathon Superpowers
+      isSplitPayment: input.isSplitPayment ?? false,
+      targetAmountLamports: input.targetAmount ? BigInt(Math.round(input.targetAmount * 10 ** decimals)).toString() : null,
+      isRoundupEnabled: input.isRoundupEnabled ?? false,
+      roundupVaultAddress: input.roundupVaultAddress ?? null,
+      isLootboxEnabled: input.isLootboxEnabled ?? false,
+      cashbackBps: input.cashbackBps ?? 0,
+      referralBps: input.referralBps ?? 0,
+      discountBps: input.discountBps ?? 0,
+      tippingPointCount: input.tippingPointCount ?? 0,
+      tippingPointAmount: input.tippingPointAmount ? BigInt(Math.round(input.tippingPointAmount * 10 ** decimals)).toString() : null,
+      isEscrowEnabled: input.isEscrowEnabled ?? false,
     },
   });
 

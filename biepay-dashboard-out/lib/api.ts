@@ -51,6 +51,16 @@ export interface CreateLinkPayload {
   redirectUrl?: string;
   digitalAssetUrl?: string;
   merchantId: string;
+
+  // Hackathon Superpowers
+  isSplitPayment?: boolean;
+  targetAmount?: number;
+  isRoundupEnabled?: boolean;
+  roundupVaultAddress?: string;
+  isLootboxEnabled?: boolean;
+  cashbackBps?: number;
+  referralBps?: number;
+  discountBps?: number;
 }
 
 export interface CreateLinkResponse {

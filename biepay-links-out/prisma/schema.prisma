@@ -24,6 +24,25 @@ model PaymentLink {
   createdAt       DateTime @default(now())
   merchantId      String?
   payments        PaymentRecord[]
+
+  // Hackathon Superpowers
+  isSplitPayment      Boolean  @default(false)
+  targetAmountLamports String? 
+  
+  isRoundupEnabled    Boolean  @default(false)
+  roundupVaultAddress String?
+  
+  isLootboxEnabled    Boolean  @default(false)
+  cashbackBps         Int?     @default(0)
+  referralBps         Int?     @default(0)
+  discountBps         Int?     @default(0)
+
+  // Tipping Point Group Buy
+  tippingPointCount   Int?     @default(0)
+  tippingPointAmount  String?
+  
+  // Escrow
+  isEscrowEnabled     Boolean? @default(false)
 }
 
 model PaymentRecord {
@@ -42,6 +61,8 @@ model PaymentRecord {
 model MerchantProfile {
   merchantId      String   @id
   businessName    String?
+  snsDomain       String?
+  isPro           Boolean  @default(false)
   logoUrl         String?
   accentColor     String?  @default("#c5a36e")
   webhookUrl      String?

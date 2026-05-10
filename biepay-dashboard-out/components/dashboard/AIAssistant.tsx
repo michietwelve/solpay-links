@@ -9,31 +9,6 @@ interface Message {
   content: string;
 }
 
-/**
- * SIMULATED QVAC SERVICE
- * In a production environment, this would import from @qvac/sdk
- * and perform local inference on the merchant's device.
- */
-const mockQvacCompletion = async (prompt: string): Promise<string> => {
-  // Simulate local model processing delay
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  
-  const lowerPrompt = prompt.toLowerCase();
-  
-  if (lowerPrompt.includes('revenue') || lowerPrompt.includes('sales')) {
-    return "Based on your recent payment links, your projected USDT revenue for this week is up 24% compared to last week. Most of your volume is coming from the 'Freelance - Web Dev' link.";
-  }
-  
-  if (lowerPrompt.includes('fraud') || lowerPrompt.includes('risk')) {
-    return "I've analyzed your active payment links locally. All 5 links show low risk scores. No suspicious patterns detected in recent Devnet transactions.";
-  }
-  
-  if (lowerPrompt.includes('logo') || lowerPrompt.includes('brand')) {
-    return "Your branding is now fully persistent! Your custom accent color (#c5a36e) is being applied to all 5 active payment links. Would you like me to suggest a matching high-contrast logo layout?";
-  }
-
-  return "I'm your BiePay business assistant, running locally via QVAC. I can help you analyze your revenue, check for transaction risks, or optimize your payment links without your data ever leaving this device.";
-};
 
 export function AIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
@@ -64,10 +39,50 @@ export function AIAssistant() {
     setIsLoading(true);
 
     try {
-      const response = await mockQvacCompletion(userMessage);
-      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+      const response = await fetch('/api/qvac', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userMessage }),
+      });
+
+      if (!response.ok || !response.body) {
+        throw new Error("Failed to get response");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+      let assistantMessage = "";
+
+      // Add a placeholder message for the assistant
+      setMessages(prev => [...prev, { role: 'assistant', content: "" }]);
+
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        const chunkValue = decoder.decode(value, { stream: true });
+        assistantMessage += chunkValue;
+        
+        // Update the last message (the assistant's placeholder)
+        setMessages(prev => {
+          const newMessages = [...prev];
+          newMessages[newMessages.length - 1].content = assistantMessage;
+          return newMessages;
+        });
+      }
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I encountered a local processing error. Please try again." }]);
+      console.error(error);
+      setMessages(prev => {
+        // If the last message was our placeholder, update it with an error. 
+        // Otherwise, append an error message.
+        if (prev[prev.length - 1].role === 'assistant' && prev[prev.length - 1].content === "") {
+           const newMessages = [...prev];
+           newMessages[newMessages.length - 1].content = "Sorry, I encountered an error. Please try again.";
+           return newMessages;
+        } else {
+          return [...prev, { role: 'assistant', content: "Sorry, I encountered an error. Please try again." }];
+        }
+      });
     } finally {
       setIsLoading(false);
     }

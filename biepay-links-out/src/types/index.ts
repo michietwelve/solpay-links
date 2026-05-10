@@ -39,6 +39,19 @@ export interface PaymentLink {
   status: LinkStatus;
   createdAt: Date;
   merchantId: string;            // links a link to a merchant account
+
+  // Hackathon Superpowers
+  isSplitPayment: boolean;
+  targetAmountLamports: bigint | null;
+  isRoundupEnabled: boolean;
+  roundupVaultAddress: string | null;
+  isLootboxEnabled: boolean;
+  cashbackBps: number | null;
+  referralBps: number | null;
+  discountBps: number | null;
+  tippingPointCount: number | null;
+  tippingPointAmountLamports: bigint | null;
+  isEscrowEnabled: boolean | null;
 }
 
 export interface MerchantProfile {
@@ -51,6 +64,8 @@ export interface MerchantProfile {
   email: string | null;          // merchant notification email
   apiKey: string | null;         // institutional API key
   apiKeyLastUsed: Date | null;
+  snsDomain: string | null;
+  isPro: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -85,6 +100,19 @@ export const CreateLinkSchema = z.object({
   redirectUrl: z.string().url().optional(),
   digitalAssetUrl: z.string().url().optional(),
   merchantId: z.string().min(1),
+  
+  // Hackathon Superpowers
+  isSplitPayment: z.boolean().optional(),
+  targetAmount: z.number().positive().optional(),
+  isRoundupEnabled: z.boolean().optional(),
+  roundupVaultAddress: z.string().optional(),
+  isLootboxEnabled: z.boolean().optional(),
+  cashbackBps: z.number().min(0).max(10000).optional(),
+  referralBps: z.number().min(0).max(10000).optional(),
+  discountBps: z.number().min(0).max(10000).optional(),
+  tippingPointCount: z.number().int().min(0).optional(),
+  tippingPointAmount: z.number().positive().optional(),
+  isEscrowEnabled: z.boolean().optional(),
 });
 
 export type CreateLinkInput = z.infer<typeof CreateLinkSchema>;
@@ -92,6 +120,8 @@ export type CreateLinkInput = z.infer<typeof CreateLinkSchema>;
 export const PostPaymentSchema = z.object({
   account: z.string().min(32).max(44),   // payer's wallet public key
   amount: z.number().positive().optional(), // only for open-amount links
+  inputToken: z.enum([...SUPPORTED_TOKENS, "WIF", "BONK"]).optional(), // The token chosen in the Blink dropdown
+  referrerWallet: z.string().min(32).max(44).optional(), // For the Viral Discount Loop
 });
 
 export type PostPaymentInput = z.infer<typeof PostPaymentSchema>;
@@ -102,6 +132,8 @@ export const UpdateMerchantProfileSchema = z.object({
   accentColor: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/).optional().nullable(),
   webhookUrl: z.string().url().optional().nullable(),
   email: z.string().email().optional().nullable(),
+  snsDomain: z.string().optional().nullable(),
+  isPro: z.boolean().optional(),
 });
 
 export type UpdateMerchantProfileInput = z.infer<typeof UpdateMerchantProfileSchema>;
@@ -129,7 +161,7 @@ export interface LinkedAction {
 }
 
 export interface ActionParameter {
-  type: "number" | "text";
+  type: "number" | "text" | "select";
   name: string;
   label: string;
   required?: boolean;
@@ -137,6 +169,11 @@ export interface ActionParameter {
   max?: number;
   pattern?: string;
   patternDescription?: string;
+  options?: Array<{
+    label: string;
+    value: string;
+    selected?: boolean;
+  }>;
 }
 
 export interface ActionPostResponse {

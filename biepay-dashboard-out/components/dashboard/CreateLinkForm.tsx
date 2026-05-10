@@ -23,6 +23,15 @@ interface FormState {
   redirectUrl: string;
   digitalAssetUrl: string;
   recipientWallet: string;
+  // Hackathon Superpowers
+  isSplitPayment: boolean;
+  targetAmount: string;
+  isRoundupEnabled: boolean;
+  roundupVaultAddress: string;
+  isLootboxEnabled: boolean;
+  cashbackBps: string;
+  referralBps: string;
+  discountBps: string;
 }
 
 const INITIAL: FormState = {
@@ -36,6 +45,15 @@ const INITIAL: FormState = {
   redirectUrl: "",
   digitalAssetUrl: "",
   recipientWallet: "",
+  // Hackathon Superpowers
+  isSplitPayment: false,
+  targetAmount: "",
+  isRoundupEnabled: false,
+  roundupVaultAddress: "",
+  isLootboxEnabled: false,
+  cashbackBps: "",
+  referralBps: "",
+  discountBps: "",
 };
 
 export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
@@ -80,6 +98,10 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
     setErrors((prev) => ({ ...prev, [k]: undefined }));
   };
 
+  const toggle = (k: keyof FormState) => () => {
+    setForm((prev) => ({ ...prev, [k]: !prev[k] }));
+  };
+
   function validate(): boolean {
     const errs: Partial<FormState> = {};
     if (!form.label.trim()) errs.label = "Label is required";
@@ -121,6 +143,16 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
         ...(enableRedirect && form.redirectUrl ? { redirectUrl: form.redirectUrl.trim() } : {}),
         ...(form.digitalAssetUrl ? { digitalAssetUrl: form.digitalAssetUrl.trim() } : {}),
         merchantId: user?.id ?? recipientAddress,
+        
+        // Hackathon Superpowers
+        isSplitPayment: form.isSplitPayment,
+        targetAmount: form.targetAmount ? parseFloat(form.targetAmount) : undefined,
+        isRoundupEnabled: form.isRoundupEnabled,
+        roundupVaultAddress: form.roundupVaultAddress.trim() || undefined,
+        isLootboxEnabled: form.isLootboxEnabled,
+        cashbackBps: form.cashbackBps ? parseInt(form.cashbackBps) : undefined,
+        referralBps: form.referralBps ? parseInt(form.referralBps) : undefined,
+        discountBps: form.discountBps ? parseInt(form.discountBps) : undefined,
       });
       onSuccess(result);
     } catch (err) {
@@ -253,6 +285,89 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
               placeholder="Unlimited"
             />
           </div>
+        </div>
+      </div>
+
+      <div className="p-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl space-y-6 shadow-2xl relative overflow-hidden group">
+        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
+          <svg className="w-32 h-32 text-white fill-current" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3.45l7.39 12.55H4.61L12 5.45zM11 11v4h2v-4h-2zm0 6v2h2v-2h-2z"/></svg>
+        </div>
+        
+        <div className="space-y-1 relative">
+          <h4 className="text-[12px] font-black text-white uppercase tracking-[0.2em]">Hackathon Superpowers</h4>
+          <p className="text-[10px] text-indigo-100 font-bold uppercase tracking-tight opacity-80">Viral Loops, DeFi Round-Ups & Gamification</p>
+        </div>
+
+        {/* Viral Loop Section */}
+        <div className="space-y-4 p-4 bg-white/10 rounded-2xl border border-white/10">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <p className="text-[10px] font-black text-white uppercase tracking-wider">Viral Growth Loop</p>
+              <p className="text-[9px] text-white/60 font-bold">Incentivize customers to share</p>
+            </div>
+            <div className="flex gap-2">
+              <input 
+                type="number" 
+                placeholder="Ref %" 
+                className="w-16 p-2 bg-white/5 border border-white/10 rounded-lg text-[10px] text-white outline-none"
+                value={form.referralBps}
+                onChange={set("referralBps")}
+              />
+              <input 
+                type="number" 
+                placeholder="Disc %" 
+                className="w-16 p-2 bg-white/5 border border-white/10 rounded-lg text-[10px] text-white outline-none"
+                value={form.discountBps}
+                onChange={set("discountBps")}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Savings & Lootbox Section */}
+        <div className="grid grid-cols-2 gap-4">
+          <div 
+            onClick={toggle("isRoundupEnabled")}
+            className={`p-4 rounded-2xl border cursor-pointer transition-all ${form.isRoundupEnabled ? 'bg-white/20 border-white/40 shadow-lg' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
+          >
+            <p className="text-[10px] font-black text-white uppercase mb-1">Savings Round-Up</p>
+            <p className="text-[9px] text-white/50 font-medium leading-tight">Donate spare change to your vault</p>
+          </div>
+          <div 
+            onClick={toggle("isLootboxEnabled")}
+            className={`p-4 rounded-2xl border cursor-pointer transition-all ${form.isLootboxEnabled ? 'bg-white/20 border-white/40 shadow-lg' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
+          >
+            <p className="text-[10px] font-black text-white uppercase mb-1">Checkout Lootbox</p>
+            <p className="text-[9px] text-white/50 font-medium leading-tight">1% chance for free order</p>
+          </div>
+        </div>
+
+        {/* Social Split Section */}
+        <div className="space-y-4 p-4 bg-white/10 rounded-2xl border border-white/10">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <p className="text-[10px] font-black text-white uppercase tracking-wider">Social Split Payment</p>
+              <p className="text-[9px] text-white/60 font-bold">Crowdfund this goal together</p>
+            </div>
+            <button 
+              type="button"
+              onClick={toggle("isSplitPayment")}
+              className={`w-10 h-5 rounded-full transition-all relative p-1 ${form.isSplitPayment ? 'bg-emerald-400' : 'bg-white/10'}`}
+            >
+              <div className={`w-3 h-3 bg-white rounded-full transition-transform ${form.isSplitPayment ? 'translate-x-5' : 'translate-x-0'}`} />
+            </button>
+          </div>
+          {form.isSplitPayment && (
+            <div className="animate-in fade-in zoom-in-95 duration-300 pt-2">
+              <input 
+                type="number" 
+                placeholder="Target Amount (e.g. 100)" 
+                className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-xs text-white outline-none placeholder:text-white/20"
+                value={form.targetAmount}
+                onChange={set("targetAmount")}
+              />
+            </div>
+          )}
         </div>
       </div>
 

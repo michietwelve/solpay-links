@@ -106,4 +106,31 @@ router.get("/me/settings", requireAuth, async (req: AuthenticatedRequest, res: R
   res.json(profile);
 });
 
+// DELETE /api/merchants/:merchantId
+router.delete("/:merchantId", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  const { merchantId } = req.params;
+
+  if (!req.user?.allowedIds.includes(merchantId as string)) {
+    res.status(403).json({ message: "Not authorized to delete this profile" });
+    return;
+  }
+
+  try {
+    // Delete all associated payment links (which will cascade delete records)
+    await prisma.paymentLink.deleteMany({
+      where: { merchantId: merchantId as string }
+    });
+
+    // Delete the merchant profile
+    await prisma.merchantProfile.delete({
+      where: { merchantId: merchantId as string }
+    });
+
+    res.json({ success: true, message: "Merchant data purged successfully." });
+  } catch (err) {
+    console.error("Delete failed:", err);
+    res.status(500).json({ message: "Failed to purge merchant data." });
+  }
+});
+
 export default router;
