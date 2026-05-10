@@ -49,7 +49,7 @@ router.get("/:linkId", async (req: Request, res: Response): Promise<void> => {
   // ── Build the response ──────────────────────────────────────────────────
 
   const isOpenAmount = link.amountLamports === null;
-  const decimals = link.token === "SOL" ? 4 : 2;
+  const displayDecimals = link.token === "SOL" ? 4 : 2;
   
   // 1. Localized PPP Pricing
   const userRegion = (req.headers["x-vercel-ip-country"] as string) || "NG";
@@ -61,7 +61,7 @@ router.get("/:linkId", async (req: Request, res: Response): Promise<void> => {
   } else {
     const rawAmount = Number(link.amountLamports) / 10 ** (link.token === "SOL" ? 9 : 6);
     const localAmountString = getFiatEquivalent(rawAmount, localCurrency);
-    amountLabel = `Pay ${rawAmount.toFixed(decimals)} ${link.token} (~${localAmountString} ${localCurrency})`;
+    amountLabel = `Pay ${rawAmount.toFixed(displayDecimals)} ${link.token} (~${localAmountString} ${localCurrency})`;
   }
 
   // 2. Jupiter Any-to-Any Swap (Token Selection)
@@ -97,23 +97,11 @@ router.get("/:linkId", async (req: Request, res: Response): Promise<void> => {
     ]
   });
 
-  // 3. Social Split Payment Progress
-  let finalDescription = link.description;
-  if (link.isSplitPayment && link.targetAmountLamports) {
-    const payments = await getPaymentsForLink(linkId);
-    const confirmedTotal = payments
-      .filter(p => p.status === "confirmed")
-      .reduce((sum, p) => sum + p.amountLamports, 0n);
-    
-    const target = BigInt(link.targetAmountLamports);
-    const progress = (Number(confirmedTotal) / Number(target)) * 100;
-    const decimals = link.token === "SOL" ? 9 : 6;
+  // 3. Dynamic Description for Split Payments
   let description = link.description;
-    
-  // Dynamic Description for Split Payments
   if (link.isSplitPayment && link.targetAmountLamports) {
-    const progress = Number((link.paymentCount / 10).toFixed(0)); // Mock progress for demo or real count
-    description = `[${"█".repeat(progress)}${"░".repeat(10-progress)}] ${link.paymentCount} payments received. ${description}`;
+    const progressCount = Math.min(10, Math.floor(link.paymentCount / 2));
+    description = `[${"█".repeat(progressCount)}${"░".repeat(10 - progressCount)}] ${link.paymentCount} payments received. ${description}`;
   }
 
   const body: ActionGetResponse = {
@@ -141,7 +129,7 @@ router.get("/:linkId", async (req: Request, res: Response): Promise<void> => {
   res.status(200).json(body);
 });
 
-// ─── POST /actions/:linkId/pay  ───────────────────────────────────────────
+// ─── POST /actions/:linkId/pay  ————————————————————————————————───────────
 // Builds and returns a serialized, unsigned transaction for the payer's
 // wallet to sign. The wallet sends it to the network itself.
 
@@ -187,9 +175,6 @@ router.post("/:linkId/pay", async (req: Request, res: Response): Promise<void> =
   }
 
   // 3.5. BiePay Allowance Check: Daily Spending Caps
-  // If the link has a maxDailySpend (simulated via metadata or global for now)
-  // For the hackathon, we'll enforce a strict 1000 USDC default cap for non-pro users
-  // or use the merchant's custom limit if we had one.
   const ONE_DAY_AGO = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const todaysPayments = await prisma.paymentRecord.findMany({
     where: {
@@ -222,8 +207,8 @@ router.post("/:linkId/pay", async (req: Request, res: Response): Promise<void> =
 
     if (confirmedTotal + amountBaseUnits > target) {
       const remaining = target - confirmedTotal;
-      const decimals = link.token === "SOL" ? 9 : 6;
-      const humanRemaining = (Number(remaining) / 10**decimals).toFixed(decimals === 9 ? 4 : 2);
+      const tokenDecimals = link.token === "SOL" ? 9 : 6;
+      const humanRemaining = (Number(remaining) / 10**tokenDecimals).toFixed(tokenDecimals === 9 ? 4 : 2);
       actionError(res, 400, `This exceeds the remaining goal. Please pay ${humanRemaining} ${link.token} or less.`);
       return;
     }
@@ -267,9 +252,8 @@ router.post("/:linkId/pay", async (req: Request, res: Response): Promise<void> =
   };
 
   // If the merchant specified a redirect, include it as a next action hint
-  // using the Action chaining spec (next.type = "post")
   if (link.redirectUrl) {
-    (body as unknown as Record<string, unknown>).links = {
+    (body as any).links = {
       next: {
         type: "inline",
         action: {

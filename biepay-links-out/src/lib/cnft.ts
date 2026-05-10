@@ -8,7 +8,8 @@ import {
   keypairIdentity, 
   publicKey, 
   generateSigner,
-  percentAmount 
+  percentAmount,
+  PublicKey
 } from "@metaplex-foundation/umi";
 import bs58 from "bs58";
 
@@ -61,7 +62,7 @@ export async function mintLoyaltyReceipt(
 /**
  * Helper to initialize a new tree for the platform if needed
  */
-export async function initializePlatformTree() {
+export async function initializePlatformTree(): Promise<PublicKey | undefined> {
   const secret = process.env.FEE_PAYER_SECRET;
   if (!secret) return;
 
