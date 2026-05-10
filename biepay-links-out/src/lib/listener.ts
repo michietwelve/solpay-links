@@ -71,7 +71,7 @@ async function deliverWebhook(merchantId: string, url: string, payload: WebhookP
       if (retryCount < 3) {
         const delay = Math.pow(2, retryCount) * 1000;
         console.log(`[webhook] Retrying in ${delay}ms...`);
-        setTimeout(() => deliverWebhook(url, payload, secret, retryCount + 1), delay);
+        setTimeout(() => deliverWebhook(merchantId, url, payload, secret, retryCount + 1), delay);
       }
     } else {
       console.log(`[webhook] delivered to ${url} (signed: ${!!secret})`);

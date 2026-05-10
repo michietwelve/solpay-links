@@ -17,7 +17,7 @@ import {
   TOKEN_2022_PROGRAM_ID,
   getMint,
 } from "@solana/spl-token";
-import { PaymentLink, TOKEN_MINT, TOKEN_DECIMALS } from "../types";
+import { PaymentLink, TOKEN_MINT, TOKEN_DECIMALS, SupportedToken } from "../types";
 import { buildStealthMemo } from "./stealth";
 
 // ─── Platform fee config ──────────────────────────────────────────────────
@@ -411,7 +411,7 @@ export async function buildPaymentTransaction(
 
     try {
       // 1. Get Quote
-      const quote = await getJupiterQuote(inputMint, outputMint, amountLamports, link.maxSlippageBps);
+      const quote = await getJupiterQuote(inputMint, outputMint, amountLamports, link.maxSlippageBps) as any;
       
       // 2. Get Instructions
       const {
@@ -420,7 +420,7 @@ export async function buildPaymentTransaction(
         swapInstruction,
         cleanupInstruction,
         addressLookupTableAddresses,
-      } = await getJupiterSwapInstructions(quote, payerWallet);
+      } = await getJupiterSwapInstructions(quote, payerWallet) as any;
 
       // 3. Update transaction building
       // We will create a new transaction and add Jupiter instructions

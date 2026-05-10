@@ -106,8 +106,8 @@ router.get("/:linkId", async (req: Request, res: Response): Promise<void> => {
 
   const body: ActionGetResponse = {
     type: "action",
-    icon: link.logoUrl || "https://biepay.io/og-blink.png",
-    title: link.businessName ? `${link.businessName}: ${link.label}` : link.label,
+    icon: merchant.logoUrl || "https://biepay.io/og-blink.png",
+    title: merchant.businessName ? `${merchant.businessName}: ${link.label}` : link.label,
     description,
     label: active ? amountLabel : "Unavailable",
     disabled: !active,
@@ -269,7 +269,7 @@ router.post("/:linkId/pay", async (req: Request, res: Response): Promise<void> =
               actions: [
                 {
                   type: "post",
-                  href: `${API_BASE}/actions/${linkId}/release/${record.id}`,
+                  href: `${API_BASE}/actions/${linkId}/release/${record.id as string}`,
                   label: "Confirm Receipt ✅",
                 }
               ]
@@ -294,7 +294,7 @@ router.post("/:linkId/release/:paymentId", async (req: Request, res: Response) =
 
   try {
     const record = await prisma.paymentRecord.update({
-      where: { id: paymentId },
+      where: { id: paymentId as string },
       data: { escrowStatus: "released" }
     });
 
@@ -318,7 +318,7 @@ router.post("/:linkId/refund/:paymentId", async (req: Request, res: Response) =>
 
   try {
     await prisma.paymentRecord.update({
-      where: { id: paymentId },
+      where: { id: paymentId as string },
       data: { escrowStatus: "refunded" }
     });
 
