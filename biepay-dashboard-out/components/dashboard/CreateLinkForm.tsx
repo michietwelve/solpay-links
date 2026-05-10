@@ -32,6 +32,7 @@ interface FormState {
   cashbackBps: string;
   referralBps: string;
   discountBps: string;
+  maxSlippageBps: string;
 }
 
 const INITIAL: FormState = {
@@ -54,6 +55,7 @@ const INITIAL: FormState = {
   cashbackBps: "",
   referralBps: "",
   discountBps: "",
+  maxSlippageBps: "50",
 };
 
 export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
@@ -153,6 +155,7 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
         cashbackBps: form.cashbackBps ? parseInt(form.cashbackBps) : undefined,
         referralBps: form.referralBps ? parseInt(form.referralBps) : undefined,
         discountBps: form.discountBps ? parseInt(form.discountBps) : undefined,
+        maxSlippageBps: form.maxSlippageBps ? parseInt(form.maxSlippageBps) : undefined,
       });
       onSuccess(result);
     } catch (err) {
@@ -291,6 +294,33 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
               onChange={set("maxPayments")}
               placeholder="Unlimited"
             />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] pl-1">Max Slippage</label>
+            <div className="relative">
+              <input
+                className="w-full p-4 bg-white border border-zinc-200 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-zinc-900/5 focus:border-zinc-900 outline-none transition-all"
+                type="number"
+                min="1"
+                max="500"
+                value={form.maxSlippageBps}
+                onChange={set("maxSlippageBps")}
+                placeholder="50"
+              />
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-zinc-300 uppercase tracking-widest">
+                BPS
+              </div>
+            </div>
+            <p className="text-[9px] text-zinc-400 font-medium pl-1">Protection for Any-to-Any swaps (50 = 0.5%)</p>
+          </div>
+          <div className="space-y-2 opacity-50 cursor-not-allowed">
+            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] pl-1">Advanced Routing</label>
+            <div className="w-full p-4 bg-zinc-50 border border-zinc-200 rounded-2xl text-sm font-bold text-zinc-400">
+              Institutional Auto
+            </div>
           </div>
         </div>
       </div>
