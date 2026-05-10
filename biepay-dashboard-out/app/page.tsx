@@ -49,7 +49,7 @@ export default function Home() {
   const hero = useInView(0.1);
   const features = useInView(0.1);
   const stats = useInView(0.1);
-  const superpowers = useInView(0.1);
+
   const cta = useInView(0.1);
 
   const cards = [
@@ -58,20 +58,7 @@ export default function Home() {
     { icon: <Globe className="w-6 h-6 text-[#c5a36e]" />, title: "Global Fiat Ramp", desc: "Accept payments from 160+ countries. Native PPP localization for every buyer." },
   ];
 
-  const powers = [
-    { label: "Social Split Payments", tag: "VIRAL ENGINE" },
-    { label: "Any-to-Any Swaps", tag: "JUPITER" },
-    { label: "Gasless Sponsorship", tag: "UX" },
-    { label: "Yield-Powered Cashback", tag: "DEFI" },
-    { label: "PPP Localization", tag: "GLOBAL" },
-    { label: "Trustless Escrow", tag: "SECURITY" },
-    { label: "cNFT Loyalty", tag: "WEB3" },
-    { label: "Viral Discount Loops", tag: "GROWTH" },
-    { label: "Savings Round-Ups", tag: "DEFI" },
-    { label: "Tipping Point", tag: "COMMUNITY" },
-    { label: "Spending Allowances", tag: "SAFETY" },
-    { label: "Blink Architecture", tag: "SOLANA" },
-  ];
+
 
   return (
     <div className="min-h-screen bg-[#020202] text-white overflow-x-hidden selection:bg-[#c5a36e]/30">
@@ -131,7 +118,7 @@ export default function Home() {
               Start Accepting SOL
               <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" />
             </Link>
-            <a href="#superpowers" className="w-full sm:w-auto px-12 py-5 bg-white/5 border border-white/10 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-white/10 hover:border-[#c5a36e]/30 transition-all duration-300 backdrop-blur-xl text-center">
+            <a href="#features" className="w-full sm:w-auto px-12 py-5 bg-white/5 border border-white/10 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-white/10 hover:border-[#c5a36e]/30 transition-all duration-300 backdrop-blur-xl text-center">
               View Protocol
             </a>
           </div>
@@ -239,29 +226,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 12 Superpowers */}
-      <section id="superpowers" className="py-40 px-6 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#c5a36e]/3 to-transparent -z-10" />
-        <div className="max-w-7xl mx-auto">
-          <div ref={superpowers.ref} className={`text-center mb-20 space-y-4 transition-all duration-700 ${superpowers.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
-            <h2 className="text-[11px] font-black text-[#c5a36e] uppercase tracking-[0.3em]">Protocol Superpowers</h2>
-            <p className="text-5xl font-black tracking-tighter uppercase">12 Features. <span className="text-[#c5a36e]">One Link.</span></p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {powers.map((p, i) => (
-              <div
-                key={i}
-                className={`p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-[#c5a36e]/30 hover:bg-[#c5a36e]/5 transition-all duration-500 group cursor-default space-y-3 ${superpowers.inView ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
-                style={{ transitionDelay: `${i * 50}ms`, transitionDuration: "600ms" }}
-              >
-                <div className="text-[9px] font-black uppercase tracking-[0.2em] text-[#c5a36e]/60 group-hover:text-[#c5a36e] transition-colors">{p.tag}</div>
-                <div className="text-sm font-black uppercase tracking-tight group-hover:text-[#c5a36e] transition-colors duration-300">{p.label}</div>
-                <div className="w-6 h-0.5 bg-[#c5a36e]/20 group-hover:w-full group-hover:bg-[#c5a36e]/40 transition-all duration-500" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+
 
       {/* CTA */}
       <section className="py-40 px-6 relative">
