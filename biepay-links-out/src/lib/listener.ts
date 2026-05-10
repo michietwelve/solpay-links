@@ -16,6 +16,7 @@ import { Connection, PublicKey, Logs } from "@solana/web3.js";
 import { incrementPaymentCount, confirmPayment, getLinkById } from "./store";
 import { getMerchantProfile } from "./merchant";
 import { prisma } from "./db";
+import { mintLoyaltyReceipt } from "./cnft";
 
 const PROGRAM_ID = new PublicKey(
   "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
@@ -43,7 +44,9 @@ interface WebhookPayload {
   isTest?: boolean;
 }
 
-async function deliverWebhook(url: string, payload: WebhookPayload, secret?: string | null, retryCount = 0): Promise<void> {
+async function deliverWebhook(merchantId: string, url: string, payload: WebhookPayload, secret?: string | null, retryCount = 0): Promise<void> {
+  let status = 0;
+  let success = false;
   try {
     const body = JSON.stringify(payload);
     const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -60,6 +63,9 @@ async function deliverWebhook(url: string, payload: WebhookPayload, secret?: str
       signal: AbortSignal.timeout(10_000),
     });
     
+    status = res.status;
+    success = res.ok;
+
     if (!res.ok) {
       console.warn(`[webhook] ${url} responded ${res.status}`);
       if (retryCount < 3) {
@@ -72,10 +78,30 @@ async function deliverWebhook(url: string, payload: WebhookPayload, secret?: str
     }
   } catch (err) {
     console.error(`[webhook] failed to deliver to ${url}:`, err);
+    status = 0;
+    success = false;
     if (retryCount < 3) {
       const delay = Math.pow(2, retryCount) * 1000;
       console.log(`[webhook] Retrying in ${delay}ms...`);
-      setTimeout(() => deliverWebhook(url, payload, secret, retryCount + 1), delay);
+      setTimeout(() => deliverWebhook(merchantId, url, payload, secret, retryCount + 1), delay);
+    }
+  } finally {
+    // Only log the first attempt (or final failure/success if desired, but first is best for noise)
+    if (retryCount === 0) {
+      try {
+        await prisma.webhookLog.create({
+          data: {
+            merchantId,
+            url,
+            event: payload.event,
+            payload: JSON.stringify(payload),
+            status,
+            success,
+          }
+        });
+      } catch (e) {
+        console.error("[webhook] Failed to log to DB:", e);
+      }
     }
   }
 }
@@ -127,7 +153,7 @@ export function startEventListener(connection: Connection): () => void {
         const webhookUrl = merchant.webhookUrl || process.env.WEBHOOK_URL;
         
         if (webhookUrl) {
-          await deliverWebhook(webhookUrl, {
+          await deliverWebhook(link.merchantId, webhookUrl, {
             event: "payment.confirmed",
             signature,
             linkId,
@@ -136,6 +162,12 @@ export function startEventListener(connection: Connection): () => void {
             token,
             timestamp: new Date().toISOString(),
           }, merchant.webhookSecret);
+        }
+
+        // Mint Loyalty Receipt (cNFT)
+        if (payer) {
+          mintLoyaltyReceipt(payer, merchant.businessName || "Merchant", link.label)
+            .catch(e => console.error("[listener] cNFT mint failed:", e));
         }
       }
     },

@@ -54,6 +54,17 @@ model PaymentLink {
   ephemeralPubkey     String?  // X25519 ephemeral pubkey — embedded in tx memo
 }
 
+model WebhookLog {
+  id          String   @id @default(cuid())
+  merchantId  String
+  url         String
+  event       String
+  payload     String
+  status      Int
+  success     Boolean
+  createdAt   DateTime @default(now())
+}
+
 model PaymentRecord {
   id              String   @id
   linkId          String
@@ -62,6 +73,7 @@ model PaymentRecord {
   token           String
   signature       String?
   status          String   @default("pending")
+  escrowStatus    String?  @default("none") // none, locked, released, refunded
   createdAt       DateTime @default(now())
   confirmedAt     DateTime?
   link            PaymentLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
@@ -84,4 +96,8 @@ model MerchantProfile {
 
   // Umbra Stealth Identity
   stealthViewPubkey   String?  // X25519 pubkey — published, used for ECDH by senders
+
+  // Loyalty Receipts (cNFTs)
+  merkleTree          String?
+  collectionMint      String?
 }

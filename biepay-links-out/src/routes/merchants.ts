@@ -14,6 +14,24 @@ router.get("/:merchantId", async (req: Request, res: Response) => {
   res.json(profile);
 });
 
+// GET /api/merchants/:merchantId/webhook-logs
+router.get("/:merchantId/webhook-logs", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  const { merchantId } = req.params;
+  
+  if (!req.user?.allowedIds.includes(merchantId as string)) {
+    res.status(403).json({ message: "Not authorized to view these logs" });
+    return;
+  }
+
+  const logs = await prisma.webhookLog.findMany({
+    where: { merchantId: merchantId as string },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  });
+
+  res.json(logs);
+});
+
 // PATCH /api/merchants/:merchantId
 router.patch("/:merchantId", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const { merchantId } = req.params;

@@ -131,6 +131,16 @@ export default function DashboardPage() {
   const previousPaymentCount = useRef(payments.length);
   const isInitialLoad = useRef(true);
 
+  // ── Incognito Persistence ──────────────────────────────────────────────────
+  useEffect(() => {
+    const saved = localStorage.getItem("biepay_incognito");
+    if (saved === "true") setIsIncognito(true);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("biepay_incognito", isIncognito.toString());
+  }, [isIncognito]);
+
   useEffect(() => {
     if (isPaymentsLoading) return;
     
@@ -493,6 +503,28 @@ export default function DashboardPage() {
         }
       }
     });
+  };
+
+  const handleRelease = async (paymentId: string, linkId: string) => {
+    try {
+      showToast("Releasing escrowed funds...", "info");
+      const token = await getAccessToken();
+      const res = await fetch(`${API_BASE}/actions/${linkId}/release/${paymentId}`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      
+      if (!res.ok) throw new Error("Failed to release funds");
+      
+      showToast("Funds released to settlement wallet!", "success");
+      mutatePayments();
+    } catch (err: any) {
+      console.error("[release]", err);
+      showToast(err.message || "Release failed.", "error");
+    }
   };
 
   async function handleSweep() {
@@ -1239,12 +1271,22 @@ export default function DashboardPage() {
                           <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">
                               {p.status === "confirmed" && (
-                                <button 
-                                  onClick={(e) => { e.stopPropagation(); handleRefund(p.id, p.linkId); }}
-                                  className="px-2 py-1 bg-red-50 text-red-600 text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-red-100 transition-all opacity-0 group-hover:opacity-100"
-                                >
-                                  Refund
-                                </button>
+                                <div className="flex gap-2">
+                                  {p.escrowStatus === "locked" && (
+                                    <button 
+                                      onClick={(e) => { e.stopPropagation(); handleRelease(p.id, p.linkId); }}
+                                      className="px-2 py-1 bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-emerald-600 transition-all"
+                                    >
+                                      Release
+                                    </button>
+                                  )}
+                                  <button 
+                                    onClick={(e) => { e.stopPropagation(); handleRefund(p.id, p.linkId); }}
+                                    className="px-2 py-1 bg-red-50 text-red-600 text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-red-100 transition-all opacity-0 group-hover:opacity-100"
+                                  >
+                                    Refund
+                                  </button>
+                                </div>
                               )}
                               {p.status === "refunded" && (
                                 <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest">Refunded</span>

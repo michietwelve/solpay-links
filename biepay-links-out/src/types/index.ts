@@ -2,7 +2,7 @@ import { z } from "zod";
 
 // ─── Token config ───────────────────────────────────────────────────────────
 
-export const SUPPORTED_TOKENS = ["SOL", "USDC", "USDT", "PUSD"] as const;
+export const SUPPORTED_TOKENS = ["SOL", "USDC", "USDT", "PUSD", "BONK", "WIF"] as const;
 export type SupportedToken = (typeof SUPPORTED_TOKENS)[number];
 
 export const TOKEN_MINT: Record<SupportedToken, string | null> = {
@@ -10,6 +10,8 @@ export const TOKEN_MINT: Record<SupportedToken, string | null> = {
   USDC: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU", // Official Devnet USDC
   USDT: "EJwZwpRvqiS86SAt9ikRWB9S5bwGrnF399qcSip8T6Y3", // Devnet USDT
   PUSD: "A9m2Vduv3mS88E3YvTuxm9E9Lh77Fq7rD176X8X9K8K", // Palm USD (Placeholder/Devnet)
+  BONK: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263", // Mainnet address as fallback for Jupiter
+  WIF:  "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm", // Mainnet address
 };
 
 export const TOKEN_DECIMALS: Record<SupportedToken, number> = {
@@ -17,6 +19,8 @@ export const TOKEN_DECIMALS: Record<SupportedToken, number> = {
   USDC: 6,
   USDT: 6,
   PUSD: 6,
+  BONK: 5,
+  WIF: 6,
 };
 
 // ─── Payment link model ──────────────────────────────────────────────────────

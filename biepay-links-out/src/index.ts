@@ -16,6 +16,7 @@ import merchantsRouter from "./routes/merchants";
 import analyticsRouter from "./routes/analytics";
 import debugRouter from "./routes/debug";
 import fulfillmentRouter from "./routes/fulfillment";
+import stealthRouter from "./routes/stealth";
 import { startEventListener } from "./lib/listener";
 
 const app = express();
@@ -93,6 +94,9 @@ app.use("/api/debug", debugRouter);
 
 // Fulfillment
 app.use("/api/fulfillment", fulfillmentRouter);
+
+// Stealth
+app.use("/api/stealth", stealthRouter);
 
 // ─── Health check ─────────────────────────────────────────────────────────
 

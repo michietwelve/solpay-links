@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import nacl from "tweetnacl";
 import bs58 from "bs58";
+import WebhookLogs from "./WebhookLogs";
 
 interface MerchantProfile {
   businessName: string | null;
@@ -279,6 +280,7 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
                     className="w-full p-5 bg-zinc-900/50 border border-zinc-800 text-white rounded-2xl text-sm font-mono focus:ring-2 focus:ring-white/10 outline-none transition-all"
                   />
                   
+                <WebhookLogs />
                   {profile?.webhookSecret && (
                     <div className="p-4 bg-zinc-950 rounded-2xl border border-white/5 space-y-3">
                       <div className="flex items-center justify-between">
@@ -474,6 +476,43 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
                   </div>
                 )}
               </div>
+
+              {/* Recovery Scanner */}
+              {stealthViewPubkey && (
+                <div className="pt-8 border-t border-purple-500/10 space-y-6">
+                  <div className="space-y-2">
+                    <h4 className="text-[10px] font-black text-purple-300 uppercase tracking-widest">Privacy Recovery Tool</h4>
+                    <p className="text-zinc-500 text-[10px] font-medium leading-relaxed">
+                      Funds sent via Umbra go to ephemeral addresses. Use your secret key to scan and sweep them.
+                    </p>
+                  </div>
+                  
+                  <div className="relative">
+                    <input 
+                      type="password"
+                      placeholder="Enter Stealth Secret Key to scan..."
+                      className="w-full p-4 bg-purple-500/5 border border-purple-500/20 rounded-2xl text-xs font-mono text-purple-200 outline-none focus:border-purple-500/40 transition-all placeholder:text-zinc-700"
+                      onChange={async (e) => {
+                        const sec = e.target.value.trim();
+                        if (sec.length > 40) { // basic b58 length check
+                          try {
+                            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/stealth/scan`, {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ stealthSecret: sec })
+                            });
+                            if (res.ok) {
+                              const balances = await res.json();
+                              // We can store these in local state to show a list of sweepable funds
+                              onNotify?.(`Found ${balances.length} sweepable stealth accounts.`, "info");
+                            }
+                          } catch (e) {}
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="p-8 bg-zinc-50 rounded-[2.5rem] border border-zinc-100 space-y-4">

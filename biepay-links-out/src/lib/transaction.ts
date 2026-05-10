@@ -15,6 +15,7 @@ import {
   createAssociatedTokenAccountInstruction,
   TOKEN_PROGRAM_ID,
   TOKEN_2022_PROGRAM_ID,
+  getMint,
 } from "@solana/spl-token";
 import { PaymentLink, TOKEN_MINT, TOKEN_DECIMALS } from "../types";
 import { buildStealthMemo } from "./stealth";
@@ -36,6 +37,49 @@ function buildMemoInstruction(text: string): TransactionInstruction {
     keys: [],
     programId: MEMO_PROGRAM_ID,
     data: Buffer.from(text, "utf-8"),
+  });
+}
+
+// ─── Jupiter Integration ──────────────────────────────────────────────────
+
+async function getJupiterQuote(inputMint: string, outputMint: string, amount: bigint, slippageBps: number) {
+  const url = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount.toString()}&slippageBps=${slippageBps}`;
+  console.log(`[Jupiter] Fetching quote: ${url}`);
+  const res = await fetch(url);
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Jupiter quote failed: ${err}`);
+  }
+  return res.json();
+}
+
+async function getJupiterSwapInstructions(quoteResponse: any, userPublicKey: string) {
+  const res = await fetch('https://quote-api.jup.ag/v6/swap-instructions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      quoteResponse,
+      userPublicKey,
+      wrapAndUnwrapSol: true,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Jupiter swap instructions failed: ${err}`);
+  }
+  return res.json();
+}
+
+function instructionDataToTxInstruction(ix: any): TransactionInstruction {
+  if (!ix) return null as any;
+  return new TransactionInstruction({
+    programId: new PublicKey(ix.programId),
+    keys: ix.accounts.map((acc: any) => ({
+      pubkey: new PublicKey(acc.pubkey),
+      isSigner: acc.isSigner,
+      isWritable: acc.isWritable,
+    })),
+    data: Buffer.from(ix.data, "base64"),
   });
 }
 
@@ -359,9 +403,63 @@ export async function buildPaymentTransaction(
   
   if (isJupiterSwap) {
     console.log(`[Jupiter] Preparing Any-to-Any swap from ${inputToken} to ${link.token}`);
-    // In a real implementation, we would hit Jupiter API here.
-    // For the hackathon demo, we will simulate the multi-instruction transaction
-    // as Jupiter swaps can be finicky on Devnet.
+    
+    const inputMint = inputToken === "SOL" ? "So11111111111111111111111111111111111111112" : TOKEN_MINT[inputToken as SupportedToken];
+    const outputMint = link.token === "SOL" ? "So11111111111111111111111111111111111111112" : TOKEN_MINT[link.token];
+    
+    if (!inputMint || !outputMint) throw new Error("Invalid token mint for swap");
+
+    try {
+      // 1. Get Quote
+      const quote = await getJupiterQuote(inputMint, outputMint, amountLamports, link.maxSlippageBps);
+      
+      // 2. Get Instructions
+      const {
+        computeBudgetInstructions,
+        setupInstructions,
+        swapInstruction,
+        cleanupInstruction,
+        addressLookupTableAddresses,
+      } = await getJupiterSwapInstructions(quote, payerWallet);
+
+      // 3. Update transaction building
+      // We will create a new transaction and add Jupiter instructions
+      const tx = new Transaction();
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+      tx.recentBlockhash = blockhash;
+      tx.lastValidBlockHeight = lastValidBlockHeight;
+      tx.feePayer = payer;
+
+      // Add Compute Budget
+      computeBudgetInstructions.forEach((ix: any) => tx.add(instructionDataToTxInstruction(ix)));
+      
+      // Add Setup
+      setupInstructions.forEach((ix: any) => tx.add(instructionDataToTxInstruction(ix)));
+      
+      // Add Swap
+      tx.add(instructionDataToTxInstruction(swapInstruction));
+      
+      // Add Cleanup
+      if (cleanupInstruction) tx.add(instructionDataToTxInstruction(cleanupInstruction));
+
+      // 4. Add the rest of BiePay logic (fees, memos, etc.)
+      // Note: Since Jupiter handled the swap, the "output" is now in the payer's ATA or wallet.
+      // We still need to transfer from payer to merchant.
+      
+      // We reuse the existing builders but they need to know they are part of a larger TX
+      // For now, let's just add the transfer instructions directly here.
+      
+      const transferTx = link.token === "SOL" 
+        ? await buildSolTransferTx(connection, payer, link, BigInt(quote.outAmount), referenceId, referrerWallet)
+        : await buildSplTransferTx(connection, payer, link, BigInt(quote.outAmount), outputMint, referenceId, referrerWallet);
+      
+      transferTx.instructions.forEach(ix => tx.add(ix));
+      
+      return { transaction: tx, amountHuman };
+    } catch (err) {
+      console.error("[Jupiter] Any-to-Any swap failed:", err);
+      throw new Error(`Swap failed: ${(err as Error).message}. Try paying in ${link.token} directly.`);
+    }
   }
 
   // 2. Handle Lootbox (1% chance to win free purchase)

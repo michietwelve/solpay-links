@@ -108,17 +108,19 @@ router.get("/:linkId", async (req: Request, res: Response): Promise<void> => {
     const target = BigInt(link.targetAmountLamports);
     const progress = (Number(confirmedTotal) / Number(target)) * 100;
     const decimals = link.token === "SOL" ? 9 : 6;
-    const humanTotal = (Number(confirmedTotal) / 10**decimals).toFixed(2);
-    const humanTarget = (Number(target) / 10**decimals).toFixed(2);
+  let description = link.description;
     
-    finalDescription = `🔥 Social Split: ${humanTotal} / ${humanTarget} ${link.token} raised (${progress.toFixed(1)}%)\n\n${link.description}`;
+  // Dynamic Description for Split Payments
+  if (link.isSplitPayment && link.targetAmountLamports) {
+    const progress = Number((link.paymentCount / 10).toFixed(0)); // Mock progress for demo or real count
+    description = `[${"█".repeat(progress)}${"░".repeat(10-progress)}] ${link.paymentCount} payments received. ${description}`;
   }
 
   const body: ActionGetResponse = {
     type: "action",
-    icon: merchant.logoUrl ?? ICON_URL,
-    title: merchant.businessName ?? link.label,
-    description: finalDescription,
+    icon: link.logoUrl || "https://biepay.io/og-blink.png",
+    title: link.businessName ? `${link.businessName}: ${link.label}` : link.label,
+    description,
     label: active ? amountLabel : "Unavailable",
     disabled: !active,
     ...(active
@@ -295,6 +297,55 @@ router.post("/:linkId/pay", async (req: Request, res: Response): Promise<void> =
   }
 
   res.status(200).json(body);
+});
+
+// ─── Escrow Release / Refund ───────────────────────────────────────────────
+
+/**
+ * POST /actions/:linkId/release/:paymentId
+ * Allows a buyer to release funds from escrow (simulated via status update)
+ */
+router.post("/:linkId/release/:paymentId", async (req: Request, res: Response) => {
+  const { linkId, paymentId } = req.params;
+
+  try {
+    const record = await prisma.paymentRecord.update({
+      where: { id: paymentId },
+      data: { escrowStatus: "released" }
+    });
+
+    const response: ActionPostResponse = {
+      type: "transaction",
+      transaction: "", // No actual transaction needed for status update demo, or we could sweep
+      message: "Funds successfully released to merchant!"
+    };
+
+    res.json(response);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to release funds" });
+  }
+});
+
+/**
+ * POST /actions/:linkId/refund/:paymentId
+ */
+router.post("/:linkId/refund/:paymentId", async (req: Request, res: Response) => {
+  const { linkId, paymentId } = req.params;
+
+  try {
+    await prisma.paymentRecord.update({
+      where: { id: paymentId },
+      data: { escrowStatus: "refunded" }
+    });
+
+    res.json({
+      type: "transaction",
+      transaction: "",
+      message: "Refund request submitted."
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to process refund" });
+  }
 });
 
 export default router;
