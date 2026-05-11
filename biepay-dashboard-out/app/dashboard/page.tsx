@@ -1003,22 +1003,27 @@ export default function DashboardPage() {
                 { label: "Upload Storefront Logo", done: !!profile?.logoUrl, icon: "M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" },
                 { label: "Configure Webhooks", done: !!profile?.webhookUrl, icon: "M13 10V3L4 14h7v7l9-11h-7z" }
               ].map((item, i) => (
-                <div key={i} className={`p-4 rounded-2xl border transition-all ${item.done ? 'bg-zinc-900 border-zinc-800' : 'bg-white/5 border-white/5 hover:border-white/20'}`}>
+                <button 
+                  key={i} 
+                  onClick={() => setModal("settings")}
+                  className={`p-4 rounded-2xl border transition-all text-left group ${item.done ? 'bg-zinc-900 border-zinc-800 opacity-60' : 'bg-white/5 border-white/5 hover:border-white/20 hover:scale-[1.02]'}`}
+                >
                   <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${item.done ? 'bg-emerald-500 text-white' : 'bg-zinc-800 text-zinc-500'}`}>
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110 ${item.done ? 'bg-emerald-500 text-white' : 'bg-zinc-800 text-zinc-500'}`}>
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={item.icon} /></svg>
                     </div>
                     <span className={`text-[11px] font-black uppercase tracking-tight ${item.done ? 'text-zinc-400 line-through' : 'text-white'}`}>{item.label}</span>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
             <div className="pt-2">
               <button 
-                onClick={() => setActiveTab("settings")}
-                className="text-[10px] font-black text-amber-500 hover:text-amber-400 uppercase tracking-[0.2em] transition-colors"
+                onClick={() => setModal("settings")}
+                className="text-[10px] font-black text-amber-500 hover:text-amber-400 uppercase tracking-[0.2em] transition-colors py-2 group flex items-center gap-2"
               >
-                Go to Settings &rarr;
+                <span>Go to Settings</span>
+                <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
               </button>
             </div>
           </div>
