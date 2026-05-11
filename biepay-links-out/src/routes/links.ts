@@ -13,6 +13,7 @@ import { CreateLinkSchema } from "../types";
 import { actionError } from "../middleware/actions";
 import { requireAuth, AuthenticatedRequest } from "../middleware/auth";
 import { prisma } from "../lib/db";
+import { buildEscrowSettlementTransaction, serialiseTransaction } from "../lib/transaction";
 
 const router = Router();
 const API_BASE = process.env.API_BASE_URL ?? "http://localhost:3000";
@@ -559,6 +560,121 @@ router.post("/:id/payments/:paymentId/refund-confirm", requireAuth, async (req: 
     res.json({ success: true, payment });
   } catch (err) {
     res.status(500).json({ message: "Failed to update payment status" });
+  }
+});
+
+// ─── ESCROW SETTLEMENT ────────────────────────────────────────────────────
+
+// GET /api/links/escrow/active
+router.get("/escrow/active", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  const allowedIds = req.user?.allowedIds || [];
+  try {
+    const escrows = await prisma.paymentRecord.findMany({
+      where: {
+        escrowStatus: "locked",
+        link: {
+          merchantId: { in: allowedIds }
+        }
+      },
+      include: { link: { select: { label: true, recipientWallet: true } } },
+      orderBy: { createdAt: "desc" }
+    });
+    res.json(escrows);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch active escrows" });
+  }
+});
+
+// POST /api/links/escrow/release
+router.post("/escrow/release", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  const { recordId } = req.body;
+  if (!recordId) return res.status(400).json({ message: "Record ID required" });
+
+  try {
+    const record = await prisma.paymentRecord.findUnique({
+      where: { id: recordId as string },
+      include: { link: true }
+    });
+
+    if (!record || record.escrowStatus !== "locked") {
+      return res.status(404).json({ message: "Locked escrow record not found" });
+    }
+
+    // Auth check: only the merchant can release to themselves
+    if (!req.user?.allowedIds.includes(record.link.merchantId)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    const connection = new Connection(process.env.RPC_ENDPOINT || "https://api.devnet.solana.com", "confirmed");
+    const tx = await buildEscrowSettlementTransaction(
+      connection,
+      req.user.allowedIds[0], // Payer for the settlement TX fees
+      record.link.recipientWallet,
+      record.token,
+      BigInt(record.amountLamports),
+      "release"
+    );
+
+    // Note: Since the Escrow wallet is server-side, the server already partially signed it.
+    // The merchant (front-end) will sign the fee payment.
+    
+    // In a real production app, we would broadcast it ourselves if we pay the fees.
+    // For now, we return it to the dashboard to sign and send.
+    
+    res.json({ transaction: serialiseTransaction(tx) });
+
+    // We optimisticly mark it as released for the hackathon demo, 
+    // but in production we'd wait for the signature on-chain.
+    await prisma.paymentRecord.update({
+      where: { id: recordId as string },
+      data: { escrowStatus: "released" }
+    });
+
+  } catch (err) {
+    console.error("[escrow] Release failed:", err);
+    res.status(500).json({ message: "Release failed" });
+  }
+});
+
+// POST /api/links/escrow/refund
+router.post("/escrow/refund", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  const { recordId } = req.body;
+  if (!recordId) return res.status(400).json({ message: "Record ID required" });
+
+  try {
+    const record = await prisma.paymentRecord.findUnique({
+      where: { id: recordId as string },
+      include: { link: true }
+    });
+
+    if (!record || record.escrowStatus !== "locked") {
+      return res.status(404).json({ message: "Locked escrow record not found" });
+    }
+
+    // Auth check
+    if (!req.user?.allowedIds.includes(record.link.merchantId)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    const connection = new Connection(process.env.RPC_ENDPOINT || "https://api.devnet.solana.com", "confirmed");
+    const tx = await buildEscrowSettlementTransaction(
+      connection,
+      req.user.allowedIds[0],
+      record.payerWallet,
+      record.token,
+      BigInt(record.amountLamports),
+      "refund"
+    );
+
+    res.json({ transaction: serialiseTransaction(tx) });
+
+    await prisma.paymentRecord.update({
+      where: { id: recordId as string },
+      data: { escrowStatus: "refunded" }
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: "Refund failed" });
   }
 });
 

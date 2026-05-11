@@ -1,89 +1,61 @@
 import { Router, Request, Response } from "express";
-import { PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import nacl from "tweetnacl";
 import bs58 from "bs58";
-import { prisma } from "../lib/db";
+import { PrismaClient } from "@prisma/client";
 
 const router = Router();
+const prisma = new PrismaClient();
 
-/**
- * POST /api/fulfillment/claim
- * Verifies that a wallet owns a payment for a specific link.
- * Body: { 
- *   linkId: string, 
- *   publicKey: string, 
- *   signature: string, (base58 signature of the message "BiePay Fulfillment: [linkId]")
- * }
- */
+// POST /api/fulfillment/claim
 router.post("/claim", async (req: Request, res: Response) => {
   const { linkId, publicKey, signature } = req.body;
 
   if (!linkId || !publicKey || !signature) {
-    res.status(400).json({ message: "Missing required fields: linkId, publicKey, signature" });
-    return;
+    return res.status(400).json({ message: "Missing required fields" });
   }
 
   try {
-    const pubkey = new PublicKey(publicKey);
-    
-    // 1. Verify the signature
+    // 1. Verify Signature
     const message = `BiePay Fulfillment: ${linkId}`;
-    const messageBytes = new TextEncoder().encode(message);
-    const signatureBytes = bs58.decode(signature);
-    const publicKeyBytes = pubkey.toBytes();
-
-    const isValid = nacl.sign.detached.verify(
-      messageBytes,
-      signatureBytes,
-      publicKeyBytes
+    const verified = nacl.sign.detached.verify(
+      new TextEncoder().encode(message),
+      bs58.decode(signature),
+      bs58.decode(publicKey)
     );
 
-    if (!isValid) {
-      res.status(401).json({ message: "Invalid signature. Ownership proof failed." });
-      return;
+    if (!verified) {
+      return res.status(401).json({ message: "Invalid signature proof" });
     }
 
-    // 2. Check if this wallet has a confirmed payment for this link
-    const payment = await prisma.paymentRecord.findFirst({
+    // 2. Check if payment exists for this user and link
+    // Note: In a production environment, we would look up the actual transaction signature associated with this wallet.
+    // For the hackathon, we verify if there's a successful transaction recorded for this link.
+    const payment = await prisma.transaction.findFirst({
       where: {
         linkId,
-        payerWallet: publicKey,
-        status: "confirmed"
+        sender: publicKey,
+        status: "success"
       }
     });
 
     if (!payment) {
-      // Check if the wallet is the RECIPIENT (merchant can always access their own link assets)
-      const link = await prisma.paymentLink.findUnique({ where: { id: linkId } });
-      if (link && link.recipientWallet === publicKey) {
-        res.json({ 
-          success: true, 
-          assetUrl: link.digitalAssetUrl,
-          isMerchant: true 
-        });
-        return;
-      }
-
-      res.status(403).json({ message: "No confirmed payment found for this wallet on this link." });
-      return;
+      return res.status(403).json({ message: "No successful payment found for this wallet." });
     }
 
-    // 3. Return the asset URL
-    const link = await prisma.paymentLink.findUnique({ where: { id: linkId } });
-    if (!link) {
-      res.status(444).json({ message: "Link data lost." });
-      return;
-    }
-
-    res.json({ 
-      success: true, 
-      assetUrl: link.digitalAssetUrl,
-      paymentId: payment.id 
+    // 3. Get the link data for fulfillment
+    const link = await prisma.paymentLink.findUnique({
+      where: { id: linkId }
     });
 
+    if (!link || !link.fulfillmentUrl) {
+      return res.status(404).json({ message: "No digital asset associated with this link." });
+    }
+
+    res.json({ assetUrl: link.fulfillmentUrl });
   } catch (err) {
-    console.error("[fulfillment] Claim error:", err);
-    res.status(500).json({ message: "Internal server error during verification." });
+    console.error("[fulfillment] Claim failed:", err);
+    res.status(500).json({ message: "Verification failed." });
   }
 });
 

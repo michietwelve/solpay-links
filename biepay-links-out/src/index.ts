@@ -37,7 +37,7 @@ app.set("trust proxy", 1);
 // ─── Global middleware ────────────────────────────────────────────────────
 
 app.use(morgan("dev"));
-app.use(express.json());
+app.use(express.json({ limit: "5mb" }));
 
 // Enable standard CORS for all origins (Crucial for Vercel -> Railway communication)
 app.use(cors());

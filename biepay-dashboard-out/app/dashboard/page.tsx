@@ -1025,7 +1025,7 @@ export default function DashboardPage() {
         )}
 
         {/* Stats Bar */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="premium-card p-6 space-y-1">
             <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Available Balance</p>
             <div className="flex items-baseline gap-2">
@@ -1039,6 +1039,11 @@ export default function DashboardPage() {
             <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Lifetime Value</p>
             <h3 className="text-2xl font-black tracking-tighter">{isIncognito ? "••••" : `$${stats.totalVolume.toLocaleString()}`}</h3>
             <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-tighter">Gross Revenue</p>
+          </div>
+          <div className="premium-card p-6 space-y-1">
+            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Customer Conversion</p>
+            <h3 className="text-2xl font-black tracking-tighter">{isIncognito ? "••••" : `${stats.conversionRate.toFixed(1)}%`}</h3>
+            <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tighter">{stats.totalViews.toLocaleString()} unique views</p>
           </div>
           <div className="premium-card p-6 space-y-1">
             <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Payments Received</p>

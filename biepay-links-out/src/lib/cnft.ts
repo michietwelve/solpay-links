@@ -65,9 +65,10 @@ export async function mintLoyaltyReceipt(
     const result = await mintV1(umi, {
       leafOwner: publicKey(receiver),
       merkleTree: publicKey(merkleTreeStr),
+      collection: process.env.PLATFORM_COLLECTION_MINT ? publicKey(process.env.PLATFORM_COLLECTION_MINT) : null,
       metadata: {
         ...metadata,
-        collection: null,
+        collection: process.env.PLATFORM_COLLECTION_MINT ? { key: publicKey(process.env.PLATFORM_COLLECTION_MINT), verified: false } : null,
       },
     }).sendAndConfirm(umi);
 

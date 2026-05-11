@@ -16,7 +16,7 @@ import type {
   ActionPostResponse,
   ActionParameter,
 } from "../types";
-import { detectLocalCurrency, getFiatEquivalent } from "../lib/fx";
+import { detectLocalCurrency, getFiatEquivalent, PPP_MULTIPLIER } from "../lib/fx";
 
 const router = Router();
 
@@ -44,6 +44,12 @@ router.get("/:linkId", async (req: Request, res: Response): Promise<void> => {
     actionError(res, 404, "Merchant profile not found.");
     return;
   }
+
+  // 0. Increment View Count for Analytics
+  await prisma.paymentLink.update({
+    where: { id: linkId },
+    data: { viewCount: { increment: 1 } }
+  });
 
   const { active, reason } = getLinkStatus(link);
 
@@ -169,7 +175,11 @@ router.post("/:linkId/pay", async (req: Request, res: Response): Promise<void> =
   // 3. Resolve amount (fixed from link, or provided by user)
   let amountBaseUnits: bigint;
   try {
-    amountBaseUnits = resolveAmount(link, amount);
+    const userRegion = (req.headers["x-vercel-ip-country"] as string) || "NG";
+    const localCurrency = detectLocalCurrency(userRegion);
+    const pppMultiplier = PPP_MULTIPLIER[localCurrency] || 1.0;
+    
+    amountBaseUnits = resolveAmount(link, amount, pppMultiplier);
   } catch (err) {
     actionError(res, 400, (err as Error).message);
     return;

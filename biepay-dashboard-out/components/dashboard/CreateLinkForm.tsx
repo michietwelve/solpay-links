@@ -28,12 +28,11 @@ interface FormState {
   targetAmount: string;
   isRoundupEnabled: boolean;
   roundupVaultAddress: string;
-  isLootboxEnabled: boolean;
-  cashbackBps: string;
-  referralBps: string;
-  discountBps: string;
-  maxSlippageBps: string;
   isStealthEnabled: boolean;
+  isEscrowEnabled: boolean;
+  isLootboxEnabled: boolean;
+  tippingPointCount: string;
+  tippingPointAmount: string;
 }
 
 const INITIAL: FormState = {
@@ -52,12 +51,11 @@ const INITIAL: FormState = {
   targetAmount: "",
   isRoundupEnabled: false,
   roundupVaultAddress: "",
-  isLootboxEnabled: false,
-  cashbackBps: "",
-  referralBps: "",
-  discountBps: "",
-  maxSlippageBps: "50",
   isStealthEnabled: false,
+  isEscrowEnabled: false,
+  isLootboxEnabled: false,
+  tippingPointCount: "",
+  tippingPointAmount: "",
 };
 
 export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
@@ -149,6 +147,10 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
         discountBps: formData.discountBps ? parseInt(formData.discountBps) : undefined,
         maxSlippageBps: formData.maxSlippageBps ? parseInt(formData.maxSlippageBps) : undefined,
         isStealthEnabled: formData.isStealthEnabled,
+        isEscrowEnabled: formData.isEscrowEnabled,
+        isLootboxEnabled: formData.isLootboxEnabled,
+        tippingPointCount: formData.tippingPointCount ? parseInt(formData.tippingPointCount) : undefined,
+        tippingPointAmount: formData.tippingPointAmount ? parseFloat(formData.tippingPointAmount) : undefined,
       });
       onSuccess(result);
     } catch (err) {
@@ -260,6 +262,85 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
             </div>
             <p className="text-[9px] text-zinc-500 font-medium leading-tight">Accept multiple contributions towards a target.</p>
           </div>
+
+          <div 
+            onClick={toggleField("isEscrowEnabled")}
+            className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${formData.isEscrowEnabled ? 'border-amber-500 bg-amber-50' : 'border-zinc-100 bg-zinc-50 hover:border-zinc-200'}`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-black uppercase tracking-tight text-zinc-900">Escrow Security</span>
+              <div className={`w-2 h-2 rounded-full ${formData.isEscrowEnabled ? 'bg-amber-500' : 'bg-zinc-300'}`} />
+            </div>
+            <p className="text-[9px] text-zinc-500 font-medium leading-tight">Lock funds until product delivery is confirmed.</p>
+          </div>
+
+          <div 
+            onClick={toggleField("isLootboxEnabled")}
+            className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${formData.isLootboxEnabled ? 'border-blue-500 bg-blue-50' : 'border-zinc-100 bg-zinc-50 hover:border-zinc-200'}`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-black uppercase tracking-tight text-zinc-900">Lootbox Luck</span>
+              <div className={`w-2 h-2 rounded-full ${formData.isLootboxEnabled ? 'bg-blue-500' : 'bg-zinc-300'}`} />
+            </div>
+            <p className="text-[9px] text-zinc-500 font-medium leading-tight">1% chance for customers to get the item for free.</p>
+          </div>
+
+          <div 
+            onClick={toggleField("isRoundupEnabled")}
+            className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${formData.isRoundupEnabled ? 'border-rose-500 bg-rose-50' : 'border-zinc-100 bg-zinc-50 hover:border-zinc-200'}`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-black uppercase tracking-tight text-zinc-900">Savings Round-Up</span>
+              <div className={`w-2 h-2 rounded-full ${formData.isRoundupEnabled ? 'bg-rose-500' : 'bg-zinc-300'}`} />
+            </div>
+            <p className="text-[9px] text-zinc-500 font-medium leading-tight">Automatically round up payments to your treasury.</p>
+          </div>
+        </div>
+
+        {formData.isRoundupEnabled && (
+          <div className="mt-4 p-4 bg-rose-50 border border-rose-100 rounded-2xl space-y-2 animate-in slide-in-from-top-2">
+            <label className="text-[9px] font-black text-rose-900 uppercase tracking-widest pl-1">Round-Up Vault Address</label>
+            <input 
+              placeholder="Vault wallet address"
+              className="w-full p-3 bg-white border border-rose-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-rose-500 outline-none transition-all"
+              value={formData.roundupVaultAddress}
+              onChange={setField("roundupVaultAddress")}
+            />
+          </div>
+        )}
+
+        <div 
+          onClick={() => setFormData(prev => ({ ...prev, tippingPointCount: prev.tippingPointCount ? "" : "10" }))}
+          className={`mt-4 p-4 rounded-2xl border-2 cursor-pointer transition-all ${formData.tippingPointCount ? 'border-indigo-500 bg-indigo-50' : 'border-zinc-100 bg-zinc-50 hover:border-zinc-200'}`}
+        >
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] font-black uppercase tracking-tight text-zinc-900">Tipping Point (Group Buy)</span>
+            <div className={`w-2 h-2 rounded-full ${formData.tippingPointCount ? 'bg-indigo-500' : 'bg-zinc-300'}`} />
+          </div>
+          <p className="text-[9px] text-zinc-500 font-medium leading-tight">Unlock a discount once enough people buy.</p>
+          
+          {formData.tippingPointCount && (
+            <div className="mt-4 grid grid-cols-2 gap-4 animate-in slide-in-from-top-2">
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-indigo-900 uppercase tracking-widest">Buyer Threshold</label>
+                <input 
+                  placeholder="e.g. 50"
+                  className="w-full p-3 bg-white border border-indigo-200 rounded-xl text-xs font-bold"
+                  value={formData.tippingPointCount}
+                  onChange={setField("tippingPointCount")}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-indigo-900 uppercase tracking-widest">Reduced Price</label>
+                <input 
+                  placeholder="e.g. 5.00"
+                  className="w-full p-3 bg-white border border-indigo-200 rounded-xl text-xs font-bold"
+                  value={formData.tippingPointAmount}
+                  onChange={setField("tippingPointAmount")}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {formData.isSplitPayment && (

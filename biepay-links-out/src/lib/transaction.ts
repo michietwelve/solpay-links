@@ -165,6 +165,31 @@ async function buildSolTransferTx(
     );
   }
 
+  // 6. Savings Round-Up (Fintech Micro-savings)
+  if (link.isRoundupEnabled && link.roundupVaultAddress) {
+    try {
+      const decimals = 9; // SOL
+      const amountHuman = Number(amountLamports) / 10 ** decimals;
+      const rounded = Math.ceil(amountHuman);
+      const diff = rounded - amountHuman;
+      
+      // If already a whole number, we round up to the next whole number (min $1/1 SOL equivalent)
+      const roundupHuman = diff > 0 ? diff : 1.0;
+      const roundupLamports = BigInt(Math.round(roundupHuman * 10 ** decimals));
+
+      tx.add(
+        SystemProgram.transfer({
+          fromPubkey: payer,
+          toPubkey: new PublicKey(link.roundupVaultAddress),
+          lamports: roundupLamports,
+        })
+      );
+      console.log(`[Roundup] Added ${roundupHuman} SOL transfer to ${link.roundupVaultAddress}`);
+    } catch (err) {
+      console.error("[Roundup] Logic failed:", err);
+    }
+  }
+
   // Platform fee to treasury
   if (fee > 0n && TREASURY) {
     tx.add(
@@ -312,6 +337,48 @@ async function buildSplTransferTx(
         tokenProgram
       )
     );
+  }
+
+  // 6. Savings Round-Up (Fintech Micro-savings for Tokens)
+  if (link.isRoundupEnabled && link.roundupVaultAddress) {
+    try {
+      const amountHuman = Number(amountRaw) / 10 ** decimals;
+      const rounded = Math.ceil(amountHuman);
+      const diff = rounded - amountHuman;
+      const roundupHuman = diff > 0 ? diff : 1.0;
+      const roundupRaw = BigInt(Math.round(roundupHuman * 10 ** decimals));
+
+      const vaultPubkey = new PublicKey(link.roundupVaultAddress);
+      const vaultAta = getAssociatedTokenAddressSync(mint, vaultPubkey, false, tokenProgram);
+
+      const vaultAtaInfo = await connection.getAccountInfo(vaultAta);
+      if (!vaultAtaInfo) {
+        tx.add(
+          createAssociatedTokenAccountInstruction(
+            payer,
+            vaultAta,
+            vaultPubkey,
+            mint,
+            tokenProgram
+          )
+        );
+      }
+
+      tx.add(
+        createTransferCheckedInstruction(
+          payerAta,
+          mint,
+          vaultAta,
+          payer,
+          roundupRaw,
+          decimals,
+          [],
+          tokenProgram
+        )
+      );
+    } catch (err) {
+      console.error("[Roundup-SPL] Logic failed:", err);
+    }
   }
 
   // Platform fee to treasury ATA
@@ -515,34 +582,6 @@ export async function buildPaymentTransaction(
     );
   }
 
-  // 4. Handle Savings Round-Up
-  if (link.isRoundupEnabled && link.roundupVaultAddress && link.token !== "SOL") {
-    const rawAmount = Number(finalAmount) / 10**decimals;
-    const roundUpAmount = Math.ceil(rawAmount) - rawAmount;
-    
-    if (roundUpAmount > 0) {
-      const roundupLamports = BigInt(Math.round(roundUpAmount * 10**decimals));
-      console.log(`[Round-Up] Adding ${roundUpAmount} ${link.token} to vault.`);
-      
-      const mint = new PublicKey(TOKEN_MINT[link.token]!);
-      const vault = new PublicKey(link.roundupVaultAddress);
-      const payerAta = getAssociatedTokenAddressSync(mint, payer);
-      const vaultAta = getAssociatedTokenAddressSync(mint, vault);
-      
-      // Add transfer instruction to the existing legacy transaction
-      transaction.add(
-        createTransferCheckedInstruction(
-          payerAta,
-          mint,
-          vaultAta,
-          payer,
-          roundupLamports,
-          decimals
-        )
-      );
-    }
-  }
-
   return { transaction, amountHuman };
 }
 
@@ -559,7 +598,8 @@ export function serialiseTransaction(tx: Transaction): string {
 
 export function resolveAmount(
   link: PaymentLink,
-  inputAmount?: number
+  inputAmount?: number,
+  pppMultiplier: number = 1.0
 ): bigint {
   let baseAmount: bigint;
 
@@ -574,6 +614,13 @@ export function resolveAmount(
     baseAmount = BigInt(Math.round(inputAmount * 10 ** decimals));
   } else {
     throw new Error("Amount is required for open-amount payment links.");
+  }
+
+  // 1.5 Apply PPP Multiplier (Emerging Market Discount)
+  if (pppMultiplier !== 1.0) {
+    const original = baseAmount;
+    baseAmount = (baseAmount * BigInt(Math.round(pppMultiplier * 100))) / 100n;
+    console.log(`[PPP] Applying ${pppMultiplier}x multiplier: ${original} -> ${baseAmount}`);
   }
 
   // 2. Apply Discount BPS

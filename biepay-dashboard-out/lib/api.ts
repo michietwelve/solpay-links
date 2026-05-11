@@ -179,6 +179,8 @@ export interface DashboardStats {
   totalPayments: number;
   activeLinks: number;
   platformFees: number;
+  totalViews: number;
+  conversionRate: number;
 }
 
 export function getEffectiveStatus(link: PaymentLink): LinkStatus {
@@ -215,11 +217,13 @@ export function computeStats(links: PaymentLink[], solPrice = 140): DashboardSta
   let totalVolumeLamports = 0;
   let totalPayments = 0;
   let activeLinks = 0;
+  let totalViews = 0;
 
   for (const l of links) {
     const status = getEffectiveStatus(l);
     if (status === "active") activeLinks++;
     totalPayments += l.paymentCount;
+    totalViews += (l.viewCount || 0);
 
     if (l.amountLamports !== null) {
       const perPayment = Number(l.amountLamports);
@@ -231,11 +235,15 @@ export function computeStats(links: PaymentLink[], solPrice = 140): DashboardSta
     }
   }
 
+  const conversionRate = totalViews > 0 ? (totalPayments / totalViews) * 100 : 0;
+
   return {
     totalVolume: totalVolumeLamports,
     totalPayments,
     activeLinks,
     platformFees: (totalVolumeLamports * FEE_BPS) / 10_000,
+    totalViews,
+    conversionRate,
   };
 }
 
