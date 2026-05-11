@@ -77,8 +77,8 @@ router.get("/:linkId", async (req: Request, res: Response): Promise<void> => {
     isSplitPayment: link.isSplitPayment,
     targetAmountLamports: link.targetAmountLamports,
     currentAmountLamports: link.payments
-      .filter(p => p.status === "confirmed")
-      .reduce((sum, p) => sum + BigInt(p.amountLamports), 0n)
+      .filter((p: any) => p.status === "confirmed")
+      .reduce((sum: bigint, p: any) => sum + BigInt(p.amountLamports), 0n)
       .toString(),
   });
 });

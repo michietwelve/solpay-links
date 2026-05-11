@@ -195,7 +195,7 @@ router.post("/:linkId/pay", async (req: Request, res: Response): Promise<void> =
     }
   });
 
-  const totalToday = todaysPayments.reduce((sum, p) => sum + BigInt(p.amountLamports), 0n);
+  const totalToday = todaysPayments.reduce((sum: bigint, p: any) => sum + BigInt(p.amountLamports), 0n);
   const limit = BigInt(1000 * 10**6); // Default 1000 USDC cap for demo
   
   if (totalToday + amountBaseUnits > limit) {
@@ -208,8 +208,8 @@ router.post("/:linkId/pay", async (req: Request, res: Response): Promise<void> =
     const payments = await getPaymentsForLink(linkId);
     const FIVE_MINS_AGO = new Date(Date.now() - 5 * 60 * 1000);
     const activeTotal = payments
-      .filter(p => p.status === "confirmed" || (p.status === "pending" && new Date(p.createdAt) >= FIVE_MINS_AGO))
-      .reduce((sum, p) => sum + BigInt(p.amountLamports), 0n);
+      .filter((p: any) => p.status === "confirmed" || (p.status === "pending" && new Date(p.createdAt) >= FIVE_MINS_AGO))
+      .reduce((sum: bigint, p: any) => sum + BigInt(p.amountLamports), 0n);
     
     const target = BigInt(link.targetAmountLamports);
     if (activeTotal >= target) {

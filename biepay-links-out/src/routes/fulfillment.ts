@@ -29,13 +29,11 @@ router.post("/claim", async (req: Request, res: Response) => {
     }
 
     // 2. Check if payment exists for this user and link
-    // Note: In a production environment, we would look up the actual transaction signature associated with this wallet.
-    // For the hackathon, we verify if there's a successful transaction recorded for this link.
-    const payment = await prisma.transaction.findFirst({
+    const payment = await prisma.paymentRecord.findFirst({
       where: {
         linkId,
-        sender: publicKey,
-        status: "success"
+        payerWallet: publicKey,
+        status: "confirmed"
       }
     });
 
@@ -48,11 +46,11 @@ router.post("/claim", async (req: Request, res: Response) => {
       where: { id: linkId }
     });
 
-    if (!link || !link.fulfillmentUrl) {
+    if (!link || !link.digitalAssetUrl) {
       return res.status(404).json({ message: "No digital asset associated with this link." });
     }
 
-    res.json({ assetUrl: link.fulfillmentUrl });
+    res.json({ assetUrl: link.digitalAssetUrl });
   } catch (err) {
     console.error("[fulfillment] Claim failed:", err);
     res.status(500).json({ message: "Verification failed." });
