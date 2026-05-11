@@ -298,7 +298,7 @@ router.post("/:linkId/release/:paymentId", async (req: Request, res: Response) =
   try {
     if (!account) throw new Error("Wallet account required");
     
-    const record = await prisma.paymentRecord.findUnique({ where: { id: paymentId }, include: { link: true }});
+    const record = await prisma.paymentRecord.findUnique({ where: { id: paymentId as string }, include: { link: true }}) as any;
     if (!record) throw new Error("Payment not found");
     if (record.escrowStatus !== "locked") throw new Error("Payment is not locked in escrow");
 
@@ -339,7 +339,7 @@ router.post("/:linkId/refund/:paymentId", async (req: Request, res: Response) =>
   try {
     if (!account) throw new Error("Wallet account required");
 
-    const record = await prisma.paymentRecord.findUnique({ where: { id: paymentId }, include: { link: true }});
+    const record = await prisma.paymentRecord.findUnique({ where: { id: paymentId as string }, include: { link: true }}) as any;
     if (!record) throw new Error("Payment not found");
     if (record.escrowStatus !== "locked") throw new Error("Payment is not locked in escrow");
 
