@@ -81,6 +81,7 @@ export interface MerchantProfile {
   isPro: boolean;
   createdAt: Date;
   updatedAt: Date;
+  network: string;               // "devnet" | "mainnet"
 
   // Umbra Stealth Identity
   stealthViewPubkey: string | null;
@@ -96,6 +97,7 @@ export interface PaymentRecord {
   token: SupportedToken;
   signature: string | null;      // filled when confirmed
   status: "pending" | "confirmed" | "failed";
+  escrowStatus: "none" | "locked" | "released" | "refunded" | null;
   createdAt: Date;
   confirmedAt: Date | null;
 }
@@ -153,6 +155,7 @@ export const UpdateMerchantProfileSchema = z.object({
   snsDomain: z.string().optional().nullable(),
   isPro: z.boolean().optional(),
   stealthViewPubkey: z.string().optional().nullable(),
+  network: z.enum(["devnet", "mainnet"]).optional(),
 });
 
 export type UpdateMerchantProfileInput = z.infer<typeof UpdateMerchantProfileSchema>;
