@@ -33,6 +33,10 @@ interface FormState {
   isLootboxEnabled: boolean;
   tippingPointCount: string;
   tippingPointAmount: string;
+  cashbackBps: string;
+  referralBps: string;
+  discountBps: string;
+  maxSlippageBps: string;
 }
 
 const INITIAL: FormState = {
@@ -56,6 +60,10 @@ const INITIAL: FormState = {
   isLootboxEnabled: false,
   tippingPointCount: "",
   tippingPointAmount: "",
+  cashbackBps: "",
+  referralBps: "",
+  discountBps: "",
+  maxSlippageBps: "",
 };
 
 export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
