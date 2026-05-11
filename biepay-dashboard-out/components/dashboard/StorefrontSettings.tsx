@@ -307,6 +307,28 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
                     </div>
                   )}
                 </div>
+                
+                <div className="pt-6 border-t border-white/5 space-y-4">
+                  <div className="flex items-center justify-between px-1">
+                    <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Institutional Security</h4>
+                    <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[8px] font-black rounded border border-emerald-500/30 uppercase tracking-widest">Self-Custody</span>
+                  </div>
+                  
+                  <div className="p-6 bg-zinc-900 rounded-3xl border border-white/5 space-y-4">
+                    <p className="text-zinc-500 text-[10px] font-medium leading-relaxed">
+                      Your embedded wallet is secured by Privy. You can export your private key at any time to import it into Phantom or Solflare.
+                    </p>
+                    <button 
+                      onClick={onExport}
+                      className="w-full py-4 bg-white/5 border border-white/10 text-white font-black text-xs uppercase tracking-[0.2em] rounded-xl hover:bg-white/10 transition-all flex items-center justify-center gap-3 group"
+                    >
+                      <svg className="w-4 h-4 text-[#c5a36e] group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                      </svg>
+                      Export Private Key
+                    </button>
+                  </div>
+                </div>
 
                 <div className="pt-8 border-t border-white/5 space-y-6">
                   <div className="space-y-4">
@@ -326,9 +348,12 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
                     </div>
 
                     {profile.isPro ? (
-                      <div className="w-full py-4 bg-zinc-800 text-zinc-400 font-black text-xs uppercase tracking-[0.2em] rounded-xl text-center border border-zinc-700">
+                      <button 
+                        className="w-full py-4 bg-zinc-800 text-zinc-400 font-black text-xs uppercase tracking-[0.2em] rounded-xl text-center border border-zinc-700 hover:bg-zinc-700 hover:text-white transition-all"
+                        onClick={() => onNotify?.("You are a BiePay Pro member. Enjoy 0% fees!", "info")}
+                      >
                         Pro Unlocked
-                      </div>
+                      </button>
                     ) : (
                       <button 
                         className="w-full py-4 bg-[#c5a36e] text-black font-black text-xs uppercase tracking-[0.2em] rounded-xl hover:bg-[#d4b98c] transition-all shadow-[0_10px_30px_rgba(197,163,110,0.25)] hover:shadow-[0_15px_40px_rgba(197,163,110,0.35)] hover:-translate-y-0.5 active:translate-y-0"
@@ -346,19 +371,33 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
               </div>
             </div>
 
-            <div className="p-8 bg-red-50/50 rounded-[2.5rem] border border-red-100 shadow-sm group hover:bg-red-50 transition-colors">
+            <div className="p-8 bg-red-50/50 rounded-[2.5rem] border border-red-100 shadow-sm group hover:bg-red-50 transition-colors relative overflow-hidden">
               <h4 className="text-red-900 text-sm font-black tracking-tight mb-2">Danger Zone</h4>
               <p className="text-red-500 text-[10px] font-bold uppercase tracking-[0.15em] mb-6">Irreversible Account Deletion</p>
-              <button 
-                onClick={() => {
-                  if (confirm("Are you sure you want to permanently delete your merchant account and all associated payment links? This cannot be undone.")) {
-                    onDelete?.();
-                  }
-                }}
-                className="w-full p-5 bg-white border border-red-200 text-red-600 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-red-600 hover:text-white transition-all shadow-lg hover:shadow-red-200"
-              >
-                Purge Merchant Data
-              </button>
+              
+              <div className="space-y-4">
+                <p className="text-[10px] text-red-900/60 font-medium leading-relaxed px-1">
+                  Are you sure you want to permanently delete your merchant account and all associated payment links? This cannot be undone.
+                </p>
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => {
+                      if (confirm("FINAL WARNING: This will delete everything. Proceed?")) {
+                        onDelete?.();
+                      }
+                    }}
+                    className="flex-[2] p-5 bg-red-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-red-700 transition-all shadow-lg shadow-red-200 active:scale-[0.98]"
+                  >
+                    Confirm Deletion
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab("brand")}
+                    className="flex-1 p-5 bg-white border border-zinc-200 text-zinc-400 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-zinc-50 transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         ) : (
