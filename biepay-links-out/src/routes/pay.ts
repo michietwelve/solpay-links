@@ -71,7 +71,15 @@ router.get("/:linkId", async (req: Request, res: Response): Promise<void> => {
       businessName: merchant.businessName,
       logoUrl: merchant.logoUrl,
       accentColor: merchant.accentColor,
+      snsDomain: merchant.snsDomain,
     },
+    // Crowdfund / Split Goal Data
+    isSplitPayment: link.isSplitPayment,
+    targetAmountLamports: link.targetAmountLamports,
+    currentAmountLamports: link.payments
+      .filter(p => p.status === "confirmed")
+      .reduce((sum, p) => sum + BigInt(p.amountLamports), 0n)
+      .toString(),
   });
 });
 

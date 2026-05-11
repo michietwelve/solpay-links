@@ -235,7 +235,7 @@ router.post("/:linkId/pay", async (req: Request, res: Response): Promise<void> =
 
   try {
     const connection = new Connection(RPC, "confirmed");
-    const { transaction, amountHuman: human } = await buildPaymentTransaction(
+    const { transaction, amountHuman: human, lootboxWin } = await buildPaymentTransaction(
       connection,
       account,
       link,
@@ -247,52 +247,53 @@ router.post("/:linkId/pay", async (req: Request, res: Response): Promise<void> =
 
     serialisedTx = serialiseTransaction(transaction);
     amountHuman = human;
+
+    const body: ActionPostResponse = {
+      type: "transaction",
+      transaction: serialisedTx,
+      message: lootboxWin 
+        ? `🎉 LOOTBOX WON! Your purchase of ${amountHuman} ${link.token} is FREE! 🎉`
+        : `Paying ${amountHuman} ${link.token} to ${link.label}. ${
+            link.memo ? `Memo: ${link.memo}` : ""
+          }`.trim(),
+    };
+
+    // If the merchant specified a redirect, include it as a next action hint
+    if (link.redirectUrl) {
+      (body as any).links = {
+        next: {
+          type: "inline",
+          action: {
+            type: "completed",
+            title: link.isEscrowEnabled ? "Funds Locked in Escrow" : "Payment sent!",
+            icon: ICON_URL,
+            label: link.isEscrowEnabled ? "Confirm Receipt" : "Done",
+            description: link.isEscrowEnabled 
+              ? `Your payment of ${amountHuman} ${link.token} is held in BiePay Escrow. Click 'Confirm Receipt' once you receive your items to release funds to the merchant.`
+              : `Your payment of ${amountHuman} ${link.token} has been submitted.`,
+            ...(link.isEscrowEnabled ? {
+              links: {
+                actions: [
+                  {
+                    type: "post",
+                    href: `${API_BASE}/actions/${linkId}/release/${record.id as string}`,
+                    label: "Confirm Receipt ✅",
+                  }
+                ]
+              }
+            } : {})
+          },
+        },
+      };
+    }
+
+    res.status(200).json(body);
   } catch (err) {
     const msg = (err as Error).message;
     console.error("[POST /actions/:linkId/pay] build tx error:", msg);
     actionError(res, 500, `Failed to build transaction: ${msg}`);
     return;
   }
-
-  // 6. Return the signed-ready transaction to the wallet
-  const body: ActionPostResponse = {
-    type: "transaction",
-    transaction: serialisedTx,
-    message: `Paying ${amountHuman} ${link.token} to ${link.label}. ${
-      link.memo ? `Memo: ${link.memo}` : ""
-    }`.trim(),
-  };
-
-  // If the merchant specified a redirect, include it as a next action hint
-  if (link.redirectUrl) {
-    (body as any).links = {
-      next: {
-        type: "inline",
-        action: {
-          type: "completed",
-          title: link.isEscrowEnabled ? "Funds Locked in Escrow" : "Payment sent!",
-          icon: ICON_URL,
-          label: link.isEscrowEnabled ? "Confirm Receipt" : "Done",
-          description: link.isEscrowEnabled 
-            ? `Your payment of ${amountHuman} ${link.token} is held in BiePay Escrow. Click 'Confirm Receipt' once you receive your items to release funds to the merchant.`
-            : `Your payment of ${amountHuman} ${link.token} has been submitted.`,
-          ...(link.isEscrowEnabled ? {
-            links: {
-              actions: [
-                {
-                  type: "post",
-                  href: `${API_BASE}/actions/${linkId}/release/${record.id as string}`,
-                  label: "Confirm Receipt ✅",
-                }
-              ]
-            }
-          } : {})
-        },
-      },
-    };
-  }
-
-  res.status(200).json(body);
 });
 
 // ─── Escrow Release / Refund ───────────────────────────────────────────────

@@ -61,7 +61,11 @@ interface LinkData {
     businessName: string | null;
     logoUrl: string | null;
     accentColor: string | null;
+    snsDomain?: string | null;
   };
+  isSplitPayment?: boolean;
+  targetAmountLamports?: string | null;
+  currentAmountLamports?: string | null;
 }
 
 type Stage =
@@ -743,9 +747,16 @@ export default function PayPage() {
                   <Logo className="w-10 h-10" />
                 )}
                 <div>
-                  <h1 className="text-lg font-bold text-zinc-900 leading-tight">
-                    {link.merchant.businessName ?? link.label}
-                  </h1>
+                  <div className="flex items-center gap-1.5">
+                    <h1 className="text-lg font-bold text-zinc-900 leading-tight">
+                      {link.merchant.businessName ?? link.label}
+                    </h1>
+                    {link.merchant.snsDomain && (
+                      <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[8px] font-black rounded border border-blue-100 uppercase tracking-widest">
+                        {link.merchant.snsDomain}.sol
+                      </span>
+                    )}
+                  </div>
                   {link.merchant.businessName && <p className="text-xs text-zinc-400 font-medium tracking-tight uppercase">Pay with BiePay</p>}
                   {!link.merchant.businessName && link.description && <p className="text-xs text-zinc-400 line-clamp-1">{link.description}</p>}
                 </div>
@@ -780,6 +791,30 @@ export default function PayPage() {
                       {link.localFiat.label}
                     </span>
                   )}
+                </div>
+              )}
+
+              {/* Crowdfund Goal Progress */}
+              {link.isSplitPayment && link.targetAmountLamports && (
+                <div className="mt-5 space-y-2">
+                  <div className="flex justify-between items-end">
+                    <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Crowdfund Goal</span>
+                    <span className="text-xs font-bold text-zinc-900">
+                      {Math.floor((Number(link.currentAmountLamports || 0) / Number(link.targetAmountLamports)) * 100)}% Reached
+                    </span>
+                  </div>
+                  <div className="w-full h-2 bg-zinc-100 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full transition-all duration-1000 ease-out"
+                      style={{ 
+                        width: `${Math.min(100, (Number(link.currentAmountLamports || 0) / Number(link.targetAmountLamports)) * 100)}%`,
+                        backgroundColor: link.merchant.accentColor ?? "#c5a36e"
+                      }}
+                    />
+                  </div>
+                  <p className="text-[9px] text-zinc-400 font-medium text-center">
+                    {(Number(link.targetAmountLamports) / 10**TOKEN_DECIMALS[link.token]).toFixed(2)} {link.token} Target
+                  </p>
                 </div>
               )}
 

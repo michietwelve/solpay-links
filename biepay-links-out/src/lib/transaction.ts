@@ -475,7 +475,7 @@ export async function buildPaymentTransaction(
   referenceId: string,
   inputToken?: string,             // The token the user wants to pay with (Jupiter Any-to-Any)
   referrerWallet?: string          // For the Viral Discount Loop
-): Promise<{ transaction: any; amountHuman: string }> {
+): Promise<{ transaction: any; amountHuman: string; lootboxWin?: boolean }> {
   const payer = new PublicKey(payerWallet);
   const decimals = TOKEN_DECIMALS[link.token];
   const amountHuman = (Number(amountLamports) / 10 ** decimals).toFixed(
@@ -548,9 +548,11 @@ export async function buildPaymentTransaction(
 
   // 2. Handle Lootbox (1% chance to win free purchase)
   let finalAmount = amountLamports;
+  let lootboxWin = false;
   if (link.isLootboxEnabled && Math.random() < 0.01) {
     console.log("🎉 LOOTBOX WON! Setting amount to 0.");
     finalAmount = 0n;
+    lootboxWin = true;
   }
 
   // 3. Handle Cashback / Referral Rebates
@@ -582,7 +584,7 @@ export async function buildPaymentTransaction(
     );
   }
 
-  return { transaction, amountHuman };
+  return { transaction, amountHuman, lootboxWin };
 }
 
 // ─── Serialise for Actions response ──────────────────────────────────────
