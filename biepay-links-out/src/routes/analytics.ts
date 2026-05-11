@@ -26,7 +26,7 @@ router.get("/:merchantId", requireAuth, async (req: AuthenticatedRequest, res: R
   try {
     const priceRes = await fetch(`https://price.jup.ag/v6/price?ids=${tokenList.join(",")}`);
     if (priceRes.ok) {
-      const priceData = await priceRes.json();
+      const priceData = await priceRes.json() as any;
       tokenList.forEach(t => {
         if (priceData.data[t]) prices[t] = priceData.data[t].price;
       });

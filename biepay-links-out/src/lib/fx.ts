@@ -37,7 +37,7 @@ async function fetchLiveRates(): Promise<Record<FiatCurrency, number>> {
       { signal: AbortSignal.timeout(3000) }
     );
     if (!res.ok) throw new Error('CoinGecko rate fetch failed');
-    const data = await res.json();
+    const data = await res.json() as any;
     const usdc = data['usd-coin'];
     return {
       NGN: usdc?.ngn ?? FALLBACK_FIAT_RATES.NGN,

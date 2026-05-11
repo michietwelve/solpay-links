@@ -42,7 +42,7 @@ router.post("/:merchantId/webhook-logs/:logId/redeliver", requireAuth, async (re
   }
 
   try {
-    const log = await prisma.webhookLog.findUnique({ where: { id: logId } });
+    const log = await prisma.webhookLog.findUnique({ where: { id: logId as string } });
     if (!log) return res.status(404).json({ message: "Log not found" });
 
     const merchant = await prisma.merchantProfile.findUnique({ where: { merchantId: log.merchantId } });

@@ -1,4 +1,7 @@
 import { Resend } from 'resend';
+import { prisma } from './db';
+import { queueWebhook } from './webhookWorker';
+import { getMerchantProfile } from './merchant';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 // Use your own verified domain in RESEND_FROM_EMAIL, or leave blank to use Resend's free sender
@@ -55,5 +58,41 @@ export async function sendPaymentNotification(email: string, details: {
   } catch (err) {
     console.error("[notification] Failed to send email:", err);
     return { success: false, error: err };
+  }
+}
+
+export async function deliverNotifications(link: any, payment: any) {
+  try {
+    const merchant = await getMerchantProfile(link.merchantId);
+    if (!merchant) return;
+
+    // 1. Email Notification
+    if (merchant.email) {
+      const decimals = 9; // Fallback
+      const amountHuman = (BigInt(payment.amountLamports) / BigInt(10 ** decimals)).toString();
+      
+      await sendPaymentNotification(merchant.email, {
+        amount: amountHuman,
+        token: payment.token,
+        linkLabel: link.label,
+        customerWallet: payment.payerWallet,
+        signature: payment.signature || "unknown"
+      });
+    }
+
+    // 2. Webhook Notification
+    if (merchant.webhookUrl) {
+      await queueWebhook(link.merchantId, merchant.webhookUrl, {
+        event: "payment.confirmed",
+        signature: payment.signature,
+        linkId: link.id,
+        payer: payment.payerWallet,
+        amount: payment.amountLamports,
+        token: payment.token,
+        timestamp: new Date().toISOString()
+      }, merchant.webhookSecret);
+    }
+  } catch (err) {
+    console.error("[deliverNotifications] Failed to process:", err);
   }
 }

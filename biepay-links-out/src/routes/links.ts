@@ -259,16 +259,17 @@ router.get("/payments/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const payment = await prisma.paymentRecord.findUnique({
-      where: { id },
+      where: { id: id as string },
       include: { link: { select: { label: true, digitalAssetUrl: true, id: true } } }
-    });
+    }) as any;
 
     if (!payment) {
       res.status(404).json({ error: "Payment not found" });
       return;
     }
 
-    const decimals = TOKEN_DECIMALS[payment.token as SupportedToken] || 9;
+    const TOKEN_DECIMALS_LOCAL: Record<string, number> = { SOL: 9, USDC: 6, USDT: 6, BONK: 5, WIF: 6 };
+    const decimals = TOKEN_DECIMALS_LOCAL[payment.token] || 9;
     const amountHuman = (BigInt(payment.amountLamports) / BigInt(10 ** decimals)).toString();
 
     res.json({
