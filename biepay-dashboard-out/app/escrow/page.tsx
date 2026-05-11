@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { Shield, Clock, CheckCircle, RefreshCcw, Loader2, ArrowRight } from "lucide-react";
-import Layout from "../../components/layout/Layout";
+import Logo from "../../components/layout/Logo";
 
 interface EscrowRecord {
   id: string;
@@ -68,8 +68,20 @@ export default function EscrowPage() {
   };
 
   return (
-    <Layout>
-      <div className="max-w-6xl mx-auto space-y-10">
+    <div className="min-h-screen bg-zinc-50">
+      <header className="premium-glass px-6 h-16 flex items-center justify-between sticky top-0 z-[50]">
+        <div className="flex items-center gap-3">
+          <Logo className="w-7 h-7" variant="gold" />
+          <span className="font-bold text-sm tracking-tight">BiePay Escrow</span>
+          <span className="text-[10px] bg-zinc-900 text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">Secure</span>
+        </div>
+        <a href="/dashboard" className="text-xs font-black text-zinc-400 hover:text-zinc-900 uppercase tracking-widest transition-colors">
+          &larr; Back to Dashboard
+        </a>
+      </header>
+
+      <main className="max-w-6xl mx-auto px-6 py-12">
+        <div className="space-y-10">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-[#c5a36e] mb-1">
@@ -180,6 +192,7 @@ export default function EscrowPage() {
           </div>
         </div>
       </div>
-    </Layout>
+      </main>
+    </div>
   );
 }
