@@ -269,8 +269,6 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
                       )}
                     </div>
                   </div>
-
-                  </div>
                 </div>
               </div>
 
@@ -307,8 +305,6 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
                       <p className={`text-[9px] font-bold leading-relaxed ${network === "mainnet" ? "text-zinc-400" : "text-zinc-500"}`}>Production environment for processing actual customer payments.</p>
                     </div>
                   </button>
-                </div>
-              </div>
                 </div>
               </div>
             </div>
