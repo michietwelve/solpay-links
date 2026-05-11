@@ -1,7 +1,8 @@
 // stress-test.ts
+declare var process: any;
 import { PrismaClient } from "@prisma/client";
 import { resolveAmount, buildPaymentTransaction } from "./src/lib/transaction";
-import { createLink, getPaymentsForLink, createPaymentRecord, confirmPayment } from "./src/lib/store";
+import { createLink, getPaymentsForLink, createPaymentRecord, confirmPayment, getLinkById } from "./src/lib/store";
 import { Connection, PublicKey, Keypair } from "@solana/web3.js";
 import { detectLocalCurrency, getFiatEquivalent } from "./src/lib/fx";
 
@@ -38,7 +39,8 @@ async function runTests() {
     amount: 10,
     merchantId: TEST_MERCHANT,
     isSplitPayment: true,
-    targetAmount: 30
+    targetAmount: 30,
+    maxSlippageBps: 50
   });
   
   const p1 = await createPaymentRecord(splitLink.id, TEST_PAYER, BigInt(10 * 10**6), "USDC");
@@ -61,7 +63,8 @@ async function runTests() {
     amount: 100, 
     merchantId: TEST_MERCHANT,
     tippingPointCount: 2,
-    tippingPointAmount: 50
+    tippingPointAmount: 50,
+    maxSlippageBps: 50
   });
   
   // Set payment count to 2 to trigger the drop
@@ -82,7 +85,8 @@ async function runTests() {
     amount: 100,
     merchantId: TEST_MERCHANT,
     referralBps: 500,
-    discountBps: 200
+    discountBps: 200,
+    maxSlippageBps: 50
   });
   
   const { transaction } = await buildPaymentTransaction(
