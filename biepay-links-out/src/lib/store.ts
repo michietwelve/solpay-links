@@ -107,6 +107,7 @@ export async function createLink(input: CreateLinkInput): Promise<PaymentLink> {
 export async function getLinkById(id: string): Promise<PaymentLink | undefined> {
   const link = await prisma.paymentLink.findUnique({
     where: { id },
+    include: { payments: true }
   });
   return link ? mapLink(link) : undefined;
 }
@@ -125,6 +126,7 @@ export async function getAllLinks(merchantIdOrIds?: string | string[]): Promise<
 
   const links = await prisma.paymentLink.findMany({
     where,
+    include: { payments: true },
     orderBy: { createdAt: "desc" },
   });
 

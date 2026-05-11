@@ -601,7 +601,7 @@ router.post("/escrow/release", requireAuth, async (req: AuthenticatedRequest, re
     }
 
     // Auth check: only the merchant can release to themselves
-    if (!req.user?.allowedIds.includes(record.link.merchantId)) {
+    if (!record.link.merchantId || !req.user?.allowedIds.includes(record.link.merchantId)) {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
@@ -652,7 +652,7 @@ router.post("/escrow/refund", requireAuth, async (req: AuthenticatedRequest, res
     }
 
     // Auth check
-    if (!req.user?.allowedIds.includes(record.link.merchantId)) {
+    if (!record.link.merchantId || !req.user?.allowedIds.includes(record.link.merchantId)) {
       return res.status(403).json({ message: "Unauthorized" });
     }
 

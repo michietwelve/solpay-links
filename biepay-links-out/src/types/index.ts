@@ -65,6 +65,8 @@ export interface PaymentLink {
   isStealthEnabled: boolean;
   stealthAddress: string | null;
   ephemeralPubkey: string | null;
+
+  payments?: PaymentRecord[]; // Crowdfund progress
 }
 
 export interface MerchantProfile {
