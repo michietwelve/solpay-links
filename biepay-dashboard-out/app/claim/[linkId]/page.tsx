@@ -32,7 +32,7 @@ export default function ClaimPage() {
     try {
       // 1. Sign the ownership proof
       const message = `BiePay Fulfillment: ${linkId}`;
-      const signature = await wallet.signMessage(message);
+      const signature = await wallet.signMessage(new TextEncoder().encode(message));
       const signatureBase58 = bs58.encode(signature);
 
       // 2. Verify with the backend
