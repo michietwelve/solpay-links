@@ -201,6 +201,8 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
             >
               <option value="SOL">SOL</option>
               <option value="USDC">USDC</option>
+              <option value="USDT">USDT</option>
+              <option value="PUSD">PUSD</option>
               <option value="BONK">BONK</option>
             </select>
           </div>
