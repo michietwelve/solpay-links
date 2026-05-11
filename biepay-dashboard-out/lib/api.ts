@@ -80,6 +80,9 @@ export interface CreateLinkPayload {
   discountBps?: number;
   maxSlippageBps?: number;
   isStealthEnabled?: boolean;
+  isEscrowEnabled?: boolean;
+  tippingPointCount?: number;
+  tippingPointAmount?: number;
 }
 
 export interface CreateLinkResponse {
