@@ -191,6 +191,8 @@ export default function DashboardPage() {
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [analyticsData, setAnalyticsData] = useState<any[]>([]);
   const [confirmConfig, setConfirmConfig] = useState<{ title: string; message: string; onConfirm: () => void; variant?: "danger" | "gold" } | null>(null);
+  const [hasViewedNotifications, setHasViewedNotifications] = useState(false);
+  const [receiptPayment, setReceiptPayment] = useState<any>(null);
 
   const filtered = links.filter(l =>
     (l.label.toLowerCase().includes(search.toLowerCase()) || l.id.includes(search)) &&
@@ -739,10 +741,10 @@ export default function DashboardPage() {
             )}
           </button>
           
-          <div className="relative group">
+          <div className="relative group" onMouseEnter={() => setHasViewedNotifications(true)}>
             <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 hover:bg-zinc-50 transition-all">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-              {payments.filter((p: any) => p.status === 'confirmed').length > 0 && (
+              {payments.filter((p: any) => p.status === 'confirmed').length > 0 && !hasViewedNotifications && (
                 <span className="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full border border-white"></span>
               )}
             </button>
@@ -755,20 +757,20 @@ export default function DashboardPage() {
                   <div className="p-4 text-center text-xs text-zinc-400">No new notifications</div>
                 ) : (
                   payments.slice(0, 5).map((p: any) => (
-                    <a
+                    <button
                       key={p.id}
-                      href={p.signature ? `https://explorer.solana.com/tx/${p.signature}?cluster=devnet` : "#"}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="block p-3 border-b border-zinc-50 hover:bg-zinc-50 transition-colors cursor-pointer"
+                      onClick={() => setReceiptPayment(p)}
+                      className="w-full text-left block p-3 border-b border-zinc-50 hover:bg-zinc-50 transition-colors cursor-pointer"
                     >
                       <div className="flex justify-between items-start">
-                        <p className="text-[10px] font-black text-zinc-900 uppercase">{p.linkLabel}</p>
+                        <p className="text-[10px] font-black text-zinc-900 uppercase">
+                          {p.payerWallet?.slice(0,4)}...{p.payerWallet?.slice(-4)} sent money to you
+                        </p>
                         <svg className="w-2.5 h-2.5 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                       </div>
                       <p className="text-[9px] text-emerald-600 font-bold">Payment Confirmed</p>
                       <p className="text-[8px] text-zinc-400 mt-1">{timeAgo(p.createdAt)}</p>
-                    </a>
+                    </button>
                   ))
                 )}
               </div>
@@ -1360,6 +1362,55 @@ export default function DashboardPage() {
         />
       )}
 
+      {/* Receipt Modal */}
+      {receiptPayment && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setReceiptPayment(null)}>
+          <div className="bg-white rounded-3xl border border-zinc-200 shadow-2xl w-[400px] max-w-[90vw]" onClick={e => e.stopPropagation()}>
+            <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
+              <h2 className="text-xl font-black text-zinc-900 tracking-tight uppercase">Payment Receipt</h2>
+              <button onClick={() => setReceiptPayment(null)} className="text-zinc-400 hover:text-zinc-600">×</button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="flex justify-center mb-6">
+                <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center border-4 border-emerald-100">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                </div>
+              </div>
+              
+              <div className="bg-zinc-50 rounded-2xl p-4 space-y-3 border border-zinc-100">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-zinc-400 uppercase">From</span>
+                  <span className="text-xs font-mono font-black text-zinc-900">{receiptPayment.payerWallet}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-zinc-400 uppercase">To</span>
+                  <span className="text-xs font-mono font-black text-zinc-900">You</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-zinc-400 uppercase">Amount</span>
+                  <span className="text-sm font-black text-emerald-600">{formatAmount(receiptPayment.amountLamports, receiptPayment.token)} {receiptPayment.token}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-zinc-400 uppercase">Date</span>
+                  <span className="text-xs font-bold text-zinc-900">{new Date(receiptPayment.createdAt).toLocaleString()}</span>
+                </div>
+              </div>
+
+              {receiptPayment.signature && (
+                <a 
+                  href={`https://explorer.solana.com/tx/${receiptPayment.signature}?cluster=devnet`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block w-full py-3 text-center text-[10px] font-black text-zinc-500 uppercase tracking-widest border border-zinc-200 rounded-xl hover:bg-zinc-50 transition-colors"
+                >
+                  View on Solana Explorer
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Detail slide-over */}
       {detailLink && (
         <>
@@ -1500,7 +1551,7 @@ export default function DashboardPage() {
               </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-8 pt-6">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden p-8 pt-6">
               {isProfileLoading ? (
                 <div className="py-20 text-center text-zinc-400 flex flex-col items-center gap-4">
                   <div className="w-8 h-8 border-4 border-zinc-200 border-t-zinc-900 rounded-full animate-spin"></div>
