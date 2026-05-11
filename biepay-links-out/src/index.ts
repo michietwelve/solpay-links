@@ -18,6 +18,7 @@ import debugRouter from "./routes/debug";
 import fulfillmentRouter from "./routes/fulfillment";
 import stealthRouter from "./routes/stealth";
 import { startEventListener } from "./lib/listener";
+import { startWebhookWorker } from "./lib/webhookWorker";
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? "3001", 10);
@@ -161,9 +162,12 @@ app.listen(PORT, () => {
   // Start on-chain event listener for payment confirmations
   const unsubscribe = startEventListener(connection);
 
+  // Start background webhook processor
+  const stopWorker = startWebhookWorker();
+
   // Clean shutdown
-  process.on("SIGTERM", () => { unsubscribe(); process.exit(0); });
-  process.on("SIGINT",  () => { unsubscribe(); process.exit(0); });
+  process.on("SIGTERM", () => { unsubscribe(); stopWorker(); process.exit(0); });
+  process.on("SIGINT",  () => { unsubscribe(); stopWorker(); process.exit(0); });
 });
 
 export default app;

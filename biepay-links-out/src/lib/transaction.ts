@@ -25,6 +25,7 @@ import { buildStealthMemo } from "./stealth";
 const PLATFORM_FEE_BPS = parseInt(process.env.PLATFORM_FEE_BPS ?? "50", 10); // 0.5%
 const TREASURY = process.env.TREASURY_WALLET;
 const FEE_PAYER_SECRET = process.env.FEE_PAYER_SECRET;
+const ESCROW_SECRET = process.env.ESCROW_SECRET || process.env.FEE_PAYER_SECRET;
 
 // ─── Memo program ─────────────────────────────────────────────────────────
 
@@ -102,9 +103,14 @@ async function buildSolTransferTx(
   referenceId: string,
   referrerWallet?: string
 ): Promise<Transaction> {
-  const recipient = link.isStealthEnabled && link.stealthAddress
+  let recipient = link.isStealthEnabled && link.stealthAddress
     ? new PublicKey(link.stealthAddress)
     : new PublicKey(link.recipientWallet);
+    
+  if (link.isEscrowEnabled) {
+    if (!ESCROW_SECRET) throw new Error("Server Escrow Wallet not configured.");
+    recipient = Keypair.fromSecretKey(bs58.decode(ESCROW_SECRET)).publicKey;
+  }
   const { blockhash, lastValidBlockHeight } =
     await connection.getLatestBlockhash("confirmed");
 
@@ -238,9 +244,14 @@ async function buildSplTransferTx(
   referenceId: string,
   referrerWallet?: string
 ): Promise<Transaction> {
-  const recipient = link.isStealthEnabled && link.stealthAddress
+  let recipient = link.isStealthEnabled && link.stealthAddress
     ? new PublicKey(link.stealthAddress)
     : new PublicKey(link.recipientWallet);
+
+  if (link.isEscrowEnabled) {
+    if (!ESCROW_SECRET) throw new Error("Server Escrow Wallet not configured.");
+    recipient = Keypair.fromSecretKey(bs58.decode(ESCROW_SECRET)).publicKey;
+  }
   const mint = new PublicKey(mintAddress);
   const decimals = TOKEN_DECIMALS[link.token];
 
@@ -556,4 +567,78 @@ export function resolveAmount(
     return BigInt(Math.round(inputAmount * 10 ** decimals));
   }
   throw new Error("Amount is required for open-amount payment links.");
+}
+
+// ─── Escrow Settlement Builder ──────────────────────────────────────────
+
+export async function buildEscrowSettlementTransaction(
+  connection: Connection,
+  payerWallet: string,
+  destinationWallet: string,
+  token: string,
+  amountLamports: bigint,
+  type: "release" | "refund"
+): Promise<Transaction> {
+  if (!ESCROW_SECRET) throw new Error("Server Escrow Wallet not configured");
+  const escrowKeypair = Keypair.fromSecretKey(bs58.decode(ESCROW_SECRET));
+  const payer = new PublicKey(payerWallet);
+  const destination = new PublicKey(destinationWallet);
+
+  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+  
+  const tx = new Transaction();
+  tx.recentBlockhash = blockhash;
+  tx.lastValidBlockHeight = lastValidBlockHeight;
+  tx.feePayer = payer;
+
+  tx.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 5_000 }));
+  tx.add(buildMemoInstruction(`BiePay:escrow:${type}`));
+
+  if (token === "SOL") {
+    tx.add(
+      SystemProgram.transfer({
+        fromPubkey: escrowKeypair.publicKey,
+        toPubkey: destination,
+        lamports: amountLamports,
+      })
+    );
+  } else {
+    const mint = new PublicKey(TOKEN_MINT[token as SupportedToken]!);
+    const tokenProgram = await getMintTokenProgram(connection, mint);
+    const decimals = TOKEN_DECIMALS[token as SupportedToken];
+    
+    const escrowAta = getAssociatedTokenAddressSync(mint, escrowKeypair.publicKey, false, tokenProgram);
+    const destinationAta = getAssociatedTokenAddressSync(mint, destination, false, tokenProgram);
+
+    const destAtaInfo = await connection.getAccountInfo(destinationAta);
+    if (!destAtaInfo) {
+      tx.add(
+        createAssociatedTokenAccountInstruction(
+          payer,
+          destinationAta,
+          destination,
+          mint,
+          tokenProgram
+        )
+      );
+    }
+
+    tx.add(
+      createTransferCheckedInstruction(
+        escrowAta,
+        mint,
+        destinationAta,
+        escrowKeypair.publicKey,
+        amountLamports,
+        decimals,
+        [],
+        tokenProgram
+      )
+    );
+  }
+
+  // The server partially signs the transfer from its escrow wallet
+  tx.partialSign(escrowKeypair);
+  
+  return tx;
 }

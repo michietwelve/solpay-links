@@ -11,6 +11,7 @@ import {
   percentAmount,
   PublicKey
 } from "@metaplex-foundation/umi";
+import { createNft, mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import bs58 from "bs58";
 
 const RPC = process.env.RPC_ENDPOINT || "https://api.devnet.solana.com";
@@ -28,7 +29,7 @@ export async function mintLoyaltyReceipt(
     return;
   }
 
-  const umi = createUmi(RPC).use(mplBubblegum());
+  const umi = createUmi(RPC).use(mplBubblegum()).use(mplTokenMetadata());
   const kp = umi.eddsa.createKeypairFromSecretKey(bs58.decode(secret));
   umi.use(keypairIdentity(kp));
 
@@ -62,13 +63,24 @@ export async function mintLoyaltyReceipt(
 /**
  * Helper to initialize a new tree for the platform if needed
  */
-export async function initializePlatformTree(): Promise<PublicKey | undefined> {
+export async function initializePlatformTree(): Promise<{tree: string, collection: string} | undefined> {
   const secret = process.env.FEE_PAYER_SECRET;
   if (!secret) return;
 
-  const umi = createUmi(RPC).use(mplBubblegum());
+  const umi = createUmi(RPC).use(mplBubblegum()).use(mplTokenMetadata());
   const kp = umi.eddsa.createKeypairFromSecretKey(bs58.decode(secret));
   umi.use(keypairIdentity(kp));
+
+  const collectionMint = generateSigner(umi);
+  console.log(`[cNFT] Creating Collection: ${collectionMint.publicKey}...`);
+  await createNft(umi, {
+    mint: collectionMint,
+    name: "BiePay Loyalty Receipts",
+    symbol: "BIE",
+    uri: "https://arweave.net/placeholder-receipt-metadata", // placeholder
+    sellerFeeBasisPoints: percentAmount(0),
+    isCollection: true,
+  }).sendAndConfirm(umi);
 
   const merkleTree = generateSigner(umi);
   console.log(`[cNFT] Creating Merkle Tree: ${merkleTree.publicKey}...`);
@@ -80,6 +92,8 @@ export async function initializePlatformTree(): Promise<PublicKey | undefined> {
   });
   
   await builder.sendAndConfirm(umi);
-  console.log(`[cNFT] Tree Initialized! Add this to your .env: PLATFORM_MERKLE_TREE=${merkleTree.publicKey}`);
-  return merkleTree.publicKey;
+  console.log(`[cNFT] Tree Initialized! Add this to your .env:`);
+  console.log(`PLATFORM_MERKLE_TREE=${merkleTree.publicKey}`);
+  console.log(`PLATFORM_COLLECTION_MINT=${collectionMint.publicKey}`);
+  return { tree: merkleTree.publicKey.toString(), collection: collectionMint.publicKey.toString() };
 }

@@ -1,4 +1,5 @@
-import { Connection, PublicKey, Transaction, SystemProgram, Keypair, LAMPORTS_PER_SOL, sendAndConfirmTransaction } from "@solana/web3.js";
+import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL, sendAndConfirmTransaction } from "@solana/web3.js";
+import { createTransferCheckedInstruction, getAssociatedTokenAddressSync, createAssociatedTokenAccountInstruction, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { recoverStealthKeypair } from "./stealth";
 import { prisma } from "./db";
 
@@ -18,8 +19,10 @@ export async function scanForStealthBalances(connection: Connection, merchantId:
     try {
       const kp = recoverStealthKeypair(stealthSecret, link.ephemeralPubkey!);
       const balance = await connection.getBalance(kp.publicKey);
+      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(kp.publicKey, { programId: TOKEN_PROGRAM_ID });
+      const hasTokens = tokenAccounts.value.some(ta => ta.account.data.parsed.info.tokenAmount.uiAmount > 0);
       
-      if (balance > 0) {
+      if (balance > 0 || hasTokens) {
         results.push({
           address: kp.publicKey.toBase58(),
           balance: balance / LAMPORTS_PER_SOL,
@@ -44,22 +47,45 @@ export async function sweepStealthFunds(
   const kp = recoverStealthKeypair(stealthSecret, ephemeralPubkey);
   const destPubkey = new PublicKey(destination);
   
+  const tx = new Transaction();
+
+  // 1. Sweep SPL Tokens
+  const tokenAccounts = await connection.getParsedTokenAccountsByOwner(kp.publicKey, { programId: TOKEN_PROGRAM_ID });
+  for (const ta of tokenAccounts.value) {
+    const amount = ta.account.data.parsed.info.tokenAmount.amount;
+    if (Number(amount) > 0) {
+      const mint = new PublicKey(ta.account.data.parsed.info.mint);
+      const decimals = ta.account.data.parsed.info.tokenAmount.decimals;
+      
+      const destAta = getAssociatedTokenAddressSync(mint, destPubkey);
+      const destAtaInfo = await connection.getAccountInfo(destAta);
+      if (!destAtaInfo) {
+         tx.add(createAssociatedTokenAccountInstruction(kp.publicKey, destAta, destPubkey, mint));
+      }
+      tx.add(createTransferCheckedInstruction(
+        ta.pubkey, mint, destAta, kp.publicKey, BigInt(amount), decimals
+      ));
+    }
+  }
+
+  // 2. Sweep Native SOL
   const balance = await connection.getBalance(kp.publicKey);
-  if (balance === 0) throw new Error("No funds to sweep");
+  const fee = 10000; // lamports for compute
+  if (balance > fee) {
+    tx.add(
+      SystemProgram.transfer({
+        fromPubkey: kp.publicKey,
+        toPubkey: destPubkey,
+        lamports: balance - fee,
+      })
+    );
+  }
 
-  // Transfer all minus small fee
-  const fee = 5000; // lamports
-  const amount = balance - fee;
-  
-  if (amount <= 0) throw new Error("Balance too low to cover fees");
+  if (tx.instructions.length === 0) throw new Error("No funds to sweep");
 
-  const tx = new Transaction().add(
-    SystemProgram.transfer({
-      fromPubkey: kp.publicKey,
-      toPubkey: destPubkey,
-      lamports: amount,
-    })
-  );
+  const { blockhash } = await connection.getLatestBlockhash("confirmed");
+  tx.recentBlockhash = blockhash;
+  tx.feePayer = kp.publicKey;
 
   const signature = await sendAndConfirmTransaction(connection, tx, [kp]);
   return signature;

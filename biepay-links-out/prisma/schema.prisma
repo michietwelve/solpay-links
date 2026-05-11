@@ -101,3 +101,14 @@ model MerchantProfile {
   merkleTree          String?
   collectionMint      String?
 }
+
+model WebhookJob {
+  id         String   @id @default(cuid())
+  merchantId String
+  url        String
+  payload    String   // JSON
+  secret     String?
+  attempts   Int      @default(0)
+  nextRunAt  DateTime @default(now())
+  status     String   @default("pending") // pending, completed, failed
+}

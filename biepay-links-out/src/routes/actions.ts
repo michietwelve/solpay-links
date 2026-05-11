@@ -6,6 +6,7 @@ import {
   buildPaymentTransaction,
   serialiseTransaction,
   resolveAmount,
+  buildEscrowSettlementTransaction
 } from "../lib/transaction";
 import { PostPaymentSchema } from "../types";
 import { prisma } from "../lib/db";
@@ -195,18 +196,19 @@ router.post("/:linkId/pay", async (req: Request, res: Response): Promise<void> =
   // 4. Social Split Validation: Ensure we don't over-fund
   if (link.isSplitPayment && link.targetAmountLamports) {
     const payments = await getPaymentsForLink(linkId);
-    const confirmedTotal = payments
-      .filter(p => p.status === "confirmed")
-      .reduce((sum, p) => sum + p.amountLamports, 0n);
+    const FIVE_MINS_AGO = new Date(Date.now() - 5 * 60 * 1000);
+    const activeTotal = payments
+      .filter(p => p.status === "confirmed" || (p.status === "pending" && new Date(p.createdAt) >= FIVE_MINS_AGO))
+      .reduce((sum, p) => sum + BigInt(p.amountLamports), 0n);
     
     const target = BigInt(link.targetAmountLamports);
-    if (confirmedTotal >= target) {
+    if (activeTotal >= target) {
       actionError(res, 400, "This Social Split has already reached its goal!");
       return;
     }
 
-    if (confirmedTotal + amountBaseUnits > target) {
-      const remaining = target - confirmedTotal;
+    if (activeTotal + amountBaseUnits > target) {
+      const remaining = target - activeTotal;
       const tokenDecimals = link.token === "SOL" ? 9 : 6;
       const humanRemaining = (Number(remaining) / 10**tokenDecimals).toFixed(tokenDecimals === 9 ? 4 : 2);
       actionError(res, 400, `This exceeds the remaining goal. Please pay ${humanRemaining} ${link.token} or less.`);
@@ -291,22 +293,39 @@ router.post("/:linkId/pay", async (req: Request, res: Response): Promise<void> =
  */
 router.post("/:linkId/release/:paymentId", async (req: Request, res: Response) => {
   const { linkId, paymentId } = req.params;
+  const { account } = req.body;
 
   try {
-    const record = await prisma.paymentRecord.update({
+    if (!account) throw new Error("Wallet account required");
+    
+    const record = await prisma.paymentRecord.findUnique({ where: { id: paymentId }, include: { link: true }});
+    if (!record) throw new Error("Payment not found");
+    if (record.escrowStatus !== "locked") throw new Error("Payment is not locked in escrow");
+
+    const connection = new Connection(RPC, "confirmed");
+    const tx = await buildEscrowSettlementTransaction(
+      connection,
+      account,
+      record.link.recipientWallet,
+      record.token,
+      BigInt(record.amountLamports),
+      "release"
+    );
+
+    await prisma.paymentRecord.update({
       where: { id: paymentId as string },
       data: { escrowStatus: "released" }
     });
 
     const response: ActionPostResponse = {
       type: "transaction",
-      transaction: "", // No actual transaction needed for status update demo, or we could sweep
+      transaction: serialiseTransaction(tx),
       message: "Funds successfully released to merchant!"
     };
 
     res.json(response);
-  } catch (err) {
-    res.status(500).json({ message: "Failed to release funds" });
+  } catch (err: any) {
+    actionError(res, 400, err.message || "Failed to release funds");
   }
 });
 
@@ -315,8 +334,25 @@ router.post("/:linkId/release/:paymentId", async (req: Request, res: Response) =
  */
 router.post("/:linkId/refund/:paymentId", async (req: Request, res: Response) => {
   const { linkId, paymentId } = req.params;
+  const { account } = req.body;
 
   try {
+    if (!account) throw new Error("Wallet account required");
+
+    const record = await prisma.paymentRecord.findUnique({ where: { id: paymentId }, include: { link: true }});
+    if (!record) throw new Error("Payment not found");
+    if (record.escrowStatus !== "locked") throw new Error("Payment is not locked in escrow");
+
+    const connection = new Connection(RPC, "confirmed");
+    const tx = await buildEscrowSettlementTransaction(
+      connection,
+      account,
+      record.payerWallet,
+      record.token,
+      BigInt(record.amountLamports),
+      "refund"
+    );
+
     await prisma.paymentRecord.update({
       where: { id: paymentId as string },
       data: { escrowStatus: "refunded" }
@@ -324,11 +360,11 @@ router.post("/:linkId/refund/:paymentId", async (req: Request, res: Response) =>
 
     res.json({
       type: "transaction",
-      transaction: "",
-      message: "Refund request submitted."
+      transaction: serialiseTransaction(tx),
+      message: "Refund request submitted successfully."
     });
-  } catch (err) {
-    res.status(500).json({ message: "Failed to process refund" });
+  } catch (err: any) {
+    actionError(res, 400, err.message || "Failed to process refund");
   }
 });
 
