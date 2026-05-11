@@ -32,6 +32,35 @@ router.get("/:merchantId/webhook-logs", requireAuth, async (req: AuthenticatedRe
   res.json(logs);
 });
 
+// POST /api/merchants/:merchantId/webhook-logs/:logId/redeliver
+router.post("/:merchantId/webhook-logs/:logId/redeliver", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  const { merchantId, logId } = req.params;
+  
+  if (!req.user?.allowedIds.includes(merchantId as string)) {
+    res.status(403).json({ message: "Not authorized" });
+    return;
+  }
+
+  try {
+    const log = await prisma.webhookLog.findUnique({ where: { id: logId } });
+    if (!log) return res.status(404).json({ message: "Log not found" });
+
+    const merchant = await prisma.merchantProfile.findUnique({ where: { merchantId: log.merchantId } });
+    if (!merchant || !merchant.webhookUrl) return res.status(400).json({ message: "Merchant has no webhook URL" });
+
+    const { deliverWebhook } = require("../lib/listener");
+    const result = await deliverWebhook(
+      merchant.webhookUrl, 
+      JSON.parse(log.payload), 
+      merchant.webhookSecret
+    );
+
+    res.json({ success: true, result });
+  } catch (err) {
+    res.status(500).json({ message: "Redelivery failed" });
+  }
+});
+
 // PATCH /api/merchants/:merchantId
 router.patch("/:merchantId", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const { merchantId } = req.params;
@@ -148,6 +177,51 @@ router.delete("/:merchantId", requireAuth, async (req: AuthenticatedRequest, res
   } catch (err) {
     console.error("Delete failed:", err);
     res.status(500).json({ message: "Failed to purge merchant data." });
+  }
+});
+
+// POST /api/merchants/verify-sns
+router.post("/verify-sns", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  const { domain, wallet } = req.body;
+  if (!domain || !wallet) return res.status(400).json({ message: "Domain and wallet required" });
+
+  try {
+    const { getDomainKeySync, NameRegistryState } = require("@bonfida/spl-name-service");
+    const { Connection, PublicKey } = require("@solana/web3.js");
+
+    // 1. Resolve the domain on-chain
+    const connection = new Connection(process.env.RPC_ENDPOINT || "https://api.devnet.solana.com", "confirmed");
+    const { pubkey } = getDomainKeySync(domain);
+    const { registry } = await NameRegistryState.retrieve(connection, pubkey);
+
+    const owner = registry.owner.toBase58();
+
+    // 2. Verify the owner matches the provided wallet
+    if (owner !== wallet) {
+      res.status(401).json({ 
+        message: `Verification failed. This domain is owned by ${owner.slice(0,4)}..., not your connected wallet.`,
+        actualOwner: owner
+      });
+      return;
+    }
+
+    // 3. Ensure the wallet is authorized for this merchant session
+    const isAuthorized = req.user?.allowedIds.includes(wallet);
+    if (!isAuthorized) {
+      res.status(401).json({ message: "This wallet is not linked to your BiePay account." });
+      return;
+    }
+
+    // Success response
+    res.json({ 
+      success: true, 
+      verifiedAt: new Date().toISOString(),
+      owner,
+      domain
+    });
+  } catch (err) {
+    console.error("[SNS] Verification failed:", err);
+    res.status(500).json({ message: "SNS resolution failed. Make sure the domain is valid and registered." });
   }
 });
 

@@ -141,14 +141,20 @@ async function buildSolTransferTx(
   let fee = calculateFee(amountLamports);
   let referralRebate = 0n;
   
-  // Viral Growth Loop: Referrer gets a cut
+  // 4. Viral Growth Loop: Referrer gets a cut (Funded by Merchant)
   if (referrerWallet && link.referralBps && link.referralBps > 0) {
     referralRebate = (amountLamports * BigInt(link.referralBps)) / 10_000n;
   }
 
-  const netAmount = amountLamports - fee - referralRebate;
+  // 5. Loyalty Cashback: Payer gets a cut back (Funded by Merchant)
+  let cashbackAmount = 0n;
+  if (link.cashbackBps && link.cashbackBps > 0) {
+    cashbackAmount = (amountLamports * BigInt(link.cashbackBps)) / 10_000n;
+  }
 
-  // Transfer to recipient
+  const netAmount = amountLamports - fee - referralRebate - cashbackAmount;
+
+  // Transfer to recipient (Merchant receives net amount)
   if (netAmount > 0n) {
     tx.add(
       SystemProgram.transfer({
@@ -170,7 +176,7 @@ async function buildSolTransferTx(
     );
   }
 
-  // Referral rebate
+  // Referral rebate (Payer -> Referrer)
   if (referralRebate > 0n && referrerWallet) {
     tx.add(
       SystemProgram.transfer({
@@ -181,20 +187,9 @@ async function buildSolTransferTx(
     );
   }
 
-  // Yield-Powered Cashback: Treasury sends 1-2% back to payer
-  if (link.cashbackBps && link.cashbackBps > 0 && TREASURY) {
-    const cashbackAmount = (amountLamports * BigInt(link.cashbackBps)) / 10_000n;
-    if (cashbackAmount > 0n) {
-      console.log(`[Cashback] Routing ${cashbackAmount} lamports back to payer.`);
-      tx.add(
-        SystemProgram.transfer({
-          fromPubkey: new PublicKey(TREASURY),
-          toPubkey: payer,
-          lamports: cashbackAmount,
-        })
-      );
-    }
-  }
+  // NOTE: Cashback is already accounted for in netAmount (merchant receives less).
+  // We do NOT add a self-transfer — Solana rejects SOL self-transfers and they waste compute.
+  // Cashback can be communicated to the user via the receipt page.
 
   // 1. Mandatory tracking memo for our listener
   tx.add(buildMemoInstruction(`BiePay:${referenceId}`));
@@ -290,11 +285,18 @@ async function buildSplTransferTx(
   let fee = calculateFee(amountRaw);
   let referralRebate = 0n;
 
+  // 4. Viral Growth Loop (Funded by Merchant)
   if (referrerWallet && link.referralBps && link.referralBps > 0) {
     referralRebate = (amountRaw * BigInt(link.referralBps)) / 10_000n;
   }
 
-  const netAmount = amountRaw - fee - referralRebate;
+  // 5. Loyalty Cashback (Funded by Merchant)
+  let cashbackAmount = 0n;
+  if (link.cashbackBps && link.cashbackBps > 0) {
+    cashbackAmount = (amountRaw * BigInt(link.cashbackBps)) / 10_000n;
+  }
+
+  const netAmount = amountRaw - fee - referralRebate - cashbackAmount;
 
   // Transfer to recipient
   if (netAmount > 0n) {
@@ -375,6 +377,10 @@ async function buildSplTransferTx(
       )
     );
   }
+
+  // NOTE: Cashback is already accounted for in netAmount (merchant receives less).
+  // SPL self-transfers are rejected by the token program — do not add them.
+  // Cashback display is handled on the receipt page.
 
   // 1. Mandatory tracking memo for our listener
   tx.add(buildMemoInstruction(`BiePay:${referenceId}`));
@@ -555,18 +561,29 @@ export function resolveAmount(
   link: PaymentLink,
   inputAmount?: number
 ): bigint {
-  // Tipping Point Logic: If we've hit the count, use the reduced price
+  let baseAmount: bigint;
+
+  // 1. Tipping Point Logic: If we've hit the count, use the reduced price
   if (link.tippingPointCount && link.paymentCount >= link.tippingPointCount && link.tippingPointAmountLamports) {
     console.log(`[Tipping Point] Threshold reached (${link.paymentCount}/${link.tippingPointCount}). Using reduced price.`);
-    return link.tippingPointAmountLamports;
+    baseAmount = link.tippingPointAmountLamports;
+  } else if (link.amountLamports !== null) {
+    baseAmount = link.amountLamports;
+  } else if (inputAmount !== undefined && inputAmount > 0) {
+    const decimals = TOKEN_DECIMALS[link.token];
+    baseAmount = BigInt(Math.round(inputAmount * 10 ** decimals));
+  } else {
+    throw new Error("Amount is required for open-amount payment links.");
   }
 
-  if (link.amountLamports !== null) return link.amountLamports;
-  if (inputAmount !== undefined && inputAmount > 0) {
-    const decimals = TOKEN_DECIMALS[link.token];
-    return BigInt(Math.round(inputAmount * 10 ** decimals));
+  // 2. Apply Discount BPS
+  if (link.discountBps && link.discountBps > 0) {
+    const discount = (baseAmount * BigInt(link.discountBps)) / 10_000n;
+    console.log(`[Discount] Applying ${link.discountBps} BPS discount: -${discount} units.`);
+    baseAmount = baseAmount - discount;
   }
-  throw new Error("Amount is required for open-amount payment links.");
+
+  return baseAmount;
 }
 
 // ─── Escrow Settlement Builder ──────────────────────────────────────────

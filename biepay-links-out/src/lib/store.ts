@@ -111,14 +111,16 @@ export async function getLinkById(id: string): Promise<PaymentLink | undefined> 
   return link ? mapLink(link) : undefined;
 }
 
-export async function getAllLinks(merchantId?: string | string[]): Promise<PaymentLink[]> {
-  let where = {};
-  if (merchantId) {
-    if (Array.isArray(merchantId)) {
-      where = { merchantId: { in: merchantId } };
-    } else {
-      where = { merchantId };
-    }
+export async function getAllLinks(merchantIdOrIds?: string | string[]): Promise<PaymentLink[]> {
+  let where: any = {};
+  if (merchantIdOrIds) {
+    const ids = Array.isArray(merchantIdOrIds) ? merchantIdOrIds : [merchantIdOrIds];
+    where = {
+      OR: [
+        { merchantId: { in: ids } },
+        { recipientWallet: { in: ids } },
+      ]
+    };
   }
 
   const links = await prisma.paymentLink.findMany({
@@ -163,6 +165,7 @@ export async function deleteLink(id: string): Promise<void> {
 export function getEffectiveStatus(link: PaymentLink): LinkStatus {
   if (link.status === "cancelled") return "cancelled";
   if (link.status === "completed") return "completed";
+  if (link.status === "archived") return "archived";
   if (link.expiresAt && new Date() > link.expiresAt) return "expired";
   return "active";
 }
@@ -180,6 +183,8 @@ export function getLinkStatus(link: PaymentLink): {
       return { active: false, reason: "This payment link has reached its payment limit." };
     case "expired":
       return { active: false, reason: "This payment link has expired." };
+    case "archived":
+      return { active: false, reason: "This payment link has been archived by the merchant." };
     case "active":
     default:
       return { active: true };

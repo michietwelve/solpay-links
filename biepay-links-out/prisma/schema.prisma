@@ -76,6 +76,7 @@ model PaymentRecord {
   escrowStatus    String?  @default("none") // none, locked, released, refunded
   createdAt       DateTime @default(now())
   confirmedAt     DateTime?
+  metadata        String?  // JSON blob for compliance & audit
   link            PaymentLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
 }
 
@@ -100,6 +101,9 @@ model MerchantProfile {
   // Loyalty Receipts (cNFTs)
   merkleTree          String?
   collectionMint      String?
+
+  // Infrastructure Preference
+  network             String   @default("devnet") // devnet, mainnet
 }
 
 model WebhookJob {

@@ -18,8 +18,8 @@ const DASHBOARD_BASE =
     ? window.location.origin
     : (process.env.NEXT_PUBLIC_DASHBOARD_URL ?? "http://localhost:3000");
 
-export type SupportedToken = "SOL" | "USDC" | "USDT" | "PUSD";
-export type LinkStatus = "active" | "completed" | "expired" | "cancelled";
+export type SupportedToken = "SOL" | "USDC" | "USDT" | "PUSD" | "BONK" | "WIF";
+export type LinkStatus = "active" | "completed" | "expired" | "cancelled" | "archived";
 
 export interface MerchantProfile {
   merchantId: string;
@@ -106,6 +106,7 @@ export interface PaymentRecord {
   status: "pending" | "confirmed" | "failed";
   createdAt: string;
   confirmedAt: string | null;
+  metadata?: string | null;
 }
 
 // ─── API helpers ──────────────────────────────────────────────────────────────
@@ -159,7 +160,11 @@ export const linksApi = {
   allPayments: (token: string): Promise<PaymentRecordWithLabel[]> =>
     apiFetch("/api/links/all/payments", { token }),
 
-  analytics: (token: string, merchantId: string): Promise<{ date: string; volume: number }[]> =>
+  analytics: (token: string, merchantId: string): Promise<{ 
+    chart: { date: string; volume: number }[];
+    byLink: { label: string, volume: number, count: number }[];
+    byToken: { token: string, volume: number }[];
+  }> =>
     apiFetch(`/api/analytics/${merchantId}`, { token }),
 };
 
@@ -179,11 +184,32 @@ export interface DashboardStats {
 export function getEffectiveStatus(link: PaymentLink): LinkStatus {
   if (link.status === "cancelled") return "cancelled";
   if (link.status === "completed") return "completed";
+  if (link.status === "archived") return "archived";
   if (link.expiresAt && new Date() > new Date(link.expiresAt)) return "expired";
   return "active";
 }
 
-export function computeStats(links: PaymentLink[]): DashboardStats {
+// Cached live price for SOL (refreshed every 5 minutes)
+let _cachedSolPrice = 140;
+let _solPriceFetchedAt = 0;
+
+export async function getLiveSolPrice(): Promise<number> {
+  const now = Date.now();
+  if (now - _solPriceFetchedAt < 5 * 60 * 1000) return _cachedSolPrice;
+  try {
+    const res = await fetch("https://price.jup.ag/v6/price?ids=SOL");
+    if (res.ok) {
+      const data = await res.json();
+      _cachedSolPrice = data?.data?.SOL?.price ?? _cachedSolPrice;
+      _solPriceFetchedAt = now;
+    }
+  } catch {
+    // fallback to cached value
+  }
+  return _cachedSolPrice;
+}
+
+export function computeStats(links: PaymentLink[], solPrice = 140): DashboardStats {
   const FEE_BPS = 50;
 
   let totalVolumeLamports = 0;
@@ -198,7 +224,8 @@ export function computeStats(links: PaymentLink[]): DashboardStats {
     if (l.amountLamports !== null) {
       const perPayment = Number(l.amountLamports);
       const decimals = l.token === "SOL" ? 9 : 6;
-      const usdPerUnit = (l.token === "SOL") ? 140 : 1; // stablecoins (USDC/USDT/PUSD) = $1
+      // Use live SOL price; stablecoins are $1
+      const usdPerUnit = (l.token === "SOL") ? solPrice : 1;
       totalVolumeLamports +=
         (perPayment / 10 ** decimals) * l.paymentCount * usdPerUnit;
     }

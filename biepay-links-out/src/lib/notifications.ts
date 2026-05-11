@@ -34,7 +34,7 @@ export async function sendPaymentNotification(email: string, details: {
             <p style="margin: 5px 0;"><strong>Payer:</strong> <code style="background: #eee; padding: 2px 4px;">${details.customerWallet}</code></p>
           </div>
 
-          <a href="https://explorer.solana.com/tx/${details.signature}?cluster=devnet" 
+          <a href="https://explorer.solana.com/tx/${details.signature}${process.env.IS_MAINNET !== 'true' ? '?cluster=devnet' : ''}" 
              style="display: inline-block; background: #000; color: #fff; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold;">
             View on Explorer
           </a>

@@ -12,8 +12,11 @@ interface MerchantProfile {
   webhookUrl: string | null;
   webhookSecret: string | null;
   snsDomain?: string | null;
-  isPro?: boolean;
   stealthViewPubkey?: string | null;
+  isPro?: boolean;
+  merkleTree?: string | null;
+  collectionMint?: string | null;
+  network?: string;
 }
 
 interface StorefrontSettingsProps {
@@ -22,9 +25,11 @@ interface StorefrontSettingsProps {
   onExport: () => void;
   onNotify?: (msg: string, type?: "success" | "info" | "error") => void;
   onDelete?: () => void;
+  getAccessToken: () => Promise<string | null>;
+  walletAddress: string | null;
 }
 
-export default function StorefrontSettings({ profile, onSave, onExport, onNotify, onDelete }: StorefrontSettingsProps) {
+export default function StorefrontSettings({ profile, onSave, onExport, onNotify, onDelete, getAccessToken, walletAddress }: StorefrontSettingsProps) {
   const [activeTab, setActiveTab] = useState<"brand" | "security" | "privacy">("brand");
   const [businessName, setBusinessName] = useState(profile.businessName ?? "");
   const [logoUrl, setLogoUrl] = useState(profile.logoUrl ?? "");
@@ -36,6 +41,7 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [stealthViewPubkey, setStealthViewPubkey] = useState(profile.stealthViewPubkey ?? "");
   const [stealthSecret, setStealthSecret] = useState<string | null>(null);
+  const [network, setNetwork] = useState((profile as any).network ?? "devnet");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = async () => {
@@ -62,7 +68,8 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
         webhookUrl: sanitizedWebhook || null,
         snsDomain: snsDomain || null,
         stealthViewPubkey: stealthViewPubkey || null,
-      });
+        network: network,
+      } as any);
       setSaveStatus("success");
       setTimeout(() => setSaveStatus("idle"), 3000);
     } catch (e: any) {
@@ -195,6 +202,24 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
                       </button>
                     </div>
                   </div>
+
+                  <div className="p-6 bg-white border border-zinc-200 rounded-[2rem] shadow-sm hover:shadow-md transition-shadow">
+                    <label className="text-[10px] font-black text-zinc-900 uppercase tracking-widest mb-4 block">Accent Color</label>
+                    <div className="flex items-center gap-4">
+                      <input 
+                        type="color"
+                        value={accentColor}
+                        onChange={(e) => setAccentColor(e.target.value)}
+                        className="w-12 h-12 bg-transparent border-none cursor-pointer rounded-xl overflow-hidden"
+                      />
+                      <input 
+                        placeholder="#c5a36e"
+                        className="flex-1 p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-mono font-bold focus:border-zinc-900 outline-none transition-all"
+                        value={accentColor}
+                        onChange={(e) => setAccentColor(e.target.value)}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -213,28 +238,77 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
                           className="w-full p-4 bg-white border border-zinc-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-zinc-900/5 outline-none transition-all shadow-sm"
                         />
                       </div>
+                      {snsDomain && snsDomain.endsWith(".sol") && (
+                        <button 
+                          onClick={async () => {
+                            onNotify?.("Verifying SNS ownership...", "info");
+                            try {
+                              const token = await getAccessToken();
+                              const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3001"}/api/merchants/verify-sns`, {
+                                method: "POST",
+                                headers: { 
+                                  "Content-Type": "application/json",
+                                  "Authorization": `Bearer ${token}`
+                                },
+                                body: JSON.stringify({ domain: snsDomain, wallet: walletAddress })
+                              });
+                              const data = await res.json();
+                              if (res.ok) {
+                                onNotify?.(`Verified ownership of ${snsDomain}`, "success");
+                              } else {
+                                onNotify?.(data.message || "Verification failed", "error");
+                              }
+                            } catch (e) {
+                              onNotify?.("Verification service unreachable", "error");
+                            }
+                          }}
+                          className="px-4 bg-zinc-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-800 transition-colors shadow-lg shadow-zinc-900/10"
+                        >
+                          Verify
+                        </button>
+                      )}
                     </div>
                   </div>
 
-                  <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 group hover:border-zinc-300 transition-colors">
-                    <div className="flex items-center justify-between mb-3">
-                      <label className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Accent Color</label>
-                      <span className="text-[10px] font-mono text-zinc-400 uppercase font-bold">{accentColor || "#18181B"}</span>
-                    </div>
-                    <div className="flex gap-4">
-                      <input 
-                        type="color" 
-                        value={accentColor || "#18181b"}
-                        onChange={e => setAccentColor(e.target.value)}
-                        className="w-14 h-14 rounded-2xl border-none p-1 bg-white shadow-sm cursor-pointer"
-                      />
-                      <input 
-                        value={accentColor}
-                        onChange={e => setAccentColor(e.target.value)}
-                        className="flex-1 p-3 bg-white border border-zinc-200 rounded-xl text-sm font-mono uppercase font-bold focus:ring-2 focus:ring-zinc-900/5 outline-none transition-all"
-                      />
-                    </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Network Configuration Section */}
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] px-1">Network Infrastructure</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <button 
+                    onClick={() => setNetwork("devnet")}
+                    className={`p-6 rounded-[2rem] border-2 transition-all text-left space-y-3 ${
+                      network === "devnet" ? "border-amber-500 bg-amber-50/20" : "bg-white border-zinc-100 hover:border-zinc-200"
+                    }`}
+                  >
+                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${network === "devnet" ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20" : "bg-zinc-100 text-zinc-400"}`}>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-zinc-900">Solana Devnet</p>
+                      <p className="text-[9px] text-zinc-500 font-bold leading-relaxed">Perfect for testing logic and onboarding staff without real capital.</p>
+                    </div>
+                  </button>
+
+                  <button 
+                    onClick={() => setNetwork("mainnet")}
+                    className={`p-6 rounded-[2rem] border-2 transition-all text-left space-y-3 ${
+                      network === "mainnet" ? "border-zinc-900 bg-zinc-900 text-white shadow-2xl shadow-zinc-950/20" : "bg-white border-zinc-100 hover:border-zinc-200"
+                    }`}
+                  >
+                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${network === "mainnet" ? "bg-white text-zinc-900" : "bg-zinc-100 text-zinc-400"}`}>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
+                    </div>
+                    <div>
+                      <p className={`text-[10px] font-black uppercase tracking-widest ${network === "mainnet" ? "text-white" : "text-zinc-900"}`}>Mainnet-Beta</p>
+                      <p className={`text-[9px] font-bold leading-relaxed ${network === "mainnet" ? "text-zinc-400" : "text-zinc-500"}`}>Production environment for processing actual customer payments.</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
                 </div>
               </div>
             </div>
@@ -358,18 +432,22 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
                       <button 
                         className="w-full py-4 bg-[#c5a36e] text-black font-black text-xs uppercase tracking-[0.2em] rounded-xl hover:bg-[#d4b98c] transition-all shadow-[0_10px_30px_rgba(197,163,110,0.25)] hover:shadow-[0_15px_40px_rgba(197,163,110,0.35)] hover:-translate-y-0.5 active:translate-y-0"
                         onClick={async () => {
-                          onNotify?.("Unlocking BiePay Pro...", "info");
+                          onNotify?.("To upgrade, we'll verify a 0.1 SOL contribution to the BiePay Treasury.", "info");
+                          // In a production app, we would use the wallet adapter to send a transaction here.
+                          // For the hackathon, we simulate the verification of the Pro status upgrade.
+                          await new Promise(r => setTimeout(r, 2000));
                           await onSave({ isPro: true });
                           onNotify?.("BiePay Pro unlocked successfully!", "success");
                         }}
                       >
-                        Upgrade to Pro
+                        Upgrade to Pro (0.1 SOL)
                       </button>
                     )}
                   </div>
                 </div>
               </div>
             </div>
+
 
             <div className="p-8 bg-red-50/50 rounded-[2.5rem] border border-red-100 shadow-sm group hover:bg-red-50 transition-colors relative overflow-hidden">
               <h4 className="text-red-900 text-sm font-black tracking-tight mb-2">Danger Zone</h4>

@@ -220,6 +220,17 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
         {errors.description && <p className="text-[10px] text-red-500 font-bold uppercase ml-1">{errors.description}</p>}
       </div>
 
+      <div className="space-y-2">
+        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] px-1">Digital Asset / Content URL (Optional)</label>
+        <input 
+          placeholder="https://content.yoursite.com/premium-book.pdf"
+          className="w-full p-4 bg-white border border-zinc-200 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-zinc-900/5 focus:border-zinc-900 outline-none transition-all"
+          value={formData.digitalAssetUrl}
+          onChange={setField("digitalAssetUrl")}
+        />
+        <p className="text-[9px] text-zinc-400 font-medium px-1">After payment, customers will be redirected to this link to claim their content.</p>
+      </div>
+
       <div className="pt-4 border-t border-zinc-100">
         <h4 className="text-[10px] font-black text-zinc-900 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
           <span className="w-1.5 h-1.5 bg-zinc-900 rounded-full" />
@@ -248,6 +259,50 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
             <p className="text-[9px] text-zinc-500 font-medium leading-tight">Accept multiple contributions towards a target.</p>
           </div>
         </div>
+
+        {formData.isSplitPayment && (
+          <div className="mt-4 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl space-y-4 animate-in slide-in-from-top-2">
+            <div className="space-y-2">
+              <label className="text-[9px] font-black text-emerald-900 uppercase tracking-widest pl-1">Target Goal Amount ({formData.token})</label>
+              <input 
+                placeholder="e.g. 50"
+                className="w-full p-3 bg-white border border-emerald-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                value={formData.targetAmount}
+                onChange={setField("targetAmount")}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Cashback (BPS)</label>
+            <input 
+              placeholder="e.g. 100 (1%)"
+              className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-zinc-900/5 outline-none transition-all"
+              value={formData.cashbackBps}
+              onChange={setField("cashbackBps")}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Referral (BPS)</label>
+            <input 
+              placeholder="e.g. 200 (2%)"
+              className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-zinc-900/5 outline-none transition-all"
+              value={formData.referralBps}
+              onChange={setField("referralBps")}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest pl-1">Discount (BPS)</label>
+            <input 
+              placeholder="e.g. 500 (5%)"
+              className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-zinc-900/5 outline-none transition-all"
+              value={formData.discountBps}
+              onChange={setField("discountBps")}
+            />
+          </div>
+        </div>
       </div>
 
       {apiError && (
@@ -267,6 +322,7 @@ export default function CreateLinkForm({ onSuccess, onCancel }: Props) {
           "Generate Payment Link"
         )}
       </button>
+
     </form>
   );
 }

@@ -76,8 +76,9 @@ type Stage =
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://biepay-links-production.up.railway.app";
-const RPC      = process.env.NEXT_PUBLIC_RPC_ENDPOINT ?? "https://api.devnet.solana.com";
+const IS_MAINNET = process.env.NEXT_PUBLIC_NETWORK === "mainnet-beta";
+const API_BASE   = process.env.NEXT_PUBLIC_API_URL ?? "https://biepay-links-production.up.railway.app";
+const RPC        = process.env.NEXT_PUBLIC_RPC_ENDPOINT ?? (IS_MAINNET ? "https://api.mainnet-beta.solana.com" : "https://api.devnet.solana.com");
 const MOONPAY_API_KEY = process.env.NEXT_PUBLIC_MOONPAY_API_KEY ?? "";
 
 // Map our token codes to MoonPay currency codes
@@ -348,7 +349,7 @@ export default function PayPage() {
     if (!walletAddr) return;
     try {
       await fundWallet(walletAddr, {
-        cluster: { name: "devnet" },
+        cluster: { name: IS_MAINNET ? "mainnet-beta" : "devnet" },
         amount: "5",
       });
     } catch (e) {
@@ -573,7 +574,7 @@ export default function PayPage() {
                 ["Merchant", link.merchant.businessName || link.label],
                 ["Date", now],
                 ["Payer Wallet", `${walletAddr?.slice(0, 6)}...${walletAddr?.slice(-6)}`],
-                ["Network", "Solana Devnet"]
+                ["Network", IS_MAINNET ? "Solana Mainnet" : "Solana Devnet"]
               ].map(([k,v]) => (
                 <div key={k} className="flex justify-between items-center">
                   <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{k}</span>
@@ -587,7 +588,8 @@ export default function PayPage() {
                 <button
                   onClick={handleAccessAsset}
                   disabled={isSigning}
-                  className="w-full py-4 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-[0.25em] rounded-xl hover:bg-emerald-500 transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-200 disabled:opacity-50"
+                  className="w-full py-4 text-white text-[10px] font-black uppercase tracking-[0.25em] rounded-xl transition-all flex items-center justify-center gap-2 shadow-xl disabled:opacity-50"
+                  style={{ backgroundColor: link.merchant.accentColor ?? "#059669" }}
                 >
                   {isSigning ? (
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -600,7 +602,7 @@ export default function PayPage() {
 
               {txSig && (
                 <a
-                  href={`https://explorer.solana.com/tx/${txSig}?cluster=devnet`}
+                  href={`https://explorer.solana.com/tx/${txSig}${!IS_MAINNET ? "?cluster=devnet" : ""}`}
                   target="_blank"
                   rel="noreferrer"
                   className="w-full py-4 bg-zinc-950 text-white text-[10px] font-black uppercase tracking-[0.25em] rounded-xl hover:bg-zinc-800 transition-all flex items-center justify-center gap-2 shadow-xl"

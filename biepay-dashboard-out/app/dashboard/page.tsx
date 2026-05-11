@@ -106,12 +106,12 @@ export default function DashboardPage() {
   };
   const [shareLink, setShareLink] = useState<{ id: string; label: string } | null>(null);
   const [search, setSearch]     = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("active");
   const [detailLink, setDetailLink] = useState<PaymentLink | null>(null);
   const [withdrawSource, setWithdrawSource] = useState<string | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
   const [successData, setSuccessData] = useState<{ title: string; message: string; txSig?: string; isError?: boolean } | null>(null);
-  const [activeTab, setActiveTab] = useState<"links" | "transactions" | "analytics" | "settings">("links");
+  const [activeTab, setActiveTab] = useState<"links" | "transactions" | "analytics" | "webhooks" | "settings">("links");
   const [settings, setSettings] = useState<{ email: string; apiKey: string | null } | null>(null);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const { payments = [], isLoading: isPaymentsLoading, mutate: mutatePayments } = useAllPayments();
@@ -190,14 +190,34 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<{ businessName: string | null; logoUrl: string | null; accentColor: string | null; webhookUrl: string | null; webhookSecret: string | null } | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [analyticsData, setAnalyticsData] = useState<any[]>([]);
+  const [topLinks, setTopLinks] = useState<any[]>([]);
+  const [tokenDistribution, setTokenDistribution] = useState<any[]>([]);
   const [confirmConfig, setConfirmConfig] = useState<{ title: string; message: string; onConfirm: () => void; variant?: "danger" | "gold" } | null>(null);
   const [hasViewedNotifications, setHasViewedNotifications] = useState(false);
   const [receiptPayment, setReceiptPayment] = useState<any>(null);
+  const [webhookLogs, setWebhookLogs] = useState<any[]>([]);
+  const [isLogsLoading, setIsLogsLoading] = useState(false);
 
-  const filtered = links.filter(l =>
-    (l.label.toLowerCase().includes(search.toLowerCase()) || l.id.includes(search)) &&
-    (!statusFilter || l.status === statusFilter)
-  );
+  const [isOmniOpen, setIsOmniOpen] = useState(false);
+
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setIsOmniOpen((open) => !open);
+      }
+    };
+    document.addEventListener("keydown", down);
+    return () => document.removeEventListener("keydown", down);
+  }, []);
+
+  const filtered = links.filter(l => {
+    const effectiveStatus = getEffectiveStatus(l);
+    return (
+      (l.label.toLowerCase().includes(search.toLowerCase()) || l.id.includes(search)) &&
+      (statusFilter === "" || effectiveStatus === statusFilter)
+    );
+  });
 
   const downloadCSV = () => {
     if (links.length === 0) return;
@@ -269,7 +289,9 @@ export default function DashboardPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        setAnalyticsData(data);
+        setAnalyticsData(data.chart || []);
+        setTopLinks(data.byLink || []);
+        setTokenDistribution(data.byToken || []);
       }
     } catch (e) {
       console.error("Analytics fetch failed:", e);
@@ -280,6 +302,44 @@ export default function DashboardPage() {
     fetchProfile();
     fetchAnalytics();
   }, [user?.id, merchantIds]);
+
+  const fetchWebhookLogs = async () => {
+    if (!user?.id) return;
+    setIsLogsLoading(true);
+    try {
+      const token = await getAccessToken();
+      const res = await fetch(`${API_BASE}/api/merchants/${user.id}/webhook-logs`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) setWebhookLogs(await res.json());
+    } catch (e) {
+      console.error("Logs fetch failed:", e);
+    } finally {
+      setIsLogsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "webhooks") fetchWebhookLogs();
+  }, [activeTab]);
+
+  const handleRedeliver = async (logId: string) => {
+    try {
+      const token = await getAccessToken();
+      const res = await fetch(`${API_BASE}/api/merchants/${user?.id}/webhook-logs/${logId}/redeliver`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        showToast("Webhook redelivered successfully.", "success");
+        fetchWebhookLogs();
+      } else {
+        showToast("Redelivery failed.", "error");
+      }
+    } catch (e) {
+      showToast("Network error during redelivery.", "error");
+    }
+  };
 
   const handleSaveProfile = async (data: any) => {
     if (!user?.id) return;
@@ -387,6 +447,29 @@ export default function DashboardPage() {
         }
       }
     });
+  }
+
+  async function handleArchive(id: string) {
+    setIsDeleting(true);
+    try {
+      const token = await getAccessToken();
+      const res = await fetch(`${API_BASE}/api/links/${id}`, {
+        method: "PATCH",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: "archived" })
+      });
+      if (!res.ok) throw new Error("Archive failed");
+      
+      await triggerSync(token ?? "");
+      showToast("Link archived.", "success");
+    } catch (err: any) {
+      showToast(err.message, "error");
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   async function handleWithdraw(dest: string) {
@@ -899,6 +982,48 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Institutional Onboarding Checklist (Only shown if incomplete) */}
+        {(!profile?.businessName || !profile?.logoUrl || !profile?.webhookUrl) && (
+          <div className="premium-card p-8 bg-zinc-950 border-zinc-800 space-y-6 animate-in slide-in-from-top-4 duration-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-black text-white tracking-tight">Institutional Setup Guide</h2>
+                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Complete your profile to unlock full platform power</p>
+              </div>
+              <div className="px-3 py-1 bg-zinc-900 rounded-lg border border-white/10">
+                <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">
+                  {Math.round(((!!profile?.businessName ? 33 : 0) + (!!profile?.logoUrl ? 33 : 0) + (!!profile?.webhookUrl ? 34 : 0)))}% Complete
+                </span>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[
+                { label: "Define Brand Identity", done: !!profile?.businessName, icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
+                { label: "Upload Storefront Logo", done: !!profile?.logoUrl, icon: "M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" },
+                { label: "Configure Webhooks", done: !!profile?.webhookUrl, icon: "M13 10V3L4 14h7v7l9-11h-7z" }
+              ].map((item, i) => (
+                <div key={i} className={`p-4 rounded-2xl border transition-all ${item.done ? 'bg-zinc-900 border-zinc-800' : 'bg-white/5 border-white/5 hover:border-white/20'}`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${item.done ? 'bg-emerald-500 text-white' : 'bg-zinc-800 text-zinc-500'}`}>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={item.icon} /></svg>
+                    </div>
+                    <span className={`text-[11px] font-black uppercase tracking-tight ${item.done ? 'text-zinc-400 line-through' : 'text-white'}`}>{item.label}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="pt-2">
+              <button 
+                onClick={() => setActiveTab("settings")}
+                className="text-[10px] font-black text-amber-500 hover:text-amber-400 uppercase tracking-[0.2em] transition-colors"
+              >
+                Go to Settings &rarr;
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Stats Bar */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="premium-card p-6 space-y-1">
@@ -941,7 +1066,60 @@ export default function DashboardPage() {
               Live Feed
             </div>
           </div>
-          <RevenueChart data={analytics} />
+          <RevenueChart data={analyticsData} />
+        </div>
+
+        {/* Granular Analytics: Top Links & Token Distribution */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Top Products */}
+          <div className="premium-card p-8 space-y-6">
+            <div>
+              <h2 className="text-xl font-black text-zinc-900 tracking-tight">Top Performing Links</h2>
+              <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-1">By Gross Revenue</p>
+            </div>
+            <div className="space-y-4">
+              {topLinks.length === 0 ? (
+                <p className="text-xs text-zinc-400 text-center py-8">No data available yet.</p>
+              ) : topLinks.slice(0, 5).map((l, i) => (
+                <div key={l.label} className="flex items-center justify-between p-4 bg-zinc-50 rounded-2xl border border-zinc-100/50">
+                  <div className="flex items-center gap-4">
+                    <span className="text-xs font-black text-zinc-300">#{i + 1}</span>
+                    <div>
+                      <p className="text-sm font-black text-zinc-900">{l.label}</p>
+                      <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{l.count} sales</p>
+                    </div>
+                  </div>
+                  <p className="text-sm font-black text-zinc-950">${l.volume.toLocaleString()}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Token Distribution */}
+          <div className="premium-card p-8 space-y-6">
+            <div>
+              <h2 className="text-xl font-black text-zinc-900 tracking-tight">Asset Distribution</h2>
+              <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-1">Preferred Payment Tokens</p>
+            </div>
+            <div className="space-y-4">
+              {tokenDistribution.length === 0 ? (
+                <p className="text-xs text-zinc-400 text-center py-8">No data available yet.</p>
+              ) : tokenDistribution.map((t) => (
+                <div key={t.token} className="space-y-2">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-xs font-black text-zinc-900">{t.token}</span>
+                    <span className="text-xs font-bold text-zinc-500">${t.volume.toLocaleString()}</span>
+                  </div>
+                  <div className="h-2 bg-zinc-100 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-zinc-900 transition-all duration-1000" 
+                      style={{ width: `${(t.volume / stats.totalVolume) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Links table */}
@@ -966,6 +1144,12 @@ export default function DashboardPage() {
                 className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === "settings" ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}
               >
                 Settings
+              </button>
+              <button 
+                onClick={() => setActiveTab("webhooks")}
+                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === "webhooks" ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}
+              >
+                Webhooks
               </button>
             </div>
 
@@ -1004,6 +1188,18 @@ export default function DashboardPage() {
                 />
                 <svg className="w-4 h-4 text-zinc-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
               </div>
+
+              <select
+                value={statusFilter}
+                onChange={e => setStatusFilter(e.target.value)}
+                className="px-4 py-2.5 bg-white border border-zinc-200 rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none focus:border-zinc-900 transition-all shadow-sm cursor-pointer"
+              >
+                <option value="active">Active</option>
+                <option value="completed">Completed</option>
+                <option value="expired">Expired</option>
+                <option value="archived">Archived</option>
+                <option value="">All Statuses</option>
+              </select>
               <button onClick={downloadCSV} className="p-2.5 bg-white border border-zinc-200 rounded-2xl hover:bg-zinc-50 transition-all shadow-sm" title="Export CSV">
                 <svg className="w-5 h-5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
               </button>
@@ -1052,12 +1248,142 @@ export default function DashboardPage() {
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
                           </button>
+                          {getEffectiveStatus(l) !== "archived" && (
+                            <button 
+                              onClick={() => handleArchive(l.id)}
+                              className="p-2 text-zinc-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all"
+                              title="Archive Link"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => handleDelete(l.id)}
+                            className="p-2 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                            title="Delete Permanently"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          </button>
                         </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+          ) : activeTab === "transactions" ? (
+            <div className="premium-card overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <table className="w-full text-left">
+                <thead className="bg-zinc-50 border-b border-zinc-100">
+                  <tr>
+                    {["Status", "Product", "Amount", "Compliance", "Time", ""].map(h => (
+                      <th key={h} className="text-[10px] font-black text-zinc-400 px-6 py-4 uppercase tracking-widest">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-50">
+                  {isPaymentsLoading ? (
+                    Array(5).fill(0).map((_, i) => (
+                      <tr key={i} className="animate-pulse"><td colSpan={6} className="px-6 py-8 h-12 bg-zinc-50/20" /></tr>
+                    ))
+                  ) : payments.length === 0 ? (
+                    <tr><td colSpan={6} className="px-6 py-12 text-center text-xs text-zinc-400 font-bold uppercase tracking-widest">No transactions found.</td></tr>
+                  ) : payments.map(p => {
+                    const metadata = p.metadata ? JSON.parse(p.metadata) : null;
+                    const isCompliant = metadata?.compliance === "compliant";
+                    
+                    return (
+                      <tr key={p.id} className="hover:bg-zinc-50/50 transition-colors group cursor-pointer" onClick={() => setReceiptPayment(p)}>
+                        <td className="px-6 py-4">
+                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${p.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                            {p.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-xs font-black text-zinc-900">{(p as any).linkLabel || "Payment Link"}</p>
+                          <p className="text-[9px] font-mono text-zinc-400 truncate max-w-[100px]">{p.signature?.slice(0, 12)}...</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-xs font-black text-zinc-900">{formatAmount(p.amountLamports, p.token)}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-1.5">
+                            <div className={`w-1.5 h-1.5 rounded-full ${isCompliant ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                            <span className={`text-[9px] font-black uppercase tracking-widest ${isCompliant ? 'text-emerald-600' : 'text-amber-600'}`}>
+                              {isCompliant ? 'Compliant' : 'Flagged'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-[10px] text-zinc-400 font-bold uppercase tracking-widest">{timeAgo(p.createdAt)}</td>
+                        <td className="px-6 py-4 text-right">
+                          <svg className="w-4 h-4 text-zinc-300 group-hover:text-zinc-900 transition-colors inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : activeTab === "webhooks" ? (
+            <div className="premium-card overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-black text-zinc-900 tracking-tight">Delivery Logs</h2>
+                  <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-1">Institutional Webhook History</p>
+                </div>
+                <button 
+                  onClick={fetchWebhookLogs}
+                  className="p-2 text-zinc-400 hover:text-zinc-900 transition-colors"
+                  title="Refresh Logs"
+                >
+                  <svg className={`w-4 h-4 ${isLogsLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                </button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-zinc-50/50">
+                    <tr>
+                      <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Status</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Event</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Payload</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Sent</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-50">
+                    {isLogsLoading && webhookLogs.length === 0 ? (
+                      Array(5).fill(0).map((_, i) => (
+                        <tr key={i} className="animate-pulse"><td colSpan={5} className="px-6 py-8 h-12 bg-zinc-50/20" /></tr>
+                      ))
+                    ) : webhookLogs.length === 0 ? (
+                      <tr><td colSpan={5} className="px-6 py-12 text-center text-xs text-zinc-400 font-bold uppercase tracking-widest">No webhook logs found.</td></tr>
+                    ) : webhookLogs.map(log => (
+                      <tr key={log.id} className="hover:bg-zinc-50/50 transition-colors">
+                        <td className="px-6 py-4">
+                          <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${log.status >= 200 && log.status < 300 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                            {log.status} {log.status >= 200 && log.status < 300 ? 'SUCCESS' : 'FAILED'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-[11px] font-black text-zinc-900">{JSON.parse(log.payload).event}</td>
+                        <td className="px-6 py-4">
+                          <code className="text-[10px] font-mono text-zinc-400 truncate max-w-[200px] block" title={log.payload}>
+                            {log.payload}
+                          </code>
+                        </td>
+                        <td className="px-6 py-4 text-[10px] text-zinc-400 font-bold uppercase tracking-widest">{timeAgo(log.createdAt)}</td>
+                        <td className="px-6 py-4 text-right">
+                          <button 
+                            onClick={() => handleRedeliver(log.id)}
+                            className="px-3 py-1.5 bg-zinc-900 text-white text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-zinc-700 transition-all shadow-sm active:scale-95"
+                          >
+                            Redeliver
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           ) : activeTab === "settings" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -1349,7 +1675,93 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Share modal */}
+      {/* Omni Search Modal */}
+      {isOmniOpen && (
+        <div className="fixed inset-0 z-[100] flex items-start justify-center pt-24 px-4 bg-zinc-950/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div 
+            className="fixed inset-0" 
+            onClick={() => setIsOmniOpen(false)} 
+          />
+          <div className="relative w-full max-w-2xl bg-white rounded-[2rem] shadow-[0_30px_100px_rgba(0,0,0,0.3)] overflow-hidden border border-zinc-200 animate-in zoom-in-95 slide-in-from-top-4 duration-300">
+            <div className="flex items-center px-6 border-b border-zinc-100">
+              <svg className="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              <input 
+                autoFocus
+                placeholder="Search anything... (links, transactions, settings)"
+                className="w-full p-6 text-base font-bold outline-none placeholder:text-zinc-300"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-zinc-100 rounded-lg border border-zinc-200 shadow-inner">
+                <span className="text-[9px] font-black text-zinc-400 uppercase">ESC</span>
+              </div>
+            </div>
+            
+            <div className="max-h-[400px] overflow-y-auto p-4 space-y-1">
+              <p className="px-3 py-2 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Recent Links</p>
+              {filtered.slice(0, 8).map(l => (
+                <button 
+                  key={l.id}
+                  onClick={() => { setDetailLink(l); setIsOmniOpen(false); }}
+                  className="w-full flex items-center justify-between p-4 hover:bg-zinc-50 rounded-2xl transition-colors group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-zinc-100 rounded-xl flex items-center justify-center text-zinc-400 group-hover:bg-zinc-200 transition-colors">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-black text-zinc-900">{l.label}</p>
+                      <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{formatAmount(l.amountLamports, l.token)}</p>
+                    </div>
+                  </div>
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Jump to Link</span>
+                  </div>
+                </button>
+              ))}
+              <div className="pt-2">
+                <p className="px-3 py-2 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Quick Actions</p>
+                <div className="grid grid-cols-2 gap-2 p-2">
+                  <button 
+                    onClick={() => { setModal("create"); setIsOmniOpen(false); }}
+                    className="flex items-center gap-3 p-4 bg-zinc-50 rounded-2xl border border-zinc-100 hover:border-zinc-900 transition-all text-left"
+                  >
+                    <div className="w-8 h-8 bg-zinc-900 text-white rounded-lg flex items-center justify-center">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                    </div>
+                    <span className="text-xs font-black text-zinc-900 uppercase tracking-tight">Create Link</span>
+                  </button>
+                  <button 
+                    onClick={() => { setActiveTab("analytics"); setIsOmniOpen(false); }}
+                    className="flex items-center gap-3 p-4 bg-zinc-50 rounded-2xl border border-zinc-100 hover:border-zinc-900 transition-all text-left"
+                  >
+                    <div className="w-8 h-8 bg-amber-500 text-white rounded-lg flex items-center justify-center">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                    </div>
+                    <span className="text-xs font-black text-zinc-900 uppercase tracking-tight">Analytics</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-zinc-50 border-t border-zinc-100 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1.5">
+                  <span className="px-1.5 py-0.5 bg-white border border-zinc-200 rounded text-[9px] font-black">↑↓</span>
+                  <span className="text-[9px] font-bold text-zinc-400 uppercase">Navigate</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="px-1.5 py-0.5 bg-white border border-zinc-200 rounded text-[9px] font-black">ENTER</span>
+                  <span className="text-[9px] font-bold text-zinc-400 uppercase">Select</span>
+                </div>
+              </div>
+              <p className="text-[9px] font-black text-zinc-300 uppercase tracking-[0.2em]">BiePay Omni-Search v1.0</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Existing Share Modal */}
       {modal === "share" && shareLink && (
         <ShareModal linkId={shareLink.id} label={shareLink.label} onClose={() => setModal(null)} />
       )}
@@ -1559,12 +1971,14 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <StorefrontSettings 
-                profile={profile || { businessName: "", logoUrl: "", accentColor: "#c5a36e", webhookUrl: "", webhookSecret: "" }} 
-                onSave={handleSaveProfile}
-                onExport={handleExportWallet}
-                onNotify={showToast}
-                onDelete={handleDeleteAccount}
-              />
+                  profile={profile || { businessName: "", logoUrl: "", accentColor: "#c5a36e", webhookUrl: "", webhookSecret: "" }} 
+                  onSave={handleSaveProfile}
+                  onExport={handleExportWallet}
+                  onNotify={showToast}
+                  onDelete={handleDeleteAccount}
+                  getAccessToken={getAccessToken}
+                  walletAddress={address}
+                />
               )}
 
             </div>

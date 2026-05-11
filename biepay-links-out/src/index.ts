@@ -17,6 +17,7 @@ import analyticsRouter from "./routes/analytics";
 import debugRouter from "./routes/debug";
 import fulfillmentRouter from "./routes/fulfillment";
 import stealthRouter from "./routes/stealth";
+import solanaWebhooks from "./routes/solanaWebhooks";
 import { startEventListener } from "./lib/listener";
 import { startWebhookWorker } from "./lib/webhookWorker";
 
@@ -89,6 +90,7 @@ app.use("/api/merchants", merchantsRouter);
 
 // Analytics
 app.use("/api/analytics", analyticsRouter);
+app.use("/api/webhooks", solanaWebhooks);
 
 // Debug
 app.use("/api/debug", debugRouter);

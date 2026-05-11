@@ -253,6 +253,36 @@ router.get("/:id/payments", async (req: Request, res: Response): Promise<void> =
   });
 });
 
+// ─── GET /api/payments/:id  ───────────────────────────────────────────────
+// Fetch a single payment record for the receipt page
+router.get("/payments/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const payment = await prisma.paymentRecord.findUnique({
+      where: { id },
+      include: { link: { select: { label: true, digitalAssetUrl: true, id: true } } }
+    });
+
+    if (!payment) {
+      res.status(404).json({ error: "Payment not found" });
+      return;
+    }
+
+    const decimals = TOKEN_DECIMALS[payment.token as SupportedToken] || 9;
+    const amountHuman = (BigInt(payment.amountLamports) / BigInt(10 ** decimals)).toString();
+
+    res.json({
+      payment: {
+        ...payment,
+        amountHuman,
+      },
+      link: payment.link
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch payment record" });
+  }
+});
+
 // ─── GET /api/links  ─────────────────────────────────────────────────────
 // Authenticated list fetching. Only returns links belonging to the user's linked wallets.
 
@@ -264,23 +294,10 @@ router.get("/", requireAuth, async (req: AuthenticatedRequest, res: Response): P
     return;
   }
 
-  const links = await prisma.paymentLink.findMany({
-    where: {
-      OR: [
-        { merchantId: { in: allowedIds } },
-        { recipientWallet: { in: allowedIds } }
-      ]
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  // Use the hardened library function instead of raw prisma call
+  const links = await getAllLinks(allowedIds);
 
-  res.json(
-    links.map((l: any) => ({
-      ...l,
-      status: getEffectiveStatus(l as any),
-      amountLamports: l.amountLamports?.toString() ?? null,
-    }))
-  );
+  res.json(links);
 });
 
 // ─── DELETE /api/links/:id  ───────────────────────────────────────────────
@@ -304,6 +321,18 @@ router.delete("/:id", requireAuth, async (req: AuthenticatedRequest, res: Respon
 });
 
 // PATCH /api/links/:id
+import { z } from "zod";
+
+const VALID_STATUSES = ["active", "cancelled", "archived"] as const;
+
+const PatchLinkSchema = z.object({
+  label: z.string().min(1).optional(),
+  description: z.string().optional(),
+  redirectUrl: z.string().url().nullish(),
+  digitalAssetUrl: z.string().url().nullish(),
+  status: z.enum(VALID_STATUSES).optional(),
+});
+
 router.patch("/:id", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   const link = await getLinkById(id as string);
@@ -315,35 +344,35 @@ router.patch("/:id", requireAuth, async (req: AuthenticatedRequest, res: Respons
 
   // Auth check
   if (link.merchantId !== req.user?.id && 
+      !req.user?.allowedIds.includes(link.merchantId) &&
       !req.user?.allowedIds.includes(link.recipientWallet)) {
     res.status(403).json({ message: "Not authorized to update this link" });
     return;
   }
 
-  const data = req.body;
+  // Validate input
+  const parsed = PatchLinkSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: parsed.error.errors.map(e => e.message).join("; ") });
+    return;
+  }
 
-  // Safeguard: Do not allow changing amount/token if payments already received
-  if (link.paymentCount > 0) {
-    if (data.amountLamports !== undefined && data.amountLamports !== link.amountLamports) {
-      res.status(400).json({ message: "Cannot change amount after payments have been received." });
-      return;
-    }
-    if (data.token !== undefined && data.token !== link.token) {
-      res.status(400).json({ message: "Cannot change token after payments have been received." });
-      return;
-    }
+  const data = parsed.data;
+
+  // Safeguard: Do not allow re-activating a completed link
+  if (link.status === "completed" && data.status === "active") {
+    res.status(400).json({ message: "Cannot reactivate a completed link." });
+    return;
   }
 
   const updated = await prisma.paymentLink.update({
     where: { id: id as string },
     data: {
-      label: data.label,
-      description: data.description,
-      amountLamports: data.amountLamports,
-      token: data.token,
-      redirectUrl: data.redirectUrl,
-      digitalAssetUrl: data.digitalAssetUrl,
-      status: data.status,
+      ...(data.label !== undefined && { label: data.label }),
+      ...(data.description !== undefined && { description: data.description }),
+      ...(data.redirectUrl !== undefined && { redirectUrl: data.redirectUrl }),
+      ...(data.digitalAssetUrl !== undefined && { digitalAssetUrl: data.digitalAssetUrl }),
+      ...(data.status !== undefined && { status: data.status }),
     }
   });
 

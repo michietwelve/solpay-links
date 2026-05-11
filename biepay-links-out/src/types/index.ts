@@ -5,13 +5,15 @@ import { z } from "zod";
 export const SUPPORTED_TOKENS = ["SOL", "USDC", "USDT", "PUSD", "BONK", "WIF"] as const;
 export type SupportedToken = (typeof SUPPORTED_TOKENS)[number];
 
+const IS_MAINNET = process.env.IS_MAINNET === "true";
+
 export const TOKEN_MINT: Record<SupportedToken, string | null> = {
   SOL: null, // native
-  USDC: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU", // Official Devnet USDC
-  USDT: "EJwZwpRvqiS86SAt9ikRWB9S5bwGrnF399qcSip8T6Y3", // Devnet USDT
+  USDC: IS_MAINNET ? "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" : "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+  USDT: IS_MAINNET ? "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB" : "EJwZwpRvqiS86SAt9ikRWB9S5bwGrnF399qcSip8T6Y3",
   PUSD: "A9m2Vduv3mS88E3YvTuxm9E9Lh77Fq7rD176X8X9K8K", // Palm USD (Placeholder/Devnet)
-  BONK: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263", // Mainnet address as fallback for Jupiter
-  WIF:  "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm", // Mainnet address
+  BONK: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+  WIF:  "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm",
 };
 
 export const TOKEN_DECIMALS: Record<SupportedToken, number> = {
@@ -25,7 +27,7 @@ export const TOKEN_DECIMALS: Record<SupportedToken, number> = {
 
 // ─── Payment link model ──────────────────────────────────────────────────────
 
-export type LinkStatus = "active" | "completed" | "expired" | "cancelled";
+export type LinkStatus = "active" | "completed" | "expired" | "cancelled" | "archived";
 
 export interface PaymentLink {
   id: string;                    // nanoid — used in the URL
