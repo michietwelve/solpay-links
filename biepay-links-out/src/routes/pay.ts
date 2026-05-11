@@ -76,7 +76,7 @@ router.get("/:linkId", async (req: Request, res: Response): Promise<void> => {
     // Crowdfund / Split Goal Data
     isSplitPayment: link.isSplitPayment,
     targetAmountLamports: link.targetAmountLamports,
-    currentAmountLamports: link.payments
+    currentAmountLamports: (link.payments || [])
       .filter((p: any) => p.status === "confirmed")
       .reduce((sum: bigint, p: any) => sum + BigInt(p.amountLamports), 0n)
       .toString(),
