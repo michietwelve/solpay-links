@@ -1,4 +1,9 @@
 import "dotenv/config";
+
+// ─── BigInt Serialization Patch ──────────────────────────────────────────
+// Prisma and Solana records often contain BigInts which native JSON cannot serialize.
+(BigInt.prototype as any).toJSON = function() { return this.toString() };
+
 import express from "express";
 import morgan from "morgan";
 import { Connection, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
