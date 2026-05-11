@@ -258,7 +258,7 @@ export default function DashboardPage() {
     refreshBalance();
   }, [address]);
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://biepay-links-production.up.railway.app";
 
   const fetchProfile = async () => {
     if (!user?.id) return;

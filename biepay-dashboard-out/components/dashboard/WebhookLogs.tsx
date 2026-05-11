@@ -24,7 +24,7 @@ export default function WebhookLogs() {
     
     const fetchLogs = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/merchants/${user.id}/webhook-logs`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://biepay-links-production.up.railway.app"}/api/merchants/${user.id}/webhook-logs`);
         if (res.ok) {
           const data = await res.json();
           setLogs(data);

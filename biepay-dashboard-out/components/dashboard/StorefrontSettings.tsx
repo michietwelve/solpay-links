@@ -244,7 +244,7 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
                             onNotify?.("Verifying SNS ownership...", "info");
                             try {
                               const token = await getAccessToken();
-                              const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3001"}/api/merchants/verify-sns`, {
+                              const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://biepay-links-production.up.railway.app"}/api/merchants/verify-sns`, {
                                 method: "POST",
                                 headers: { 
                                   "Content-Type": "application/json",
@@ -330,7 +330,7 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
                         onClick={async () => {
                           if (!webhookUrl) return onNotify?.("Enter a URL first.", "error");
                           try {
-                            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/merchants/test-webhook`, {
+                            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://biepay-links-production.up.railway.app"}/api/merchants/test-webhook`, {
                               method: "POST",
                               headers: { "Content-Type": "application/json" },
                               body: JSON.stringify({ url: webhookUrl })
@@ -552,7 +552,7 @@ export default function StorefrontSettings({ profile, onSave, onExport, onNotify
                             if (!stealthSecret) return onNotify?.("Enter or generate a secret key first.", "error");
                             onNotify?.("Scanning for stealth funds...", "info");
                             try {
-                              const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/stealth/scan`, {
+                              const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://biepay-links-production.up.railway.app"}/api/stealth/scan`, {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({ stealthSecret })

@@ -7,7 +7,7 @@ import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import bs58 from "bs58";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://biepay-links-production.up.railway.app";
 
 export default function ReceiptPage() {
   const { paymentId } = useParams<{ paymentId: string }>();
