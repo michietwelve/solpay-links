@@ -267,8 +267,10 @@ export default function PayPage() {
     if (!ready) return;
 
     if (authenticated && user) {
-      // 1. Check Privy wallets array for a Solana wallet (across both generic and solana-specific hooks)
-      const solanaWallet = allWallets.find((w: any) => w.walletClientType === 'privy' && w.chainType === 'solana');
+      // 1. Check Privy wallets array for any Solana wallet
+      const solanaWallet = [...wallets, ...solanaWallets].find((w: any) => 
+        w.chainType === 'solana' || (w.walletClientType === 'privy' && w.chainType === 'solana')
+      );
       
       // 2. Check user's linked accounts as a fallback
       const linkedSolana = user.linkedAccounts.find(
@@ -442,8 +444,15 @@ export default function PayPage() {
       const txBytes = Buffer.from(txBase64, "base64");
       const tx      = Transaction.from(txBytes);
 
-      const activeWallet = allWallets.find(w => w.address === walletAddr);
-      if (!activeWallet) throw new Error("Wallet not found. Please reconnect.");
+      // Search across all available wallets for the current address
+      const activeWallet = [...wallets, ...solanaWallets].find(
+        w => w.address.toLowerCase() === walletAddr.toLowerCase()
+      );
+
+      if (!activeWallet) {
+        console.error("Wallet lookup failed:", { walletAddr, available: [...wallets, ...solanaWallets].map(w => w.address) });
+        throw new Error(`Wallet ${walletAddr.slice(0, 4)}... not found in current session. Please refresh or reconnect.`);
+      }
 
       const signedTx = await (activeWallet as any).signTransaction(tx);
       const connection = new Connection(RPC, "confirmed");
@@ -506,7 +515,17 @@ export default function PayPage() {
       <Card>
         <div className="px-8 py-16 text-center">
           <p className="text-sm text-red-600">{errMsg ?? "Something went wrong."}</p>
-          <button onClick={() => window.location.reload()} className="mt-4 text-xs underline">Try Again</button>
+          <div className="flex flex-col items-center gap-3 mt-6">
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-6 py-2 bg-zinc-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-zinc-800 transition-colors"
+            >
+              Retry Connection
+            </button>
+            <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest">
+              Build v1.8 • Final Stability • <button onClick={() => { localStorage.clear(); window.location.reload(); }} className="underline">Force Refresh</button>
+            </p>
+          </div>
         </div>
       </Card>
     );
