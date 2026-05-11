@@ -135,6 +135,7 @@ export default function PayPage() {
   const [airdropStatus, setAirdropStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
+  const [lootboxWin, setLootboxWin] = useState(false);
 
   const generatePDF = async () => {
     setIsGeneratingPDF(true);
@@ -444,7 +445,10 @@ export default function PayPage() {
         throw new Error(e.message ?? `Actions API error ${postRes.status}`);
       }
 
-      const { transaction: txBase64 } = await postRes.json();
+      const { transaction: txBase64, message } = await postRes.json();
+      if (message?.includes("LOOTBOX WON")) {
+        setLootboxWin(true);
+      }
       const txBytes = Buffer.from(txBase64, "base64");
       const tx      = Transaction.from(txBytes);
 
@@ -591,6 +595,17 @@ export default function PayPage() {
               <span className="text-4xl font-black text-zinc-950 tracking-tighter">{formattedAmount}</span>
               <span className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em]">{link.token}</span>
             </div>
+            {lootboxWin && (
+              <div className="mt-6 p-4 bg-amber-50 border-2 border-amber-200 rounded-2xl animate-bounce">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <span className="text-xl">🎉</span>
+                  <p className="text-[10px] font-black text-amber-600 uppercase tracking-[0.2em]">Lootbox Luck Winner!</p>
+                  <span className="text-xl">🎉</span>
+                </div>
+                <p className="text-lg font-black text-amber-900 tracking-tight">YOUR PURCHASE IS FREE</p>
+                <p className="text-[9px] text-amber-700 font-bold uppercase mt-1">Solana has smiled upon you today.</p>
+              </div>
+            )}
 
             <div className="space-y-4 pt-4 border-t border-zinc-100">
               {[
